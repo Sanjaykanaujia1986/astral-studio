@@ -1,0 +1,30 @@
+{
+  "name": "astro-platform",
+  "private": true,
+  "license": "AGPL-3.0-or-later",
+  "version": "0.8.0",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "test:watch": "npm run test:watch -w packages/engine",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "fetch:ephe": "node scripts/fetch-ephe.mjs",
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^1.1.0",
+    "zod": "^4.6.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.4"
+  }
+}

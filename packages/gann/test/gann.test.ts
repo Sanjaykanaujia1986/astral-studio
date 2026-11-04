@@ -1,0 +1,389 @@
+/**
+ * Gann constructions.
+ *
+ * The published Square of Nine is the oracle for the grid: the 5×5 layout
+ * below is the one printed in the standard references, and the walk is
+ * asserted against it cell by cell rather than against a formula, because a
+ * formula is what is being checked.
+ *
+ * The angle tests exist mainly to pin down that the grid and the spiral angle
+ * are DIFFERENT functions. Conflating them is the usual defect in this kind of
+ * software and it is invisible on screen — both produce plausible numbers.
+ */
+import { describe, it, expect } from 'vitest';
+import {
+  buildSquare, cellForValue, cellAt, ringOf, DEFAULT_SQUARE,
+  spiralAngle, totalRotation, valueAtAngle, cellAngle, CROSS_ANGLES, NegativeRootError,
+  buildFan, priceAt, barAtPrice, measure, unitSlope, STANDARD_FAN, InvalidScaleError,
+  projectLongitude, projectAll, nearestTurn,
+} from '../src/index.js';
+
+/**
+ * The published 5×5 Square of Nine, top row first. Centre 1, clockwise from
+ * the right, odd squares running up and to the right.
+ */
+const PUBLISHED = [
+  [21, 22, 23, 24, 25],
+  [20, 7, 8, 9, 10],
+  [19, 6, 1, 2, 11],
+  [18, 5, 4, 3, 12],
+  [17, 16, 15, 14, 13],
+];
+
+describe('the Square of Nine grid', () => {
+  const square = buildSquare({ rings: 2 });
+
+  it('reproduces the published 5×5 layout cell for cell', () => {
+    expect(square.side).toBe(5);
+    for (let row = 0; row < 5; row += 1) {
+      for (let col = 0; col < 5; col += 1) {
+        const x = col - 2;
+        const y = 2 - row;
+        expect(cellAt(square, x, y)?.value, `(${x}, ${y})`).toBe(PUBLISHED[row]![col]);
+      }
+    }
+  });
+
+  it('fills every cell exactly once', () => {
+    expect(square.cells).toHaveLength(25);
+    expect(new Set(square.cells.map((c) => `${c.x},${c.y}`)).size).toBe(25);
+    expect(new Set(square.cells.map((c) => c.value)).size).toBe(25);
+  });
+
+  it('puts 8r cells in ring r', () => {
+    const big = buildSquare({ rings: 6 });
+    for (let r = 1; r <= 6; r += 1) {
+      expect(big.cells.filter((c) => c.ring === r), `ring ${r}`).toHaveLength(8 * r);
+    }
+  });
+
+  it('puts the odd squares on the up-right diagonal', () => {
+    const big = buildSquare({ rings: 5 });
+    for (const odd of [9, 25, 49, 81, 121]) {
+      const cell = cellForValue(big, odd)!;
+      expect(cell.x, `${odd}`).toBe(cell.y);
+      expect(cell.x).toBeGreaterThan(0);
+      expect(cell.onDiagonalCross).toBe(true);
+    }
+  });
+
+  it('does NOT put the even squares on the opposite diagonal', () => {
+    /*
+     * The familiar claim "the even squares are opposite the odd squares" is
+     * true of the SPIRAL ANGLE and false of the grid. The down-left arm
+     * carries (2r)² + 1 — 5, 17, 37 — and each even square sits one cell
+     * short of it. 4 is due south of centre, on the cardinal cross.
+     *
+     * Written as an assertion rather than a comment because the first draft
+     * of the conventions document claimed the opposite, and this test is
+     * what found it.
+     */
+    const big = buildSquare({ rings: 5 });
+    for (let r = 1; r <= 5; r += 1) {
+      expect(cellAt(big, -r, -r)!.value, `down-left arm, ring ${r}`).toBe(4 * r * r + 1);
+      const even = cellForValue(big, 4 * r * r)!;
+      expect(even.x, `(2·${r})²`).toBe(-r + 1);
+      expect(even.y).toBe(-r);
+      expect(even.onDiagonalCross).toBe(false);
+    }
+    expect(cellAt(big, 0, -1)!.value).toBe(4);
+    expect(cellAt(big, 0, -1)!.onCardinalCross).toBe(true);
+    // Yet by spiral angle 4 is exactly 180° from 1, as the method intends.
+    expect(spiralAngle(4)).toBeCloseTo(180, 9);
+  });
+
+  it('counts the two crosses geometrically, so the centre is on neither', () => {
+    const centre = cellAt(square, 0, 0)!;
+    expect(centre.onCardinalCross).toBe(false);
+    expect(centre.onDiagonalCross).toBe(false);
+    expect(cellAt(square, 2, 0)!.onCardinalCross).toBe(true);
+    expect(cellAt(square, 2, 0)!.onDiagonalCross).toBe(false);
+    expect(cellAt(square, -2, -2)!.onDiagonalCross).toBe(true);
+  });
+
+  it('keeps the crosses correct under a different origin and increment', () => {
+    /*
+     * REGRESSION GUARD. A tempting shortcut is "the diagonal is the odd
+     * squares", which is true only for origin 1, increment 1. With an origin
+     * of 100 and an increment of 5 that test would pass vacuously while the
+     * drawing was wrong.
+     */
+    const scaled = buildSquare({ rings: 2, originValue: 100, increment: 5 });
+    expect(cellAt(scaled, 0, 0)!.value).toBe(100);
+    expect(cellAt(scaled, 1, 1)!.value).toBe(100 + 8 * 5);   // where 9 sits
+    expect(cellAt(scaled, 1, 1)!.onDiagonalCross).toBe(true);
+    expect(cellAt(scaled, 2, 0)!.onCardinalCross).toBe(true);
+    expect(cellForValue(scaled, 140)).toBe(cellAt(scaled, 1, 1));
+    // A value that is not on a cell is absent, not rounded to a neighbour.
+    expect(cellForValue(scaled, 142)).toBeUndefined();
+    expect(cellForValue(scaled, 95)).toBeUndefined();
+  });
+
+  it('mirrors exactly when wound the other way', () => {
+    const anti = buildSquare({ rings: 2, direction: 'anticlockwise' });
+    for (const cell of square.cells) {
+      expect(cellAt(anti, cell.x, -cell.y)?.value, `${cell.value}`).toBe(cell.value);
+    }
+  });
+
+  it('rejects settings that cannot produce a square', () => {
+    expect(() => buildSquare({ rings: -1 })).toThrow(RangeError);
+    expect(() => buildSquare({ rings: 1.5 })).toThrow(RangeError);
+    expect(() => buildSquare({ increment: 0 })).toThrow(RangeError);
+  });
+
+  it('defaults to five rings, which is the printed size', () => {
+    expect(DEFAULT_SQUARE.rings).toBe(5);
+    expect(buildSquare().side).toBe(11);
+    expect(ringOf(-3, 1)).toBe(3);
+  });
+});
+
+describe('the spiral angle', () => {
+  it('puts every odd square at 0° and every even square at 180°', () => {
+    for (const odd of [1, 9, 25, 49, 81, 121, 169]) {
+      expect(spiralAngle(odd), `${odd}`).toBeCloseTo(0, 9);
+    }
+    for (const even of [4, 16, 36, 64, 100, 144]) {
+      expect(spiralAngle(even), `${even}`).toBeCloseTo(180, 9);
+    }
+  });
+
+  it('adds 2 to the square root per revolution', () => {
+    expect(totalRotation(9)).toBeCloseTo(360, 9);
+    expect(totalRotation(25)).toBeCloseTo(720, 9);
+    expect(totalRotation(49)).toBeCloseTo(1080, 9);
+    // And the wrapped form hides those turns, which is why both exist.
+    expect(spiralAngle(49)).toBeCloseTo(0, 9);
+  });
+
+  it('inverts exactly', () => {
+    for (const value of [2, 3.75, 17, 101.5, 6400]) {
+      const turns = Math.floor(totalRotation(value) / 360);
+      expect(valueAtAngle(spiralAngle(value), turns), `${value}`).toBeCloseTo(value, 9);
+    }
+  });
+
+  it('gives a different value on every turn, which is why the turn is required', () => {
+    const prices = [0, 1, 2, 3].map((turns) => valueAtAngle(90, turns));
+    expect(new Set(prices).size).toBe(4);
+    expect(prices).toEqual([...prices].sort((a, b) => a - b));
+  });
+
+  it('respects a shifted origin', () => {
+    expect(spiralAngle(100, 100)).toBeCloseTo(0, 9);
+    // One full turn from an origin of 100: √100 + 2 = 12, so 144.
+    expect(valueAtAngle(0, 1, 100)).toBeCloseTo(144, 9);
+  });
+
+  it('refuses a value below the origin instead of returning NaN', () => {
+    expect(() => spiralAngle(-1)).toThrow(NegativeRootError);
+    expect(() => totalRotation(-0.5)).toThrow(NegativeRootError);
+  });
+});
+
+describe('the spiral angle is not the grid angle', () => {
+  const square = buildSquare({ rings: 60 });
+
+  it('disagrees sharply on the inner rings', () => {
+    // Value 3 sits down-right of centre: grid 315°, spiral 131.8°.
+    const three = cellForValue(square, 3)!;
+    expect(cellAngle(three.x, three.y)).toBeCloseTo(90, 9);
+    expect(spiralAngle(3)).toBeCloseTo(131.769, 3);
+    expect(Math.abs(spiralAngle(3) - cellAngle(three.x, three.y)!)).toBeGreaterThan(40);
+  });
+
+  it('converges by the outer rings', () => {
+    // East cardinal of ring 50: the walk reaches (50, 0) at (2·50−1)² + 50.
+    const value = 99 * 99 + 50;
+    const cell = cellForValue(square, value)!;
+    expect(cell.x).toBe(50);
+    expect(cell.y).toBe(0);
+    expect(cellAngle(cell.x, cell.y)).toBeCloseTo(CROSS_ANGLES.cardinalEast!, 9);
+    expect(spiralAngle(value)).toBeCloseTo(45, 0);
+  });
+
+  it('gives the centre no direction rather than calling it north-east', () => {
+    expect(cellAngle(0, 0)).toBeUndefined();
+  });
+
+  it('measures the eight cross arms clockwise from the odd-square diagonal', () => {
+    expect(cellAngle(1, 1)).toBeCloseTo(CROSS_ANGLES.diagonalNorthEast!, 9);
+    expect(cellAngle(1, 0)).toBeCloseTo(CROSS_ANGLES.cardinalEast!, 9);
+    expect(cellAngle(1, -1)).toBeCloseTo(CROSS_ANGLES.diagonalSouthEast!, 9);
+    expect(cellAngle(0, -1)).toBeCloseTo(CROSS_ANGLES.cardinalSouth!, 9);
+    expect(cellAngle(-1, -1)).toBeCloseTo(CROSS_ANGLES.diagonalSouthWest!, 9);
+    expect(cellAngle(0, 1)).toBeCloseTo(CROSS_ANGLES.cardinalNorth!, 9);
+  });
+});
+
+describe('fans', () => {
+  const anchor = { barIndex: 10, date: '2024-03-01', price: 100 };
+  const scale = { priceUnits: 2, timeUnits: 1 };
+
+  it('refuses to build without a usable scale', () => {
+    // The assertion this file exists for: "1×1" names no line without units.
+    expect(() => unitSlope({ priceUnits: 0, timeUnits: 1 })).toThrow(InvalidScaleError);
+    expect(() => unitSlope({ priceUnits: 1, timeUnits: 0 })).toThrow(InvalidScaleError);
+    expect(() => unitSlope({ priceUnits: -1, timeUnits: 1 })).toThrow(InvalidScaleError);
+    expect(() => unitSlope({ priceUnits: NaN, timeUnits: 1 })).toThrow(InvalidScaleError);
+  });
+
+  it('scales every ratio by the stated price per time', () => {
+    const fan = buildFan(anchor, scale, 'up');
+    expect(fan.lines).toHaveLength(STANDARD_FAN.length);
+    const primary = fan.lines.find((l) => l.isPrimary)!;
+    expect(primary.label).toBe('1×1');
+    expect(primary.slopePerBar).toBe(2);
+    expect(fan.lines.find((l) => l.label === '4×1')!.slopePerBar).toBe(8);
+    expect(fan.lines.find((l) => l.label === '1×4')!.slopePerBar).toBe(0.5);
+  });
+
+  it('doubling the scale doubles every line', () => {
+    const slow = buildFan(anchor, { priceUnits: 1, timeUnits: 1 }, 'up');
+    const fast = buildFan(anchor, { priceUnits: 2, timeUnits: 1 }, 'up');
+    for (let i = 0; i < slow.lines.length; i += 1) {
+      expect(fast.lines[i]!.slopePerBar).toBeCloseTo(2 * slow.lines[i]!.slopePerBar, 12);
+    }
+  });
+
+  it('falls from a high and rises from a low', () => {
+    const up = buildFan(anchor, scale, 'up');
+    const down = buildFan(anchor, scale, 'down');
+    expect(priceAt(up, up.lines.find((l) => l.isPrimary)!, 20)).toBe(120);
+    expect(priceAt(down, down.lines.find((l) => l.isPrimary)!, 20)).toBe(80);
+  });
+
+  it('passes through its anchor exactly, on every line', () => {
+    const fan = buildFan(anchor, scale, 'up');
+    for (const line of fan.lines) {
+      expect(priceAt(fan, line, anchor.barIndex), line.label).toBe(anchor.price);
+    }
+  });
+
+  it('counts bars, not calendar days', () => {
+    /*
+     * The anchor is bar 10 on a Friday; bar 11 is the following Monday. A
+     * day-counting implementation would place the 1×1 three units higher
+     * after the weekend. Bars make the line independent of the gap.
+     */
+    const fan = buildFan({ barIndex: 10, date: '2024-03-01', price: 100 }, scale, 'up');
+    expect(priceAt(fan, fan.lines.find((l) => l.isPrimary)!, 11)).toBe(102);
+  });
+
+  it('solves for the bar at a price, and says when there is none', () => {
+    const fan = buildFan(anchor, scale, 'up');
+    const primary = fan.lines.find((l) => l.isPrimary)!;
+    expect(barAtPrice(fan, primary, 120)).toBe(20);
+    expect(barAtPrice(fan, primary, 90)).toBe(5);   // extrapolated behind the anchor
+    const flat = { ...primary, slopePerBar: 0 };
+    expect(barAtPrice(fan, flat, 120)).toBeUndefined();
+  });
+});
+
+describe('measuring a move', () => {
+  const scale = { priceUnits: 1, timeUnits: 1 };
+
+  it('reports a move that ran exactly at the balance line as 1', () => {
+    const m = measure({ barIndex: 0, price: 50 }, { barIndex: 20, price: 70 }, scale);
+    expect(m.bars).toBe(20);
+    expect(m.priceChange).toBe(20);
+    expect(m.inUnitSlopes).toBe(1);
+    expect(m.nearestRatio).toEqual({ price: 1, time: 1 });
+    expect(m.errorToNearest).toBe(0);
+    expect(m.degrees).toBeCloseTo(45, 9);
+  });
+
+  it('finds the nearest standard ratio and states the error', () => {
+    const m = measure({ barIndex: 0, price: 0 }, { barIndex: 10, price: 21 }, scale);
+    expect(m.inUnitSlopes).toBe(2.1);
+    expect(m.nearestRatio).toEqual({ price: 2, time: 1 });
+    expect(m.errorToNearest).toBeCloseTo(0.05, 12);
+  });
+
+  it('measures a fall as a negative slope but matches it to a positive ratio', () => {
+    const m = measure({ barIndex: 0, price: 70 }, { barIndex: 20, price: 50 }, scale);
+    expect(m.slopePerBar).toBe(-1);
+    expect(m.nearestRatio).toEqual({ price: 1, time: 1 });
+    expect(m.degrees).toBeCloseTo(-45, 9);
+  });
+
+  it('shows that the degree figure is an artefact of the scale', () => {
+    /*
+     * The point of §4. The SAME two points, measured against two scales, give
+     * 45° and 26.6°. Reporting a bare angle without the scale would be
+     * reporting an accident of the axes as a fact about the market.
+     */
+    const points = [{ barIndex: 0, price: 0 }, { barIndex: 10, price: 10 }] as const;
+    expect(measure(points[0], points[1], { priceUnits: 1, timeUnits: 1 }).degrees)
+      .toBeCloseTo(45, 9);
+    expect(measure(points[0], points[1], { priceUnits: 2, timeUnits: 1 }).degrees)
+      .toBeCloseTo(26.565, 3);
+  });
+
+  it('refuses two points on the same bar', () => {
+    expect(() => measure({ barIndex: 4, price: 1 }, { barIndex: 4, price: 2 }, scale))
+      .toThrow(RangeError);
+  });
+});
+
+describe('planetary projections', () => {
+  const tropical = { kind: 'tropical' } as const;
+
+  it('maps longitude linearly from a stated anchor', () => {
+    const p = projectLongitude('sun', 100, {
+      method: 'linear', basePrice: 500, baseLongitude: 0, unitsPerDegree: 2,
+    }, tropical);
+    expect(p.price).toBe(700);
+    expect(p.method).toBe('linear');
+    expect(p.derivation).toContain('500');
+  });
+
+  it('maps longitude onto the square at the requested turn', () => {
+    // 0° on turn 1 from origin 1 is the second odd square: (1 + 2)² = 9.
+    const p = projectLongitude('sun', 0, {
+      method: 'square', originValue: 1, turns: 1,
+    }, tropical);
+    expect(p.price).toBeCloseTo(9, 9);
+  });
+
+  it('carries the zodiac, because tropical and sidereal differ by ~24°', () => {
+    const sidereal = { kind: 'sidereal', ayanamsha: 'lahiri' } as const;
+    const settings = {
+      method: 'linear', basePrice: 0, baseLongitude: 0, unitsPerDegree: 1,
+    } as const;
+    const t = projectLongitude('sun', 300, settings, tropical);
+    const s = projectLongitude('sun', 276.1, settings, sidereal);
+    expect(t.zodiac.kind).toBe('tropical');
+    expect(s.zodiac.ayanamsha).toBe('lahiri');
+    // The same body, the same instant, ~24 price units apart.
+    expect(t.price - s.price).toBeCloseTo(23.9, 9);
+  });
+
+  it('projects a whole chart at once', () => {
+    const prices = projectAll(
+      [{ body: 'sun', longitude: 10 }, { body: 'moon', longitude: 20 }],
+      { method: 'linear', basePrice: 0, baseLongitude: 0, unitsPerDegree: 10 },
+      tropical,
+    );
+    expect(prices.map((p) => p.price)).toEqual([100, 200]);
+  });
+
+  it('normalises longitude so 370° and 10° project alike', () => {
+    const settings = {
+      method: 'linear', basePrice: 0, baseLongitude: 0, unitsPerDegree: 1,
+    } as const;
+    expect(projectLongitude('sun', 370, settings, tropical).price)
+      .toBeCloseTo(projectLongitude('sun', 10, settings, tropical).price, 9);
+  });
+
+  it('offers the nearest turn as navigation, and it stays only navigation', () => {
+    // 90° near 400: turn 3 gives (1 + 0.5 + 6)² = 56.25; turn 9 gives 380.25.
+    const turn = nearestTurn(90, 400, 1);
+    expect(turn).toBe(9);
+    // The projection still demands the turn be passed, so choosing it remains
+    // a visible decision rather than a silent fit.
+    const p = projectLongitude('sun', 90, { method: 'square', originValue: 1, turns: turn }, tropical);
+    expect(p.price).toBeCloseTo(380.25, 9);
+  });
+});

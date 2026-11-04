@@ -1,0 +1,17 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "wheel-preview",
+      "runtimeExecutable": "npx",
+      "runtimeArgs": [
+        "vite",
+        "--port",
+        "5178",
+        "--strictPort",
+        "scratch"
+      ],
+      "port": 5178
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+node_modules/
+dist/
+dist-ssr/
+*.local
+.env
+.env.*
+!.env.example
+coverage/
+.vite/
+.DS_Store
+Thumbs.db
+*.log
+
+# Swiss Ephemeris data files — fetched via `npm run fetch:ephe`, not committed (~2 MB binary)
+packages/engine/ephe/*.se1
+
+# Capacitor / Android build output
+apps/web/android/app/build/
+apps/web/android/build/
+apps/web/android/.gradle/
+apps/web/android/local.properties
+keystore.properties
+*.jks
+*.keystore
+
+# scratch / spikes
+scratch/
+
+# GeoNames raw downloads (regenerate with: npm run build:data -w packages/locations)
+packages/locations/.cache/
+
+# Capacitor / Android build outputs
+apps/web/android/.gradle/
+apps/web/android/build/
+apps/web/android/app/build/
+apps/web/android/local.properties
+apps/web/android/app/src/main/assets/public/
+apps/web/android/capacitor-cordova-android-plugins/
+apps/web/public/wasm/
+apps/web/public/data/
+
+.vercel
+.env*
+
+# Neon connection string (secret)
+.env.db
+.env*.local

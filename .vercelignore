@@ -1,0 +1,31 @@
+# What never needs to reach the build.
+#
+# The Android project alone is ~40 MB of Gradle caches and a built APK, and
+# uploading it would slow every deploy while changing nothing about the site.
+
+apps/web/android/
+apps/web/public/wasm/
+apps/web/public/data/
+apps/web/dist/
+
+node_modules/
+**/node_modules/
+**/dist/
+**/build/
+**/.gradle/
+
+# The native oracle's ephemeris files. Used only by the test suite's
+# cross-check against `sweph`; the shipped engine reads its data out of
+# swisseph-wasm instead.
+packages/engine/ephe/
+packages/locations/.cache/
+
+scratch/
+*.apk
+*.jks
+*.keystore
+
+# Secrets never upload
+.env
+.env.*
+.env*.local

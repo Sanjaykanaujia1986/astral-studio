@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      Content Security Policy.
+
+      The app fetches nothing from anywhere. Every asset — the WASM payload, the
+      ephemeris data, the city database — is bundled and served from its own
+      origin, and an audit of the network log during a full session recorded
+      zero external requests. A policy this strict is therefore not a
+      restriction on the application; it is a statement of what it already does,
+      enforced so that it stays true.
+
+      Notes on the specific directives:
+
+      - `wasm-unsafe-eval` in script-src is required to instantiate WebAssembly.
+        It permits WASM compilation only, NOT eval() or new Function().
+      - `'unsafe-inline'` in style-src is needed because the chart wheel and the
+        report set literal colours and page dimensions as inline styles — a
+        deliberate choice so the SVG survives being handed to a print renderer
+        with no cascade to resolve custom properties against.
+      - `connect-src 'self'` is the load-bearing one: it makes exfiltration
+        impossible rather than merely absent. Birth data is personal, and this
+        app has no server to send it to.
+      - `form-action 'none'` and `base-uri 'none'` close the two redirection
+        routes that survive a strict connect-src.
+      - `frame-ancestors` is deliberately ABSENT. It is only honoured in an
+        HTTP header and is ignored — with a console error — when delivered in a
+        meta element, so including it here would be decoration that also
+        produced a warning on every load. A web deployment should send it as a
+        response header; the Android build has no framing surface to protect.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="
+        default-src 'self';
+        script-src 'self' 'wasm-unsafe-eval';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: blob:;
+        font-src 'self';
+        connect-src 'self';
+        worker-src 'self' blob:;
+        object-src 'none';
+        base-uri 'none';
+        form-action 'none';
+      "
+    />
+    <!--
+      The static title is the brand, not a workspace name.
+      React replaces it with "<workspace> · <brand>" once mounted, but this is
+      what a bookmark made before hydration keeps, and what shows for the
+      moment before the app boots. It said "Astro — Natal Chart", which is
+      neither the product name nor accurate now that there are ten workspaces.
+    -->
+    <title>Astral Studio</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

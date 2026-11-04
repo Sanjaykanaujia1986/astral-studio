@@ -1,0 +1,47 @@
+@import "tailwindcss";
+
+/*
+ * Tailwind v4 auto-detects sources under the project root but excludes
+ * node_modules — and workspace packages are symlinked in there, so classes used
+ * ONLY by @astro/ui were silently never generated. The failure is quiet and
+ * partial: any class the app also happens to use still works, so the omission
+ * hides until a component-only utility (overflow-x-auto on the scrolling table
+ * wrappers) turns out to do nothing.
+ */
+@source "../../../packages/ui/src";
+@source "../../../packages/i18n/src";
+@source "./shell";
+@source "./state";
+
+@theme {
+  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* Print: the chart and tables must survive being sent to paper. */
+@media print {
+  .no-print { display: none !important; }
+  .print-break { break-before: page; }
+  body { background: white; }
+
+  /*
+   * The application shell is screen furniture. On paper the report's own page
+   * box IS the page, so the shell's centring, max-width and padding have to be
+   * unwound or every sheet is inset twice and the millimetre dimensions the
+   * @page rule depends on no longer line up with the content.
+   */
+  main {
+    display: block !important;
+    max-width: none !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    gap: 0 !important;
+  }
+
+  /* The preview's grey mount is a screen affordance, not part of the report. */
+  .report-preview {
+    background: #ffffff !important;
+    padding: 0 !important;
+    overflow: visible !important;
+  }
+}

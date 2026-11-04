@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Astro</string>
+    <string name="title_activity_main">Astro</string>
+    <string name="package_name">com.electech.astro</string>
+    <string name="custom_url_scheme">com.electech.astro</string>
+</resources>
