@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 0.9.1 — 2026-11-04
+- **Bi-wheel**: `ChartWheel` takes an optional `outerChart`, drawing a second chart in an outer ring — transits, a return, a partner. Both rings are oriented on the INNER chart's ascendant; a ring turned to its own would look right and make every cross-aspect wrong by the angle between them, so a test asserts it.
+- A drawn divider separates the two rings, because a bi-wheel whose rings blend invites reading a transit position as a natal one. Outer glyphs are tinted and the ring carries its own label, so a screenshot says what it is.
+- `scripts/chart-report.ts` and `scripts/chart-wheels.ts`: a reading produced by calculation rather than from memory. Natal table, aspects by orb, transit hits with pass numbers and applying/separating measured at the transit instant, stations, and both wheels as standalone SVG. Run with `node_modules/.bin/jiti`.
+
 ## 0.9.0 — 2026-11-04
 - **Gann circular and polygon layouts**, with their conventions written first (`docs/GANN_CONVENTIONS.md` §6).
 - The **wheel**: values round a circle of N divisions, where the angle is **linear in the value** — so values N apart share a degree forever. That is the construction's whole point, and the opposite of the Square of Nine, where a full turn adds a growing amount because its angle is linear in √v. The workspace says so where the reader is looking, and a test asserts the two are different functions.

@@ -45,6 +45,12 @@ export interface RingRatios {
   readonly houseNumbers: number;
   /** Inner circle that aspect lines are drawn against. */
   readonly aspects: number;
+  /** Bi-wheel only: the outer chart's glyph ring. */
+  readonly outerPlanets?: number;
+  /** Bi-wheel only: the outer chart's degree text. */
+  readonly outerDegrees?: number;
+  /** Bi-wheel only: the circle separating the two charts. */
+  readonly divider?: number;
 }
 
 /**
@@ -60,6 +66,30 @@ export const DEFAULT_RINGS: RingRatios = {
   degrees: 0.695,
   houseNumbers: 0.638,
   aspects: 0.59,
+};
+
+/**
+ * Bi-wheel radii: the inner chart compressed to free an outer band.
+ *
+ * The zodiac stays outermost, where a reader expects it, and the second chart
+ * occupies the band between the zodiac and the inner chart. The two are
+ * separated by a drawn circle, because a bi-wheel whose rings blend together
+ * invites reading a transit position as a natal one.
+ *
+ * Both charts are drawn against the INNER chart's ascendant. A transit ring
+ * oriented to its own ascendant would be a different wheel sharing a frame,
+ * and every cross-aspect read off it would be wrong.
+ */
+export const BIWHEEL_RINGS: RingRatios = {
+  zodiacOuter: 1.0,
+  zodiacInner: 0.875,
+  outerPlanets: 0.805,
+  outerDegrees: 0.735,
+  divider: 0.70,
+  planets: 0.625,
+  degrees: 0.558,
+  houseNumbers: 0.505,
+  aspects: 0.455,
 };
 
 export interface WheelLayout {
@@ -93,7 +123,13 @@ export function createLayout(
 
 /** Radius in pixels for a named ring. */
 export function radiusOf(layout: WheelLayout, ring: keyof RingRatios): number {
-  return layout.outerRadius * layout.rings[ring];
+  const ratio = layout.rings[ring];
+  if (ratio === undefined) {
+    // A missing bi-wheel ring means the caller asked for an outer band on a
+    // single-wheel layout. Falling back to 0 would stack glyphs on the centre.
+    throw new RangeError(`Ring "${ring}" is not defined in this layout's ratios.`);
+  }
+  return layout.outerRadius * ratio;
 }
 
 /**

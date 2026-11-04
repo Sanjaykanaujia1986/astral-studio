@@ -20,6 +20,7 @@ import {
 } from '@astro/engine';
 import {
   createLayout,
+  BIWHEEL_RINGS,
   generateTicks,
   longitudeToAngle,
   pointAt,
@@ -56,6 +57,16 @@ export interface ChartWheelProps {
    * in a browser, a rasteriser and a PDF pipeline.
    */
   readonly theme?: Partial<ChartTheme>;
+  /**
+   * A second chart drawn in an outer ring — transits, a return, a partner.
+   *
+   * Both rings are oriented on THIS chart's ascendant. A second ring turned to
+   * its own ascendant would be a different wheel sharing a frame, and every
+   * cross-aspect read off it would be wrong by the difference between them.
+   */
+  readonly outerChart?: InstantChart;
+  /** Short label for the outer ring, e.g. a transit date. */
+  readonly outerLabel?: string;
 }
 
 function fmt(value: number): string {
@@ -112,6 +123,8 @@ export function ChartWheel({
   title,
   theme,
   subjectName,
+  outerChart,
+  outerLabel,
 }: ChartWheelProps): JSX.Element {
   const t: ChartTheme = resolveTheme(theme);
   const INK = t.ink;
@@ -122,7 +135,8 @@ export function ChartWheel({
   // 0 Aries instead. The house ring is omitted entirely rather than drawn from
   // an assumed time.
   const ascendant = chart.houses?.ascendant ?? 0;
-  const layout = createLayout(size, ascendant);
+  const biwheel = outerChart !== undefined;
+  const layout = createLayout(size, ascendant, biwheel ? { rings: BIWHEEL_RINGS } : {});
 
   const rZodiacOuter = radiusOf(layout, 'zodiacOuter');
   const rZodiacInner = radiusOf(layout, 'zodiacInner');
@@ -133,7 +147,9 @@ export function ChartWheel({
 
   const scale = size / 800;
   const signGlyphSize = 22 * scale;
-  const planetGlyphSize = 24 * scale;
+  // The inner ring is compressed in a bi-wheel, so its glyphs come down with
+  // it rather than overflowing into the ring above.
+  const planetGlyphSize = (biwheel ? 19 : 24) * scale;
   const degreeTextSize = 10 * scale;
   const houseNumberSize = 13 * scale;
 
@@ -151,8 +167,24 @@ export function ChartWheel({
     displaced: Math.abs(norm360(displayAngles[index]! - trueAngles[index]! + 180) - 180) > 0.05,
   }));
 
+  // The outer ring, placed against the INNER chart's ascendant.
+  const outerTrueAngles = (outerChart?.bodies ?? []).map(
+    (b) => longitudeToAngle(b.position.longitude, ascendant),
+  );
+  const outerDisplayAngles = resolveCollisions(outerTrueAngles, separation);
+  const placedOuter = (outerChart?.bodies ?? []).map((body, index) => ({
+    body,
+    trueAngle: outerTrueAngles[index]!,
+    displayAngle: outerDisplayAngles[index]!,
+    displaced:
+      Math.abs(norm360(outerDisplayAngles[index]! - outerTrueAngles[index]! + 180) - 180) > 0.05,
+  }));
+
   const accessibleTitle =
-    title ?? `Natal chart${subjectName ? ` for ${subjectName}` : ''}`;
+    title
+    ?? (biwheel
+      ? `Bi-wheel: natal${subjectName ? ` for ${subjectName}` : ''} with ${outerLabel ?? 'an outer chart'}`
+      : `Natal chart${subjectName ? ` for ${subjectName}` : ''}`);
 
   return (
     <svg
@@ -326,6 +358,71 @@ export function ChartWheel({
               </g>
             );
           })}
+        </g>
+      ) : null}
+
+      {/* ---- outer ring (bi-wheel) ---- */}
+      {biwheel ? (
+        <g>
+          {/* The divider. Without it the two rings read as one chart, and a
+              transit position gets taken for a natal one. */}
+          <circle
+            cx={fmt(layout.cx)} cy={fmt(layout.cy)}
+            r={fmt(radiusOf(layout, 'divider'))}
+            fill="none" stroke={MUTED} strokeWidth={1.1 * scale}
+          />
+
+          {placedOuter.map(({ body, trueAngle, displayAngle, displaced }) => {
+            const glyph = BODY_GLYPHS[body.position.body];
+            const rOuterPlanets = radiusOf(layout, 'outerPlanets');
+            const glyphPoint = pointAt(layout, rOuterPlanets, displayAngle);
+            const degreePoint = pointAt(layout, radiusOf(layout, 'outerDegrees'), displayAngle);
+            const { degreesInSign } = splitSign(body.position.longitude);
+
+            return (
+              <g key={`outer-${body.position.body}`}>
+                {/* Tick to the true longitude, as the inner ring does: a
+                    glyph nudged aside must not misreport where the body is. */}
+                {line(
+                  pointAt(layout, rZodiacInner, trueAngle),
+                  pointAt(
+                    layout,
+                    displaced ? rOuterPlanets + 11 * scale : rZodiacInner - 7 * scale,
+                    displaced ? displayAngle : trueAngle,
+                  ),
+                  MUTED,
+                  0.7 * scale,
+                )}
+
+                <text
+                  x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize={glyphStyle === 'symbol' ? 21 * scale : 21 * scale * 0.6}
+                  fontFamily={GLYPH_FONT_STACK}
+                  fill={t.aspects.hard}
+                >
+                  {glyphStyle === 'symbol' ? glyph.symbol : glyph.abbreviation}
+                </text>
+
+                <text
+                  x={fmt(degreePoint.x)} y={fmt(degreePoint.y)}
+                  textAnchor="middle" dominantBaseline="central"
+                  fontSize={degreeTextSize} fill={MUTED}
+                >
+                  {`${Math.floor(degreesInSign)}°${body.position.retrograde ? ' ℞' : ''}`}
+                </text>
+              </g>
+            );
+          })}
+
+          {outerLabel ? (
+            <text
+              x={fmt(layout.cx)} y={fmt(layout.cy + radiusOf(layout, 'divider') - 6 * scale)}
+              textAnchor="middle" fontSize={11 * scale} fill={t.aspects.hard}
+            >
+              {outerLabel}
+            </text>
+          ) : null}
         </g>
       ) : null}
 

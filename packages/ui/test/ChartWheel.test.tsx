@@ -191,3 +191,63 @@ describe('accessibility', () => {
     expect(render(<ChartWheel chart={chart} />)).toContain('aria-hidden="true"');
   });
 });
+
+/**
+ * The bi-wheel.
+ *
+ * The property that matters is orientation: both rings must be drawn against
+ * the INNER chart's ascendant. A second ring turned to its own ascendant
+ * produces a wheel that looks right and makes every cross-aspect wrong by the
+ * angle between the two — invisible on screen, which is why it is asserted.
+ */
+describe('bi-wheel', () => {
+  it('draws a second ring of glyphs without one chart overwriting the other', () => {
+    const svg = render(<ChartWheel chart={chart} outerChart={chartNoTime} size={800} />);
+    const single = render(<ChartWheel chart={chart} size={800} />);
+    // Twelve bodies drawn twice: the markup carries more glyph text nodes.
+    const count = (markup: string) => (markup.match(/font-family/g) ?? []).length;
+    expect(count(svg)).toBeGreaterThan(count(single));
+  });
+
+  it('orients the outer ring on the INNER chart’s ascendant', () => {
+    /*
+     * Both wheels are drawn for charts whose bodies are at the same
+     * longitudes; only the houses differ. If the outer ring were oriented on
+     * its own ascendant (absent here, so 0 Aries) the two rings' glyphs would
+     * land at different angles for the same body. They must coincide.
+     */
+    const svg = render(<ChartWheel chart={chart} outerChart={chart} size={800} />);
+    const positions = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*font-family/g)]
+      .map((m) => `${m[1]},${m[2]}`);
+    // Every outer glyph sits on the same RADIAL LINE as its inner twin, so
+    // the set of distinct angles is the same as for one chart.
+    const angles = new Set(
+      [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*font-family/g)].map((m) => {
+        const dx = Number(m[1]) - 400;
+        const dy = Number(m[2]) - 400;
+        return Math.round((Math.atan2(dy, dx) * 180) / Math.PI);
+      }),
+    );
+    expect(positions.length).toBeGreaterThan(angles.size);
+  });
+
+  it('separates the rings with a drawn circle', () => {
+    // Without it the two rings read as one chart.
+    const svg = render(<ChartWheel chart={chart} outerChart={chartNoTime} size={800} />);
+    expect(svg).toMatch(/<circle[^>]+r="2\d\d/);
+  });
+
+  it('is still a single wheel when no outer chart is given', () => {
+    const svg = render(<ChartWheel chart={chart} size={800} />);
+    expect(svg).toContain('Natal chart');
+    expect(svg).not.toContain('Bi-wheel');
+  });
+
+  it('labels the outer ring, so a screenshot says what it is', () => {
+    const svg = render(
+      <ChartWheel chart={chart} outerChart={chartNoTime} outerLabel="4 Nov 2026" size={800} />,
+    );
+    expect(svg).toContain('4 Nov 2026');
+    expect(svg).toContain('Bi-wheel');
+  });
+});

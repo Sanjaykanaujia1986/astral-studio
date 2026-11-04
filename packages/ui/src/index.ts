@@ -2,7 +2,7 @@ export { ChartWheel, type ChartWheelProps } from './chart-wheel/ChartWheel.js';
 export {
   createLayout, radiusOf, longitudeToAngle, angleToLongitude,
   pointAt, pointForLongitude, resolveCollisions, generateTicks, textAnchorFor,
-  DEFAULT_RINGS,
+  DEFAULT_RINGS, BIWHEEL_RINGS,
   type Point, type RingRatios, type TickSpec, type WheelLayout,
 } from './chart-wheel/geometry.js';
 export {
