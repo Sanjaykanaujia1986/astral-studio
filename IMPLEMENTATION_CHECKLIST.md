@@ -3,7 +3,7 @@
 Persistent. Updated at the end of each increment. `[x]` means built **and**
 verified by a test or a measurement, not merely written.
 
-Current version **0.8.0** · **967 unit tests** + **55 production smoke checks** ·
+Current version **0.9.0** · **981 unit tests** + **55 production smoke checks** ·
 engine fingerprint `855fec9b`, verified in Node, in the browser and on the live
 deployment.
 
@@ -49,7 +49,8 @@ Run them with `npm test` and `npm run smoke`.
 - [x] Square of Nine — configurable origin, increment, rings, handedness
 - [x] Anchored time/price overlays stating price units per time unit
 - [x] Planetary projections and angle measurement, linear or via the square
-- [ ] Further circular and polygon layouts (hexagon, Wheel of 24, Square of 144)
+- [x] Circular and polygon layouts (wheel of N, 3–12-sided spirals)
+- [ ] Square of 144 — a price–time grid; needs an anchoring convention
 - [ ] Annotations, saved templates, export
 - [ ] Market-data provider adapters
 

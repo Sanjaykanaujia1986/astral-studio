@@ -44,6 +44,14 @@ export {
 } from './fan.js';
 
 export {
+  DEFAULT_CIRCLE, DEFAULT_POLYGON, InvalidLayoutError,
+  buildCircle, circleAngle, circleTurn, sameDegree,
+  buildPolygon, polygonCellCount, polygonPoint, polygonCorners,
+  type CircleCell, type CircleChart, type CircleSettings,
+  type PolygonCell, type PolygonChart, type PolygonSettings,
+} from './layouts.js';
+
+export {
   projectLongitude, projectAll, nearestTurn,
   type BodyLongitude, type LinearProjectionSettings, type ProjectedPrice,
   type ProjectionMethod, type ProjectionSettings, type SquareProjectionSettings,

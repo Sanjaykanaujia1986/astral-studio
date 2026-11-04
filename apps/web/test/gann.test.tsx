@@ -91,8 +91,29 @@ describe('what the workspace says about itself', () => {
   it('lists what it deliberately did not build', () => {
     renderPanel();
     expect(screen.getByText(/Not built in this release/i)).toBeInTheDocument();
-    expect(screen.getByText(/Wheel of 24/)).toBeInTheDocument();
+    // The circular and polygon layouts moved OUT of this list when they were
+    // built; the Square of 144 stayed, because it is a price-time grid whose
+    // anchoring convention has no default.
+    expect(screen.getByText(/Square of 144/)).toBeInTheDocument();
     expect(screen.getByText(/Market-data provider/)).toBeInTheDocument();
+  });
+});
+
+describe('the construction picker', () => {
+  it('offers the three layouts as separate constructions', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const picker = screen.getByLabelText('Construction');
+    expect(picker).toBeInTheDocument();
+
+    await user.selectOptions(picker, 'circle');
+    expect(screen.getByRole('img', { name: /Wheel of 24/ })).toBeInTheDocument();
+    // And it says, where the reader is looking, that this is not the square
+    // with different edges — the two angles are different functions.
+    expect(screen.getByText(/linear in the value; the square/i)).toBeInTheDocument();
+
+    await user.selectOptions(picker, 'polygon');
+    expect(screen.getByRole('img', { name: /6-sided spiral/ })).toBeInTheDocument();
   });
 });
 

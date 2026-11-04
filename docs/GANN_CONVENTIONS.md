@@ -171,13 +171,64 @@ therefore by a large number of price units.
 
 ---
 
-## 6. What this module does not do
+## 6. Circular and polygon layouts
+
+The Square of Nine's rules do **not** generalise to these. Each is its own
+construction with its own choices, written down here before it was built.
+
+### The circle (the "wheel")
+
+Values placed round a circle of **N divisions**, each spanning 360/N degrees.
+Unlike the Square of Nine's angle (§2), the mapping is **linear in the value,
+not in its square root**:
+
+```
+θ(v) = ((v − v₀) / increment) × (360° / N)   modulo 360°
+turn   = floor(((v − v₀) / increment) / N)
+```
+
+So a wheel of 24 puts 24 consecutive values round one turn at 15° each, and
+the 25th sits back at the top on the next turn. Values an exact multiple of N
+apart share an angle, which is the entire point of the construction: that is
+what "in the same degree of the wheel" means.
+
+**This is a different relationship from the Square of Nine's.** On the square,
+values a full turn apart differ by a growing amount (√v increases by 2); on
+the wheel they differ by a constant N. Software that offers both and explains
+neither leaves the reader to assume they agree.
+
+### The polygon spiral
+
+A spiral on a lattice with **S sides**, S ≥ 3. Ring *r* holds `S × r` cells,
+so the total through ring *r* is `1 + S·r(r+1)/2`. For S = 4 the counts match
+the Square of Nine's rings (4, 8, 12 … against 8, 16, 24 … — half, because
+the square's ring counts both edges and corners of a square lattice), and for
+S = 6 they give the centred hexagonal numbers 1, 7, 19, 37, which is the
+hexagon chart's defining property.
+
+Cells are placed at the polygon's own angles: cell *k* of ring *r* sits at
+`360° × k / (S·r)` measured clockwise from straight up, at radius *r*. This
+is a **radial** placement, not a square lattice: a hexagon has no rows, and
+forcing one would misstate which cells are adjacent.
+
+**The corners are the construction.** The cells at `k ≡ 0 (mod r)` are the
+polygon's vertices and carry the numbers the method cares about. They are
+computed from position, like the Square of Nine's two crosses, so they stay
+correct under any origin and increment.
+
+### Square of 144
+
+**Not implemented.** It is not a spiral at all but a 144×144 grid laid over
+price and time, which needs an anchoring convention — where cell (1,1) sits in
+the series, and what one cell is worth in price and in bars. That is the same
+question §3 asks about a fan's scale, and it has no default. Adding it without
+stating those two values would produce a grid that looks authoritative and
+means nothing.
+
+## 7. What this module does not do
 
 Stated plainly so that an empty space is not mistaken for an oversight:
 
-- **No circular or polygon layouts** (hexagon, Wheel of 24, Square of 144).
-  Each needs its own convention written down first; the Square of Nine's rules
-  do not generalise to them without choices this document has not made.
 - **No annotations, saved templates or export.** The workspace draws from the
   current series and the current settings and keeps nothing.
 - **No market-data provider.** Prices come from a CSV the user supplies, parsed
@@ -191,7 +242,7 @@ Stated plainly so that an empty space is not mistaken for an oversight:
 
 ---
 
-## 7. Settings recorded with every construction
+## 8. Settings recorded with every construction
 
 A drawing that cannot be reproduced is not evidence of anything. Every Square
 of Nine carries its origin value, increment, direction and rotation; every fan

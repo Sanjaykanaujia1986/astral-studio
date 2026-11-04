@@ -16,6 +16,8 @@ import {
   spiralAngle, totalRotation, valueAtAngle, cellAngle, CROSS_ANGLES, NegativeRootError,
   buildFan, priceAt, barAtPrice, measure, unitSlope, STANDARD_FAN, InvalidScaleError,
   projectLongitude, projectAll, nearestTurn,
+  buildCircle, circleAngle, circleTurn, sameDegree, InvalidLayoutError,
+  buildPolygon, polygonCellCount, polygonPoint, polygonCorners,
 } from '../src/index.js';
 
 /**
@@ -385,5 +387,135 @@ describe('planetary projections', () => {
     // a visible decision rather than a silent fit.
     const p = projectLongitude('sun', 90, { method: 'square', originValue: 1, turns: turn }, tropical);
     expect(p.price).toBeCloseTo(380.25, 9);
+  });
+});
+
+/**
+ * The circle and the polygon spiral.
+ *
+ * The property worth protecting is that these are NOT the Square of Nine.
+ * The circle's angle is linear in the value; the square's is linear in its
+ * square root. Two constructions that both produce plausible degrees are
+ * easy to conflate, and a reader cannot tell from the output which was used.
+ */
+describe('the circle', () => {
+  it('divides a turn evenly and puts the origin at the top', () => {
+    const chart = buildCircle({ divisions: 24, turns: 1 });
+    expect(chart.cells).toHaveLength(24);
+    expect(chart.cells[0]!.value).toBe(1);
+    expect(chart.cells[0]!.angle).toBe(0);
+    expect(chart.cells[6]!.angle).toBeCloseTo(90, 9);
+    expect(chart.cells[12]!.angle).toBeCloseTo(180, 9);
+  });
+
+  it('puts values a whole turn apart in the same degree, forever', () => {
+    // This is what the wheel is FOR, and it is the clearest difference from
+    // the square, where a turn adds a growing amount.
+    const settings = { divisions: 24, originValue: 1, increment: 1 };
+    for (const value of [1, 25, 49, 1009]) {
+      expect(circleAngle(value, settings), `${value}`).toBeCloseTo(0, 9);
+    }
+    const chart = buildCircle({ divisions: 24, turns: 3 });
+    expect(sameDegree(chart, 1)).toEqual([1, 25, 49]);
+  });
+
+  it('is linear in the value, where the square is linear in its root', () => {
+    /*
+     * REGRESSION GUARD against the two constructions being conflated. Doubling
+     * the distance from the origin doubles the wheel's rotation; on the square
+     * it does not, because √ is not linear.
+     */
+    const settings = { divisions: 24, originValue: 1, increment: 1 };
+    const oneStep = circleAngle(2, settings);
+    const twoSteps = circleAngle(3, settings);
+    expect(twoSteps).toBeCloseTo(2 * oneStep, 9);
+
+    expect(spiralAngle(3) / spiralAngle(2)).not.toBeCloseTo(2, 1);
+  });
+
+  it('counts turns, so a value is placed and not just angled', () => {
+    const settings = { divisions: 24, originValue: 1, increment: 1 };
+    expect(circleTurn(1, settings)).toBe(0);
+    expect(circleTurn(24, settings)).toBe(0);
+    expect(circleTurn(25, settings)).toBe(1);
+  });
+
+  it('respects origin and increment', () => {
+    const chart = buildCircle({ divisions: 12, turns: 1, originValue: 100, increment: 5 });
+    expect(chart.cells[0]!.value).toBe(100);
+    expect(chart.cells[1]!.value).toBe(105);
+    expect(chart.cells[1]!.angle).toBeCloseTo(30, 9);
+  });
+
+  it('refuses a wheel that cannot exist', () => {
+    expect(() => buildCircle({ divisions: 0 })).toThrow(InvalidLayoutError);
+    expect(() => buildCircle({ turns: 0 })).toThrow(InvalidLayoutError);
+    expect(() => buildCircle({ increment: 0 })).toThrow(InvalidLayoutError);
+  });
+});
+
+describe('the polygon spiral', () => {
+  it('gives the centred hexagonal numbers for six sides', () => {
+    // 1, 7, 19, 37, 61 — the hexagon chart's defining property, and an
+    // independent check that the ring sizes are right.
+    for (const [rings, total] of [[0, 1], [1, 7], [2, 19], [3, 37], [4, 61]] as const) {
+      expect(polygonCellCount(6, rings), `rings ${rings}`).toBe(total);
+      expect(buildPolygon({ sides: 6, rings }).cells).toHaveLength(total);
+    }
+  });
+
+  it('puts S×r cells in ring r, for any number of sides', () => {
+    for (const sides of [3, 4, 5, 6, 8, 12]) {
+      const chart = buildPolygon({ sides, rings: 3 });
+      for (let ring = 1; ring <= 3; ring += 1) {
+        expect(chart.cells.filter((c) => c.ring === ring), `${sides}-gon ring ${ring}`)
+          .toHaveLength(sides * ring);
+      }
+    }
+  });
+
+  it('finds exactly S corners in every ring', () => {
+    const chart = buildPolygon({ sides: 6, rings: 4 });
+    for (let ring = 1; ring <= 4; ring += 1) {
+      const corners = chart.cells.filter((c) => c.ring === ring && c.corner);
+      expect(corners, `ring ${ring}`).toHaveLength(6);
+      // Evenly spaced, which is what makes them the polygon's vertices.
+      for (const [i, corner] of corners.entries()) {
+        expect(corner.angle).toBeCloseTo(i * 60, 9);
+      }
+    }
+  });
+
+  it('gives the centre no direction rather than calling it a corner', () => {
+    const centre = buildPolygon({ sides: 6, rings: 2 }).cells[0]!;
+    expect(centre.ring).toBe(0);
+    expect(centre.angle).toBeUndefined();
+    expect(centre.corner).toBe(false);
+    expect(polygonPoint(centre)).toEqual([0, 0]);
+  });
+
+  it('places cells radially, clockwise from the top', () => {
+    const chart = buildPolygon({ sides: 4, rings: 1 });
+    const [top, right, bottom, left] = chart.cells.slice(1);
+    expect(polygonPoint(top!)[1]).toBeCloseTo(1, 9);
+    expect(polygonPoint(right!)[0]).toBeCloseTo(1, 9);
+    expect(polygonPoint(bottom!)[1]).toBeCloseTo(-1, 9);
+    expect(polygonPoint(left!)[0]).toBeCloseTo(-1, 9);
+  });
+
+  it('numbers the spiral continuously outward', () => {
+    const chart = buildPolygon({ sides: 6, rings: 3, originValue: 1, increment: 1 });
+    expect(chart.cells.map((c) => c.value)).toEqual(
+      Array.from({ length: 37 }, (_, i) => i + 1),
+    );
+    expect(polygonCorners(chart).map((c) => c.value)).toEqual(
+      [2, 3, 4, 5, 6, 7, 8, 10, 12, 14, 16, 18, 20, 23, 26, 29, 32, 35],
+    );
+  });
+
+  it('refuses a polygon that cannot exist', () => {
+    expect(() => buildPolygon({ sides: 2 })).toThrow(InvalidLayoutError);
+    expect(() => buildPolygon({ rings: -1 })).toThrow(InvalidLayoutError);
+    expect(() => buildPolygon({ increment: 0 })).toThrow(InvalidLayoutError);
   });
 });

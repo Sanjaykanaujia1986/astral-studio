@@ -55,5 +55,8 @@ export {
 } from './gann/plot.js';
 export { SquareOfNineFigure, type SquareOfNineFigureProps } from './gann/SquareOfNineFigure.js';
 export {
+  RadialLayoutFigure, type RadialLayoutFigureProps, type RadialMark,
+} from './gann/RadialLayoutFigure.js';
+export {
   GannFanFigure, type GannFanFigureProps, type GannFanPoint,
 } from './gann/GannFanFigure.js';

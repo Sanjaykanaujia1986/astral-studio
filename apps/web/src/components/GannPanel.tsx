@@ -15,10 +15,12 @@ import { Link } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
 import {
   buildSquare, buildFan, priceAt, measure, spiralAngle, valueAtAngle,
-  projectAll, nearestTurn,
+  projectAll, nearestTurn, buildCircle, buildPolygon,
   type FanDirection, type GannScale, type ProjectionSettings, type SpiralDirection,
 } from '@astro/gann';
-import { GannFanFigure, SquareOfNineFigure, type GannFanPoint } from '@astro/ui';
+import {
+  GannFanFigure, SquareOfNineFigure, RadialLayoutFigure, type GannFanPoint,
+} from '@astro/ui';
 import { useSeriesStore, extremeBars } from '../state/series.js';
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
@@ -78,6 +80,15 @@ export function GannPanel(): JSX.Element {
   const [increment, setIncrement] = useState(1);
   const [rings, setRings] = useState(5);
   const [direction, setDirection] = useState<SpiralDirection>('clockwise');
+  /*
+   * Which construction is on screen. Kept as an explicit choice rather than
+   * tabs that look like views of one thing: the wheel's angle is linear in
+   * the value and the square's is linear in its root, so they are different
+   * methods that happen to share an origin and an increment.
+   */
+  const [layout, setLayout] = useState<'square' | 'circle' | 'polygon'>('square');
+  const [divisions, setDivisions] = useState(24);
+  const [sides, setSides] = useState(6);
 
   // Fan
   const [anchorIndex, setAnchorIndex] = useState<number | null>(null);
@@ -101,6 +112,14 @@ export function GannPanel(): JSX.Element {
   const square = useMemo(
     () => buildSquare({ originValue, increment, rings, direction }),
     [originValue, increment, rings, direction],
+  );
+  const circle = useMemo(
+    () => buildCircle({ originValue, increment, divisions, turns: Math.max(1, rings) }),
+    [originValue, increment, divisions, rings],
+  );
+  const polygon = useMemo(
+    () => buildPolygon({ originValue, increment, sides, rings }),
+    [originValue, increment, sides, rings],
   );
 
   const bars = series?.bars ?? [];
@@ -159,6 +178,12 @@ export function GannPanel(): JSX.Element {
     );
   }, [chart, method, unitsPerDegree, turns, originValue, resolvedBasePrice, baseLongitude]);
 
+  const marks = projections.map((p) => ({
+    value: p.price,
+    label: t(`body.${p.body}` as 'body.sun'),
+  }));
+  const decimals = Number.isInteger(increment) && Number.isInteger(originValue) ? 0 : 2;
+
   return (
     <div className="flex flex-col gap-5">
       {/*
@@ -185,40 +210,83 @@ export function GannPanel(): JSX.Element {
             label={t('gann.square.rings')} value={rings}
             onChange={(v) => setRings(Math.max(1, Math.min(20, Math.round(v))))} min={1}
           />
-          <label className={LABEL}>
-            <span className="block font-medium">{t('gann.square.direction')}</span>
-            <select
-              className={`mt-1 ${FIELD}`}
-              style={fieldStyle}
-              value={direction}
-              onChange={(e) => setDirection(e.target.value as SpiralDirection)}
-            >
-              <option value="clockwise">{t('gann.square.clockwise')}</option>
-              <option value="anticlockwise">{t('gann.square.anticlockwise')}</option>
-            </select>
-          </label>
+          {layout === 'square' ? (
+            <label className={LABEL}>
+              <span className="block font-medium">{t('gann.square.direction')}</span>
+              <select
+                className={`mt-1 ${FIELD}`}
+                style={fieldStyle}
+                value={direction}
+                onChange={(e) => setDirection(e.target.value as SpiralDirection)}
+              >
+                <option value="clockwise">{t('gann.square.clockwise')}</option>
+                <option value="anticlockwise">{t('gann.square.anticlockwise')}</option>
+              </select>
+            </label>
+          ) : layout === 'circle' ? (
+            <NumberField
+              label={t('gann.layout.divisions')} value={divisions}
+              onChange={(v) => setDivisions(Math.max(2, Math.min(90, Math.round(v))))} min={2}
+            />
+          ) : (
+            <NumberField
+              label={t('gann.layout.sides')} value={sides}
+              onChange={(v) => setSides(Math.max(3, Math.min(12, Math.round(v))))} min={3}
+            />
+          )}
         </div>
 
-        <SquareOfNineFigure
-          square={square}
-          size={560}
-          marks={projections.map((p) => ({
-            value: p.price,
-            label: t(`body.${p.body}` as 'body.sun'),
-          }))}
-          {...(lastClose === undefined ? {} : { focusValue: lastClose })}
-          decimals={Number.isInteger(increment) && Number.isInteger(originValue) ? 0 : 2}
-          className="mx-auto"
-        />
+        <label className={`${LABEL} mb-3 block`}>
+          <span className="block font-medium">{t('gann.layout.label')}</span>
+          <select
+            className={`mt-1 ${FIELD} sm:max-w-xs`}
+            style={fieldStyle}
+            value={layout}
+            onChange={(e) => setLayout(e.target.value as 'square' | 'circle' | 'polygon')}
+          >
+            <option value="square">{t('gann.layout.square')}</option>
+            <option value="circle">{t('gann.layout.circle')}</option>
+            <option value="polygon">{t('gann.layout.polygon')}</option>
+          </select>
+        </label>
+
+        {layout === 'square' ? (
+          <SquareOfNineFigure
+            square={square}
+            size={520}
+            marks={marks}
+            {...(lastClose === undefined ? {} : { focusValue: lastClose })}
+            decimals={decimals}
+            className="mx-auto"
+          />
+        ) : (
+          <RadialLayoutFigure
+            chart={layout === 'circle' ? circle : polygon}
+            size={520}
+            marks={marks}
+            decimals={decimals}
+            className="mx-auto"
+          />
+        )}
 
         <p className="as-fineprint mt-3">
-          {t('gann.square.caption', {
-            origin: n(originValue),
-            increment: n(increment),
-            direction: t(`gann.square.${direction}` as 'gann.square.clockwise'),
-          })}
+          {layout === 'square'
+            ? t('gann.square.caption', {
+                origin: n(originValue),
+                increment: n(increment),
+                direction: t(`gann.square.${direction}` as 'gann.square.clockwise'),
+              })
+            : t('gann.layout.caption', {
+                origin: n(originValue),
+                increment: n(increment),
+                detail: layout === 'circle'
+                  ? t('gann.layout.circleDetail', { divisions: n(divisions) })
+                  : t('gann.layout.polygonDetail', { sides: n(sides) }),
+              })}
         </p>
-        <p className="as-fineprint mt-2">{t('gann.square.gridVsAngle')}</p>
+        <p className="as-fineprint mt-2">
+          {layout === 'square' ? t('gann.square.gridVsAngle') : t('gann.layout.notTheSquare')}
+        </p>
 
         <dl className="mt-3 grid grid-cols-1 gap-x-6 gap-y-2 text-sm sm:grid-cols-2">
           {lastClose === undefined ? null : (

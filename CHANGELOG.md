@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.9.0 — 2026-11-04
+- **Gann circular and polygon layouts**, with their conventions written first (`docs/GANN_CONVENTIONS.md` §6).
+- The **wheel**: values round a circle of N divisions, where the angle is **linear in the value** — so values N apart share a degree forever. That is the construction's whole point, and the opposite of the Square of Nine, where a full turn adds a growing amount because its angle is linear in √v. The workspace says so where the reader is looking, and a test asserts the two are different functions.
+- The **polygon spiral**, 3 to 12 sides. Ring r holds S×r cells, giving the centred hexagonal numbers 1, 7, 19, 37, 61 for six sides — asserted, since that is the hexagon chart's defining property. Corners are taken from position, like the square's crosses, so they survive any origin and increment.
+- A radial figure for both, kept in its own file so no single component decides which geometry it is drawing.
+- Square of 144 stays unbuilt and is still listed as such: it is a price–time grid rather than a spiral, and needs an anchoring convention and a value per cell, neither of which has a default.
+- Layout strings in all three locales (i18n guard: 32/32).
+
 ## 0.8.0 — 2026-11-04
 - **Sky events**: the four engine gaps Event Explorer has been declaring since 0.4.0 are closed, and the workspace is now **ready** rather than partial.
 - **Sign ingresses** (`findIngresses`). Solved, not detected: a crossing that happens and reverses between two grid samples is still found, so a retrograde re-entry is its own event. Verified against Mercury's triple crossing of the Pisces boundary in early 2020 and the Sun's twelve ingresses in 2024 — Aries at the equinox, 20 March 03:06 UTC.
