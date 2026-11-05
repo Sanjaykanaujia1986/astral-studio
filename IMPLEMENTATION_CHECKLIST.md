@@ -74,9 +74,10 @@ Run them with `npm test` and `npm run smoke`.
 1. ~~**Swiss Ephemeris licence.**~~ **Resolved 4 Nov 2026.** The Professional
    licence is not being bought, so the project is AGPL-3.0-or-later and the
    source is published. `LICENSE` is at the root and the app carries the
-   §13 source offer in Settings. **One step remains**: set `VITE_SOURCE_URL`
-   to the public repository, locally and in the Vercel project's environment.
-   Until it resolves, the deployment offers a source link that goes nowhere.
+   §13 source offer in Settings, pointing at
+   <https://github.com/Sanjaykanaujia1986/astral-studio>. Keep the push and
+   the deploy together: serving a version whose source is not published puts
+   the offer back out of date.
 
 2. **Accounts (ADR-3).** The original brief for this codebase excluded user
    management; this brief requires it. Clients, consent, sharing links and

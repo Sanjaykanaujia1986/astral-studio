@@ -34,10 +34,16 @@ prominently, from the running program itself.
 A link in a README is not sufficient. The app carries the offer in
 Settings → About, rendered from `BRAND.sourceUrl`.
 
-**The deployment is only compliant once that URL resolves to the current
-source.** Until it does, the offer is present and points nowhere, which is
-worse than no claim at all. Set it with `VITE_SOURCE_URL`, in the Vercel
-project's environment as well as locally.
+**Resolved 5 November 2026.** The source is published at
+<https://github.com/Sanjaykanaujia1986/astral-studio> and `VITE_SOURCE_URL`
+points the in-app offer at it, set both locally (`apps/web/.env.local`, which
+is where Vite reads from — not the monorepo root) and in the Vercel project's
+production environment.
+
+What remains is a habit rather than a task: **the published source must stay
+current**. AGPL §13 obliges offering the Corresponding Source of the version
+being served, so a deploy that is not also pushed leaves the offer pointing at
+older code.
 
 ## What this covers
 
