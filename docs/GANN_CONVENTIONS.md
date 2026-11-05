@@ -218,12 +218,29 @@ correct under any origin and increment.
 
 ### Square of 144
 
-**Not implemented.** It is not a spiral at all but a 144×144 grid laid over
-price and time, which needs an anchoring convention — where cell (1,1) sits in
-the series, and what one cell is worth in price and in bars. That is the same
-question §3 asks about a fan's scale, and it has no default. Adding it without
-stating those two values would produce a grid that looks authoritative and
-means nothing.
+Not a spiral at all but an **N×N grid laid over price and time**, N = 144 by
+convention. It needs three inputs and has no defaults for any of them, for the
+same reason §3 gives about a fan's scale:
+
+```
+anchor      = { barIndex, price }   where the grid's corner sits
+pricePerCell = number               price units one cell spans
+barsPerCell  = number               bars one cell spans
+```
+
+Without those a grid can be drawn anywhere and means nothing, so the module
+requires them and the workspace prints them beside the drawing.
+
+**Divisions are the construction.** The grid's own lines are uniform and carry
+no information beyond the scale; what the method reads are the harmonic
+fractions of the whole square — 1/8, 1/4, 1/3, 1/2, 2/3, 3/4 and the full
+extent. Those are emitted as named levels in price and as named columns in
+time, rather than left for a reader to count squares.
+
+**The diagonal of the square is the 1×1 of §3**, in the scale the grid
+declares: it advances `pricePerCell` for every `barsPerCell`. The two
+constructions agree there by definition, and the module derives one from the
+other rather than letting them drift.
 
 ## 7. What this module does not do
 

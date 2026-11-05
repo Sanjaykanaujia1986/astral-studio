@@ -18,6 +18,7 @@ import {
   projectLongitude, projectAll, nearestTurn,
   buildCircle, circleAngle, circleTurn, sameDegree, InvalidLayoutError,
   buildPolygon, polygonCellCount, polygonPoint, polygonCorners,
+  buildGrid, diagonalPriceAt, cellOf,
 } from '../src/index.js';
 
 /**
@@ -517,5 +518,81 @@ describe('the polygon spiral', () => {
     expect(() => buildPolygon({ sides: 2 })).toThrow(InvalidLayoutError);
     expect(() => buildPolygon({ rings: -1 })).toThrow(InvalidLayoutError);
     expect(() => buildPolygon({ increment: 0 })).toThrow(InvalidLayoutError);
+  });
+});
+
+/**
+ * The Square of 144.
+ *
+ * A price–time grid rather than a spiral, and the one construction here with
+ * three required inputs and no defaults. The property worth protecting is
+ * that its diagonal and the fan's 1×1 are the same line: they are two
+ * statements of the same price-per-bar, and letting them drift would give a
+ * reader two "correct" answers.
+ */
+describe('the Square of 144', () => {
+  const base = {
+    anchor: { barIndex: 10, price: 100 },
+    pricePerCell: 0.5,
+    barsPerCell: 1,
+  };
+
+  it('spans size cells in each direction from the anchor', () => {
+    const grid = buildGrid(base);
+    expect(grid.settings.size).toBe(144);
+    expect(grid.farBar).toBe(10 + 144);
+    expect(grid.farPrice).toBeCloseTo(100 + 144 * 0.5, 9);
+  });
+
+  it('emits the harmonic fractions as named levels, not bare cell lines', () => {
+    const grid = buildGrid(base);
+    const half = grid.levels.find((l) => l.label === '1/2')!;
+    expect(half.price).toBeCloseTo(100 + 72 * 0.5, 9);
+    const third = grid.columns.find((c) => c.label === '1/3')!;
+    expect(third.barIndex).toBeCloseTo(10 + 48, 9);
+    expect(grid.levels.map((l) => l.label))
+      .toEqual(['1/8', '1/4', '1/3', '1/2', '2/3', '3/4', '1/1']);
+  });
+
+  it('makes its diagonal exactly the 1×1 of a fan on the same scale', () => {
+    /*
+     * The assertion this file exists for. Both are statements of price per
+     * bar; deriving one from the other is what stops a chart offering two
+     * different "correct" diagonals.
+     */
+    const grid = buildGrid(base);
+    const fan = buildFan(
+      { barIndex: 10, date: '2024-01-01', price: 100 },
+      grid.diagonalScale,
+      'up',
+    );
+    const primary = fan.lines.find((l) => l.isPrimary)!;
+    expect(grid.diagonalSlopePerBar).toBeCloseTo(primary.slopePerBar, 12);
+    for (const bar of [10, 50, 154]) {
+      expect(diagonalPriceAt(grid, bar)).toBeCloseTo(priceAt(fan, primary, bar), 9);
+    }
+  });
+
+  it('falls from the anchor when the grid is not rising', () => {
+    const grid = buildGrid({ ...base, rising: false });
+    expect(grid.farPrice).toBeCloseTo(100 - 72, 9);
+    expect(grid.diagonalSlopePerBar).toBeLessThan(0);
+  });
+
+  it('locates a point in cell coordinates, and says when it is off the grid', () => {
+    const grid = buildGrid({ ...base, size: 10 });
+    expect(cellOf(grid, 10, 100)).toEqual({ column: 1, row: 1 });
+    expect(cellOf(grid, 14, 101.2)).toEqual({ column: 5, row: 3 });
+    // Off the square: a reason to move or widen it, not to clamp to an edge.
+    expect(cellOf(grid, 9, 100)).toBeUndefined();
+    expect(cellOf(grid, 10, 99)).toBeUndefined();
+    expect(cellOf(grid, 999, 100)).toBeUndefined();
+  });
+
+  it('refuses the three inputs it cannot default', () => {
+    expect(() => buildGrid({ ...base, pricePerCell: 0 })).toThrow(InvalidLayoutError);
+    expect(() => buildGrid({ ...base, barsPerCell: -1 })).toThrow(InvalidLayoutError);
+    expect(() => buildGrid({ ...base, size: 0 })).toThrow(InvalidLayoutError);
+    expect(() => buildGrid({ ...base, pricePerCell: NaN })).toThrow(InvalidLayoutError);
   });
 });

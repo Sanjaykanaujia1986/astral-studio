@@ -12,6 +12,7 @@
  */
 import { describe, it, expect, beforeAll, afterAll, afterEach, beforeEach, vi } from 'vitest';
 import { render, screen, cleanup, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import {
@@ -19,6 +20,7 @@ import {
 } from '@astro/engine';
 import { DashboardPanel } from '../src/components/DashboardPanel.js';
 import { useChartStore } from '../src/state/chart.js';
+import { useAlerts } from '../src/state/alerts.js';
 
 let provider: SwissEphWasmProvider;
 let chart: NatalChart;
@@ -61,6 +63,10 @@ beforeAll(async () => {
 afterAll(() => provider.close());
 
 beforeEach(() => {
+  // Alerts persist to localStorage; without this the saved one leaks into
+  // the tests that assert an empty list.
+  localStorage.clear();
+  useAlerts.setState({ alerts: [] });
   listCharts.mockReset();
   listCharts.mockResolvedValue([]);
   useChartStore.setState({ chart: null, busy: false, errorCode: null });
@@ -198,11 +204,48 @@ describe('saved charts', () => {
 });
 
 describe('alerts', () => {
-  it('says plainly that they are not built and nothing is watching', () => {
+  it('says plainly that nothing runs while the app is closed', () => {
+    /*
+     * The assertion that keeps the word "alert" honest. There is no
+     * background job and no notification path: an alert here is a saved
+     * question re-asked on load. A reader who believes something is watching
+     * on their behalf will stop checking.
+     */
     renderPanel();
-    expect(screen.getByText(/Not built\./)).toBeInTheDocument();
-    expect(screen.getByText(/nothing here is watching for one/i)).toBeInTheDocument();
+    expect(screen.getByText(/Nothing runs while the app is closed/i)).toBeInTheDocument();
+    expect(screen.getByText(/no background job and no notification path/i))
+      .toBeInTheDocument();
   });
+
+  it('starts with none, and says where they are kept', () => {
+    renderPanel();
+    expect(screen.getByText(/No alerts set/i)).toBeInTheDocument();
+    expect(screen.getByText(/kept in this browser only/i)).toBeInTheDocument();
+  });
+
+  it('asks for a chart rather than checking against nothing', () => {
+    renderPanel();
+    expect(screen.getByText(/Alerts are relative to a chart/i)).toBeInTheDocument();
+  });
+
+  it('saves an alert and checks it against the real ephemeris', async () => {
+    const user = userEvent.setup();
+    useChartStore.setState({ chart });
+    renderPanel();
+
+    await user.click(screen.getByRole('button', { name: 'Add alert' }));
+    // Default: Saturn conjunction natal Sun within 1°.
+    expect(screen.getByText(/Saturn Conjunction natal Sun, within 1°/i)).toBeInTheDocument();
+
+    await waitFor(
+      () => { expect(screen.queryByText(/Checking…/)).not.toBeInTheDocument(); },
+      { timeout: 30_000 },
+    );
+    // Either real matches or an explicit "none in this window" — never silence.
+    const matched = screen.queryByText(/upcoming/) !== null;
+    const none = screen.queryByText(/None of your alerts match/) !== null;
+    expect(matched || none).toBe(true);
+  }, 40_000);
 });
 
 describe('translation', () => {

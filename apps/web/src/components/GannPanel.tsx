@@ -10,12 +10,12 @@
  * The scale has no default. "1×1" names no line until the reader says what one
  * bar is worth in price, so the fan does not draw until they have.
  */
-import { useEffect, useMemo, useState, type JSX } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
 import {
   buildSquare, buildFan, priceAt, measure, spiralAngle, valueAtAngle,
-  projectAll, nearestTurn, buildCircle, buildPolygon,
+  projectAll, nearestTurn, buildCircle, buildPolygon, buildGrid,
   type FanDirection, type GannScale, type ProjectionSettings, type SpiralDirection,
 } from '@astro/gann';
 import {
@@ -24,6 +24,7 @@ import {
 import { useSeriesStore, extremeBars } from '../state/series.js';
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
+import { downloadSvg } from '../lib/download-svg.js';
 
 const FIELD = 'w-full max-w-full rounded-md border px-3 py-1.5 text-sm';
 const LABEL = 'min-w-0 max-w-full text-sm';
@@ -97,6 +98,12 @@ export function GannPanel(): JSX.Element {
   const [fanDirection, setFanDirection] = useState<FanDirection>('up');
 
   // Projection
+  // Square of 144. Three inputs, none defaulted — see the conventions.
+  const [showGrid, setShowGrid] = useState(false);
+  const [pricePerCell, setPricePerCell] = useState(0.5);
+  const [barsPerCell, setBarsPerCell] = useState(1);
+  const [gridSize, setGridSize] = useState(144);
+
   const [method, setMethod] = useState<'linear' | 'square'>('linear');
   const [unitsPerDegree, setUnitsPerDegree] = useState(1);
   const [turns, setTurns] = useState(0);
@@ -141,6 +148,17 @@ export function GannPanel(): JSX.Element {
     );
   }, [anchorBar, resolvedAnchor, priceUnits, timeUnits, fanDirection, scaleUsable]);
 
+  const grid = useMemo(() => {
+    if (!showGrid || !anchorBar || pricePerCell <= 0 || barsPerCell <= 0) return undefined;
+    return buildGrid({
+      anchor: { barIndex: resolvedAnchor, price: anchorBar.close },
+      pricePerCell,
+      barsPerCell,
+      size: gridSize,
+      rising: fanDirection === 'up',
+    });
+  }, [showGrid, anchorBar, resolvedAnchor, pricePerCell, barsPerCell, gridSize, fanDirection]);
+
   const points: readonly GannFanPoint[] = useMemo(
     () => bars.map((bar, index) => ({ barIndex: index, date: bar.date, close: bar.close })),
     [bars],
@@ -177,6 +195,14 @@ export function GannPanel(): JSX.Element {
       zodiac,
     );
   }, [chart, method, unitsPerDegree, turns, originValue, resolvedBasePrice, baseLongitude]);
+
+  // Export. The figures resolve their own colours, so the markup in the DOM
+  // is a complete file; nothing has to be re-rendered to save it.
+  const layoutRef = useRef<HTMLDivElement>(null);
+  const chartRef = useRef<HTMLDivElement>(null);
+  const saveFigure = (container: HTMLDivElement | null, name: string, caption: string) => {
+    downloadSvg(container?.querySelector('svg') ?? null, { name, caption });
+  };
 
   const marks = projections.map((p) => ({
     value: p.price,
@@ -250,6 +276,7 @@ export function GannPanel(): JSX.Element {
           </select>
         </label>
 
+        <div ref={layoutRef}>
         {layout === 'square' ? (
           <SquareOfNineFigure
             square={square}
@@ -268,6 +295,21 @@ export function GannPanel(): JSX.Element {
             className="mx-auto"
           />
         )}
+        </div>
+
+        <p className="mt-3">
+          <button
+            type="button"
+            className="as-button-secondary"
+            onClick={() => saveFigure(
+              layoutRef.current,
+              `gann-${layout}`,
+              `origin ${originValue}, step ${increment}`,
+            )}
+          >
+            {t('gann.export')}
+          </button>
+        </p>
 
         <p className="as-fineprint mt-3">
           {layout === 'square'
@@ -368,15 +410,57 @@ export function GannPanel(): JSX.Element {
               </button>
             </div>
 
+            <div className="mb-3 flex flex-wrap items-end gap-3">
+              <label className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4"
+                  checked={showGrid}
+                  onChange={() => setShowGrid((v) => !v)}
+                />
+                {t('gann.grid.show')}
+              </label>
+              {showGrid ? (
+                <>
+                  <NumberField
+                    label={t('gann.grid.pricePerCell')} value={pricePerCell}
+                    onChange={setPricePerCell} step={0.1} min={0}
+                  />
+                  <NumberField
+                    label={t('gann.grid.barsPerCell')} value={barsPerCell}
+                    onChange={(v) => setBarsPerCell(Math.max(1, Math.round(v)))} min={1}
+                  />
+                  <NumberField
+                    label={t('gann.grid.size')} value={gridSize}
+                    onChange={(v) => setGridSize(Math.max(1, Math.round(v)))} min={1}
+                  />
+                </>
+              ) : null}
+            </div>
+
+            {showGrid && grid ? (
+              <p className="as-fineprint mb-3">
+                {t('gann.grid.caption', {
+                  size: n(gridSize),
+                  price: n(pricePerCell),
+                  bars: n(barsPerCell),
+                  half: n(grid.levels.find((l) => l.label === '1/2')?.price ?? 0,
+                    { maximumFractionDigits: 2 }),
+                })}
+              </p>
+            ) : null}
+
             {!scaleUsable ? (
               <p className="as-body" role="alert" style={{ color: 'var(--as-warning)' }}>
                 {t('gann.fan.scaleRequired')}
               </p>
             ) : null}
 
+            <div ref={chartRef}>
             <GannFanFigure
               points={points}
               {...(fan ? { fan } : {})}
+              {...(grid ? { grid } : {})}
               priceLines={projections.slice(0, 5).map((p) => ({
                 price: p.price,
                 label: t(`body.${p.body}` as 'body.sun'),
@@ -388,8 +472,26 @@ export function GannPanel(): JSX.Element {
               }
               className="w-full"
             />
+            </div>
+
+            <p className="mt-3">
+              <button
+                type="button"
+                className="as-button-secondary"
+                onClick={() => saveFigure(
+                  chartRef.current,
+                  'gann-fan',
+                  scaleUsable
+                    ? `1x1 = ${priceUnits} price per ${timeUnits} bar(s)`
+                    : 'no scale set',
+                )}
+              >
+                {t('gann.export')}
+              </button>
+            </p>
 
             <p className="as-fineprint mt-3">{t('gann.fan.barsNotDays')}</p>
+            <p className="as-fineprint mt-1">{t('gann.export.note')}</p>
 
             {fan ? (
               <div className="mt-3 overflow-x-auto">

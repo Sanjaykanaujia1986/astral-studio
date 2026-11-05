@@ -144,11 +144,10 @@ describe('the navigation rail', () => {
   it('labels unfinished workspaces in the navigation itself', () => {
     renderShell();
     const rail = screen.getByRole('navigation', { name: 'Workspaces' });
-    // One planned (clients) and two partial (dashboard, gann). Event
-    // Explorer became ready when ingress, station and declination search
-    // landed in the engine.
+    // One planned (clients) and one partial (gann, which still has no
+    // market-data adapter). Dashboard became ready when alerts landed.
     expect(within(rail).getAllByText('Planned')).toHaveLength(1);
-    expect(within(rail).getAllByText('Partial')).toHaveLength(2);
+    expect(within(rail).getAllByText('Partial')).toHaveLength(1);
   });
 
   it('keeps an accessible name on every item when collapsed', async () => {

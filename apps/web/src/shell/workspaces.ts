@@ -44,11 +44,8 @@ export const WORKSPACES: readonly Workspace[] = [
     id: 'dashboard',
     path: '/',
     labelKey: 'nav.dashboard',
-    status: 'partial',
+    status: 'ready',
     primary: true,
-    // Today's sky, upcoming transits to the open chart and recent saved
-    // charts are built. Alerts are not, and the workspace says so.
-    milestone: 2,
     icon: 'M4 13h7V4H4v9Zm9 7h7V9h-7v11ZM4 20h7v-5H4v5ZM13 7h7V4h-7v3Z',
   },
   {

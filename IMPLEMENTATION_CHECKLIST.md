@@ -3,7 +3,7 @@
 Persistent. Updated at the end of each increment. `[x]` means built **and**
 verified by a test or a measurement, not merely written.
 
-Current version **0.9.1** · **986 unit tests** + **55 production smoke checks** ·
+Current version **0.10.0** · **998 unit tests** + **55 production smoke checks** ·
 engine fingerprint `855fec9b`, verified in Node, in the browser and on the live
 deployment.
 
@@ -38,7 +38,7 @@ Run them with `npm test` and `npm run smoke`.
 - [x] Heliocentric and topocentric frames — both refuse rather than fake an answer
 - [ ] Separate "exact hit" from "within orb interval" in the result model
 - [ ] Cancellable background jobs with progress and resumable results
-- [ ] Event alerts
+- [x] Event alerts — evaluated on load; no background job, and the panel says so
 - [x] Dashboard workspace — today's sky, upcoming transits, recent saved charts
 
 ## Milestone 3 — Gann Lab and research
@@ -50,8 +50,9 @@ Run them with `npm test` and `npm run smoke`.
 - [x] Anchored time/price overlays stating price units per time unit
 - [x] Planetary projections and angle measurement, linear or via the square
 - [x] Circular and polygon layouts (wheel of N, 3–12-sided spirals)
-- [ ] Square of 144 — a price–time grid; needs an anchoring convention
-- [ ] Annotations, saved templates, export
+- [x] Square of 144 — anchor, price per cell and bars per cell all required
+- [x] SVG export
+- [ ] Annotations and saved templates
 - [ ] Market-data provider adapters
 
 ## Milestone 4 — professional and mobile

@@ -145,13 +145,13 @@ the shell is responsive.
 
 | Workspace | Route | State |
 |---|---|---|
-| Dashboard | `/` | Partial — today's sky, transits to the open chart, recent saved charts; no alerts |
+| Dashboard | `/` | Working — today's sky, transits to the open chart, recent saved charts, alerts |
 | Chart Studio | `/chart` | Working — chart, tables, aspects, inspector |
 | Relationships | `/relationships` | Working — synastry, composite, Davison |
 | Event Explorer | `/events` | Working — transits, aspectarian, ingresses, stations, declination events |
 | Calendar | `/calendar` | Working — aspectarian calendar |
 | Vedic | `/vedic` | Working — rāśi and divisional figures, nakṣatras, daśā, pañcāṅga |
-| Gann Lab | `/gann` | Partial — Square of Nine, fans, projections; layouts, annotations and templates absent and listed |
+| Gann Lab | `/gann` | Partial — all layouts, fans, projections, Square of 144, export; annotations, templates and market data absent and listed |
 | Research | `/research` | Working — CSV import, studies, backtest |
 | Clients | `/clients` | **Planned** (needs ADR-3) |
 | Reports | `/reports` | Working — A4/A3 print, interpretation |

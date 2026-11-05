@@ -8,7 +8,7 @@
  * further than the settings panel.
  */
 import type { JSX } from 'react';
-import { priceAt, type Fan } from '@astro/gann';
+import { priceAt, diagonalPriceAt, type Fan, type PriceTimeGrid } from '@astro/gann';
 import { resolveTheme, type ChartTheme } from '../chart-wheel/theme.js';
 import {
   DEFAULT_PLOT, clipLine, makeScale, priceDomain, priceTicks,
@@ -29,6 +29,8 @@ export interface GannFanFigureProps {
   readonly box?: PlotBox;
   readonly theme?: Partial<ChartTheme>;
   readonly scaleCaption?: string;
+  /** A price-time grid drawn under the series. */
+  readonly grid?: PriceTimeGrid;
   readonly className?: string;
 }
 
@@ -39,6 +41,7 @@ export function GannFanFigure({
   box = DEFAULT_PLOT,
   theme,
   scaleCaption,
+  grid,
   className,
 }: GannFanFigureProps): JSX.Element {
   const colours = resolveTheme(theme);
@@ -77,6 +80,72 @@ export function GannFanFigure({
       xmlns="http://www.w3.org/2000/svg"
     >
       <rect x={0} y={0} width={box.width} height={box.height} fill={colours.surface} />
+
+      {/*
+        The grid, under everything else. Only the harmonic fractions are
+        drawn: the uniform cell lines carry nothing the scale does not
+        already say, and 144 of them would be a grey block.
+      */}
+      {grid ? (
+        <g>
+          {grid.levels.map((level) => {
+            const y = scale.yOf(level.price);
+            if (y < box.padTop || y > box.height - box.padBottom) return null;
+            return (
+              <g key={`grid-level-${level.label}`}>
+                <line
+                  x1={box.padLeft} x2={box.width - box.padRight}
+                  y1={y} y2={y}
+                  stroke={colours.elements.earth}
+                  strokeWidth={level.fraction === 0.5 ? 1 : 0.6}
+                  strokeOpacity={0.5}
+                />
+                <text
+                  x={box.padLeft + 2} y={y - 2}
+                  fontSize={9} fill={colours.elements.earth}
+                >
+                  {level.label}
+                </text>
+              </g>
+            );
+          })}
+          {grid.columns.map((column) => {
+            const x = scale.xOf(column.barIndex);
+            if (x < box.padLeft || x > box.width - box.padRight) return null;
+            return (
+              <line
+                key={`grid-column-${column.label}`}
+                x1={x} x2={x}
+                y1={box.padTop} y2={box.height - box.padBottom}
+                stroke={colours.elements.earth}
+                strokeWidth={column.fraction === 0.5 ? 1 : 0.6}
+                strokeOpacity={0.4}
+                strokeDasharray="3 3"
+              />
+            );
+          })}
+          {(() => {
+            // The diagonal, which IS the 1x1 on this grid's scale.
+            const clip = clipLine(
+              grid.settings.anchor.barIndex,
+              grid.settings.anchor.price,
+              grid.diagonalSlopePerBar,
+              domain,
+            );
+            if (!clip) return null;
+            return (
+              <line
+                x1={scale.xOf(clip.fromBar)}
+                y1={scale.yOf(diagonalPriceAt(grid, clip.fromBar))}
+                x2={scale.xOf(clip.toBar)}
+                y2={scale.yOf(diagonalPriceAt(grid, clip.toBar))}
+                stroke={colours.elements.earth}
+                strokeWidth={1.2}
+              />
+            );
+          })()}
+        </g>
+      ) : null}
 
       {priceTicks(domain).map((tick) => (
         <g key={tick}>

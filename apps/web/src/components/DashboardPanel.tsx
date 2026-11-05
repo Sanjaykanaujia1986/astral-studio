@@ -33,6 +33,7 @@ import { getProvider } from '../lib/engine.js';
 import { CloudError, getChartSettings, listCharts, type SavedChartSummary } from '../lib/cloud.js';
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
+import { AlertsPanel } from './AlertsPanel.js';
 
 const TH = 'px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wide';
 const TD = 'px-2 py-1.5 whitespace-nowrap tabular-nums';
@@ -317,10 +318,11 @@ export function DashboardPanel(): JSX.Element {
         <p className="as-fineprint mt-3">{t('dashboard.saved.scope')}</p>
       </section>
 
-      {/* ------------------------------------------------- not built */}
+      {/* ------------------------------------------------------ alerts */}
       <section className="as-card">
         <h2 className="as-h2">{t('dashboard.alerts.heading')}</h2>
-        <p className="as-body">{t('dashboard.alerts.notBuilt')}</p>
+        <AlertsPanel chart={natal} fromJd={jd} />
+        <p className="as-fineprint mt-3">{t('alerts.kept')}</p>
       </section>
     </div>
   );

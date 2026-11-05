@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 0.10.0 — 2026-11-05
+- **Alerts**, closing the Dashboard's last gap: the workspace is now **ready**. An alert is a saved question — "Saturn square my natal Mercury within 1°?" — re-asked from the ephemeris each time the page loads.
+- It says, above the list rather than in a footnote, that **nothing runs while the app is closed and nothing is sent to you**. There is no background job and no notification path in this build, and an "alert" that silently only fires when you look would stop a reader checking. Asserted by test.
+- Alerts live in this browser, like the display settings: a list of what someone is watching is not something to ship to a database unasked. Stored entries are validated on load, so a hand-edited or older one cannot reach the transit search and throw there.
+- Matching runs through the transit search, so a retrograde loop yields its real three passes rather than one.
+- **Square of 144**, with the three inputs it cannot default — anchor, price per cell, bars per cell — and its conventions written first. Only the harmonic fractions are drawn; 144 uniform lines would be a grey block saying nothing the scale has not said. Its diagonal is DERIVED from the fan's 1×1 on the same scale, so the two constructions cannot drift into two different correct answers.
+- **SVG export** for both Gann figures, with the settings written into the file's title so a drawing that leaves the page can still say what produced it. Three lines rather than a rasteriser, because the figures already resolve their colours in JavaScript.
+- Gann Lab's "not built" list shrinks accordingly: annotations, saved templates and market-data adapters remain.
+
 ## 0.9.1 — 2026-11-04
 - **Bi-wheel**: `ChartWheel` takes an optional `outerChart`, drawing a second chart in an outer ring — transits, a return, a partner. Both rings are oriented on the INNER chart's ascendant; a ring turned to its own would look right and make every cross-aspect wrong by the angle between them, so a test asserts it.
 - A drawn divider separates the two rings, because a bi-wheel whose rings blend invites reading a transit position as a natal one. Outer glyphs are tinted and the ring carries its own label, so a screenshot says what it is.

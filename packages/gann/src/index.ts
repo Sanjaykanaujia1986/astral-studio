@@ -52,6 +52,12 @@ export {
 } from './layouts.js';
 
 export {
+  DEFAULT_GRID, HARMONICS, buildGrid, diagonalPriceAt, cellOf,
+  type GridAnchor, type GridColumn, type GridLevel, type GridSettings,
+  type PriceTimeGrid,
+} from './grid.js';
+
+export {
   projectLongitude, projectAll, nearestTurn,
   type BodyLongitude, type LinearProjectionSettings, type ProjectedPrice,
   type ProjectionMethod, type ProjectionSettings, type SquareProjectionSettings,

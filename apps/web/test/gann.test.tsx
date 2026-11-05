@@ -91,11 +91,15 @@ describe('what the workspace says about itself', () => {
   it('lists what it deliberately did not build', () => {
     renderPanel();
     expect(screen.getByText(/Not built in this release/i)).toBeInTheDocument();
-    // The circular and polygon layouts moved OUT of this list when they were
-    // built; the Square of 144 stayed, because it is a price-time grid whose
-    // anchoring convention has no default.
-    expect(screen.getByText(/Square of 144/)).toBeInTheDocument();
+    /*
+     * The list SHRINKS as things get built, which is the point of keeping it
+     * in the workspace rather than in a document: the circular and polygon
+     * layouts left it, then the Square of 144 and export. What remains is
+     * what genuinely is not there.
+     */
     expect(screen.getByText(/Market-data provider/)).toBeInTheDocument();
+    expect(screen.getByText(/Annotations/)).toBeInTheDocument();
+    expect(screen.queryByText(/Square of 144/)).not.toBeInTheDocument();
   });
 });
 
@@ -239,6 +243,41 @@ describe('the planetary projection', () => {
     renderPanel();
     await user.selectOptions(screen.getByLabelText('Mapping'), 'square');
     expect(screen.getByText(/fitting after the fact, not a method/i)).toBeInTheDocument();
+  });
+});
+
+describe('the Square of 144', () => {
+  it('is off until asked for, and then states all three inputs', async () => {
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+
+    expect(screen.queryByLabelText('Price per cell')).not.toBeInTheDocument();
+    await user.click(screen.getByLabelText(/Overlay a price.time grid/));
+
+    // None of the three has a default worth guessing, so all three are shown.
+    expect(screen.getByLabelText('Price per cell')).toBeInTheDocument();
+    expect(screen.getByLabelText('Bars per cell')).toBeInTheDocument();
+    expect(screen.getByLabelText('Cells per side')).toBeInTheDocument();
+    expect(screen.getByText(/144×144 from the fan/)).toBeInTheDocument();
+  });
+
+  it('says that its diagonal is the 1×1 on the same scale', () => {
+    // Two statements of the same price-per-bar. A reader offered both without
+    // being told they agree would reasonably assume they are independent.
+    loadSeries();
+    renderPanel();
+    return userEvent.click(screen.getByLabelText(/Overlay a price.time grid/)).then(() => {
+      expect(screen.getByText(/diagonal is the 1×1 on this scale/)).toBeInTheDocument();
+    });
+  });
+});
+
+describe('export', () => {
+  it('offers the drawing as a file, with its settings in the title', () => {
+    renderPanel();
+    expect(screen.getAllByRole('button', { name: 'Download SVG' }).length)
+      .toBeGreaterThan(0);
   });
 });
 
