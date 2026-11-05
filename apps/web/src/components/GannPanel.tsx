@@ -13,16 +13,22 @@
 import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
+import { findIngresses, julianDay } from '@astro/engine';
 import {
   buildSquare, buildFan, priceAt, measure, spiralAngle, valueAtAngle,
   projectAll, nearestTurn, buildCircle, buildPolygon, buildGrid,
+  timeCounts, seasonalCounts, COMMON_COUNTS,
   type FanDirection, type GannScale, type ProjectionSettings, type SpiralDirection,
 } from '@astro/gann';
 import {
   GannFanFigure, SquareOfNineFigure, RadialLayoutFigure, type GannFanPoint,
 } from '@astro/ui';
 import { useSeriesStore, extremeBars } from '../state/series.js';
+import {
+  useGannWorkspace, type GannTemplateSettings,
+} from '../state/gann-workspace.js';
 import { useChartStore } from '../state/chart.js';
+import { getProvider } from '../lib/engine.js';
 import { useSettings } from '../lib/settings.js';
 import { downloadSvg } from '../lib/download-svg.js';
 
@@ -71,7 +77,7 @@ function NumberField({
 }
 
 export function GannPanel(): JSX.Element {
-  const { t, n } = useTranslator();
+  const { t, n, d } = useTranslator();
   const settings = useSettings();
   const series = useSeriesStore((s) => s.series);
   const chart = useChartStore((s) => s.chart);
@@ -103,6 +109,16 @@ export function GannPanel(): JSX.Element {
   const [pricePerCell, setPricePerCell] = useState(0.5);
   const [barsPerCell, setBarsPerCell] = useState(1);
   const [gridSize, setGridSize] = useState(144);
+
+  const {
+    templates, annotations, saveTemplate, deleteTemplate, addAnnotation, deleteAnnotation,
+  } = useGannWorkspace();
+  const [templateName, setTemplateName] = useState('');
+  const [countUnit, setCountUnit] = useState<'bars' | 'calendarDays'>('calendarDays');
+  const [seasonal, setSeasonal] = useState<readonly { date: string; label: string }[]>([]);
+  const [noteText, setNoteText] = useState('');
+  const [noteBar, setNoteBar] = useState(0);
+  const [notePrice, setNotePrice] = useState(0);
 
   const [method, setMethod] = useState<'linear' | 'square'>('linear');
   const [unitsPerDegree, setUnitsPerDegree] = useState(1);
@@ -204,6 +220,72 @@ export function GannPanel(): JSX.Element {
     downloadSvg(container?.querySelector('svg') ?? null, { name, caption });
   };
 
+  const currentSettings: GannTemplateSettings = {
+    layout, originValue, increment, rings, direction, divisions, sides,
+    priceUnits, timeUnits, fanDirection, anchorIndex, showGrid,
+    pricePerCell, barsPerCell, gridSize,
+  };
+
+  const applyTemplate = (settings: GannTemplateSettings) => {
+    setLayout(settings.layout);
+    setOriginValue(settings.originValue);
+    setIncrement(settings.increment);
+    setRings(settings.rings);
+    setDirection(settings.direction);
+    setDivisions(settings.divisions);
+    setSides(settings.sides);
+    setPriceUnits(settings.priceUnits);
+    setTimeUnits(settings.timeUnits);
+    setFanDirection(settings.fanDirection);
+    setAnchorIndex(settings.anchorIndex);
+    setShowGrid(settings.showGrid);
+    setPricePerCell(settings.pricePerCell);
+    setBarsPerCell(settings.barsPerCell);
+    setGridSize(settings.gridSize);
+  };
+
+  /*
+   * Equinoxes and solstices are the Sun's ingresses into the cardinal signs,
+   * which the engine already solves. Taking them from there rather than
+   * computing them here keeps one definition of a solstice in the product.
+   */
+  useEffect(() => {
+    if (!anchorBar) { setSeasonal([]); return undefined; }
+    let live = true;
+    void (async () => {
+      try {
+        const provider = await getProvider();
+        const [y, m, dd] = anchorBar.date.split('-').map(Number);
+        const fromJd = julianDay({ year: y!, month: m!, day: dd! }, 0);
+        const found = findIngresses(provider, {
+          fromJd: fromJd - 183,
+          toJd: fromJd + 549,
+          bodies: ['sun'],
+        }).filter((event) => ['aries', 'cancer', 'libra', 'capricorn'].includes(event.sign));
+        if (live) {
+          setSeasonal(found.map((event) => ({
+            date: event.utcIso.slice(0, 10),
+            label: t(`sign.${event.sign}` as 'sign.aries'),
+          })));
+        }
+      } catch (cause) {
+        console.error('seasonal dates failed', cause);
+        if (live) setSeasonal([]);
+      }
+    })();
+    return () => { live = false; };
+  }, [anchorBar, t]);
+
+  const counts = anchorBar
+    ? timeCounts({ barIndex: resolvedAnchor, date: anchorBar.date }, COMMON_COUNTS, countUnit)
+    : [];
+  const seasonalFromAnchor = anchorBar
+    ? seasonalCounts({ barIndex: resolvedAnchor, date: anchorBar.date }, seasonal)
+    : [];
+
+  const chartNotes = annotations.filter((note) => note.kind === 'chart');
+  const squareNotes = annotations.filter((note) => note.kind === 'square');
+
   const marks = projections.map((p) => ({
     value: p.price,
     label: t(`body.${p.body}` as 'body.sun'),
@@ -281,7 +363,10 @@ export function GannPanel(): JSX.Element {
           <SquareOfNineFigure
             square={square}
             size={520}
-            marks={marks}
+            marks={[
+              ...marks,
+              ...squareNotes.map((note) => ({ value: note.value, label: note.text })),
+            ]}
             {...(lastClose === undefined ? {} : { focusValue: lastClose })}
             decimals={decimals}
             className="mx-auto"
@@ -290,7 +375,10 @@ export function GannPanel(): JSX.Element {
           <RadialLayoutFigure
             chart={layout === 'circle' ? circle : polygon}
             size={520}
-            marks={marks}
+            marks={[
+              ...marks,
+              ...squareNotes.map((note) => ({ value: note.value, label: note.text })),
+            ]}
             decimals={decimals}
             className="mx-auto"
           />
@@ -461,6 +549,9 @@ export function GannPanel(): JSX.Element {
               points={points}
               {...(fan ? { fan } : {})}
               {...(grid ? { grid } : {})}
+              notes={chartNotes.map((note) => ({
+                id: note.id, barIndex: note.barIndex, price: note.price, text: note.text,
+              }))}
               priceLines={projections.slice(0, 5).map((p) => ({
                 price: p.price,
                 label: t(`body.${p.body}` as 'body.sun'),
@@ -653,11 +744,219 @@ export function GannPanel(): JSX.Element {
         )}
       </section>
 
+      {/* ------------------------------------------- time counts */}
+      {series && anchorBar ? (
+        <section className="as-card">
+          <h2 className="as-h2">{t('gann.counts.heading')}</h2>
+          <p className="as-body mb-3">{t('gann.counts.whatTheyAre')}</p>
+
+          <label className={`${LABEL} mb-3 block sm:max-w-xs`}>
+            <span className="block font-medium">{t('gann.counts.unit')}</span>
+            <select
+              className={`mt-1 ${FIELD}`}
+              style={fieldStyle}
+              value={countUnit}
+              onChange={(e) => setCountUnit(e.target.value as 'bars' | 'calendarDays')}
+            >
+              <option value="calendarDays">{t('gann.counts.unit.days')}</option>
+              <option value="bars">{t('gann.counts.unit.bars')}</option>
+            </select>
+          </label>
+
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr style={{ borderBottom: '1px solid var(--as-border)' }}>
+                  <th className={TH} style={mutedStyle}>{t('gann.counts.column.count')}</th>
+                  <th className={TH} style={mutedStyle}>{t('gann.counts.column.lands')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {counts.map((entry) => (
+                  <tr key={entry.label} style={{ borderBottom: '1px solid var(--as-border)' }}>
+                    <th scope="row" className={`${TD} text-left font-normal`}>{entry.label}</th>
+                    <td className={TD}>
+                      {entry.date
+                        ? d(`${entry.date}T00:00:00Z`, { dateStyle: 'medium', timeZone: 'UTC' })
+                        : t('gann.counts.bar', { bar: n(entry.barIndex ?? 0) })}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {seasonalFromAnchor.length > 0 ? (
+            <>
+              <h3 className="as-h3 mt-4">{t('gann.counts.seasonal')}</h3>
+              <p className="as-fineprint mb-2">{t('gann.counts.seasonalSource')}</p>
+              <ul className="as-list">
+                {seasonalFromAnchor.map((entry) => (
+                  <li key={entry.date} className="text-sm">
+                    <span className="tabular-nums">
+                      {d(`${entry.date}T00:00:00Z`, { dateStyle: 'medium', timeZone: 'UTC' })}
+                    </span>
+                    {' — '}
+                    {t('gann.counts.sunEnters', { sign: entry.label })}
+                    <span style={mutedStyle}>
+                      {' '}
+                      ({t('gann.counts.daysFrom', { days: n(entry.daysFromAnchor) })})
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          <p className="as-fineprint mt-3">{t('gann.counts.notAForecast')}</p>
+        </section>
+      ) : null}
+
+      {/* ------------------------------------- notes and templates */}
+      <section className="as-card">
+        <h2 className="as-h2">{t('gann.notes.heading')}</h2>
+        <p className="as-fineprint mb-3">{t('gann.notes.pinned')}</p>
+
+        <div className="mb-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <label className={`${LABEL} lg:col-span-2`}>
+            <span className="block font-medium">{t('gann.notes.text')}</span>
+            <input
+              type="text"
+              className={`mt-1 ${FIELD}`}
+              style={fieldStyle}
+              value={noteText}
+              maxLength={120}
+              onChange={(e) => setNoteText(e.target.value)}
+            />
+          </label>
+          <NumberField
+            label={t('gann.notes.bar')} value={noteBar}
+            onChange={(v) => setNoteBar(Math.max(0, Math.round(v)))} min={0}
+          />
+          <NumberField
+            label={t('gann.notes.price')} value={notePrice}
+            onChange={setNotePrice} step={0.1}
+          />
+        </div>
+
+        <div className="mb-3 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="as-button-secondary"
+            disabled={!noteText.trim() || !series}
+            onClick={() => {
+              addAnnotation({
+                kind: 'chart', text: noteText, barIndex: noteBar, price: notePrice,
+              });
+              setNoteText('');
+            }}
+          >
+            {t('gann.notes.pinToChart')}
+          </button>
+          <button
+            type="button"
+            className="as-button-secondary"
+            disabled={!noteText.trim()}
+            onClick={() => {
+              addAnnotation({ kind: 'square', text: noteText, value: notePrice });
+              setNoteText('');
+            }}
+          >
+            {t('gann.notes.pinToValue')}
+          </button>
+        </div>
+
+        {annotations.length === 0 ? (
+          <p className="as-body" style={mutedStyle}>{t('gann.notes.none')}</p>
+        ) : (
+          <ul className="as-list">
+            {annotations.map((note) => (
+              <li key={note.id} className="flex flex-wrap items-baseline gap-x-3 text-sm">
+                <span>{note.text}</span>
+                <span style={mutedStyle}>
+                  {note.kind === 'chart'
+                    ? t('gann.notes.atBar', {
+                        bar: n(note.barIndex),
+                        price: n(note.price, { maximumFractionDigits: 2 }),
+                      })
+                    : t('gann.notes.atValue', {
+                        value: n(note.value, { maximumFractionDigits: 2 }),
+                      })}
+                </span>
+                <button
+                  type="button"
+                  className="text-xs underline"
+                  style={mutedStyle}
+                  onClick={() => deleteAnnotation(note.id)}
+                >
+                  {t('gann.notes.remove')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <h3 className="as-h3 mt-4">{t('gann.templates.heading')}</h3>
+        <p className="as-fineprint mb-2">{t('gann.templates.what')}</p>
+        <div className="mb-3 flex flex-wrap items-end gap-2">
+          <label className={LABEL}>
+            <span className="block font-medium">{t('gann.templates.name')}</span>
+            <input
+              type="text"
+              className={`mt-1 ${FIELD}`}
+              style={fieldStyle}
+              value={templateName}
+              maxLength={60}
+              onChange={(e) => setTemplateName(e.target.value)}
+            />
+          </label>
+          <button
+            type="button"
+            className="as-button-secondary"
+            disabled={!templateName.trim()}
+            onClick={() => { saveTemplate(templateName, currentSettings); setTemplateName(''); }}
+          >
+            {t('gann.templates.save')}
+          </button>
+        </div>
+
+        {templates.length === 0 ? (
+          <p className="as-body" style={mutedStyle}>{t('gann.templates.none')}</p>
+        ) : (
+          <ul className="as-list">
+            {templates.map((template) => (
+              <li key={template.id} className="flex flex-wrap items-center gap-x-3 text-sm">
+                <button
+                  type="button"
+                  className="as-button-secondary"
+                  onClick={() => applyTemplate(template.settings)}
+                >
+                  {template.name}
+                </button>
+                <span className="as-fineprint">
+                  {d(template.savedIso, { dateStyle: 'medium' })}
+                </span>
+                <button
+                  type="button"
+                  className="text-xs underline"
+                  style={mutedStyle}
+                  onClick={() => deleteTemplate(template.id)}
+                >
+                  {t('gann.notes.remove')}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+
+        <p className="as-fineprint mt-3">{t('gann.notes.kept')}</p>
+      </section>
+
       {/* What is deliberately absent, stated rather than left as a gap. */}
       <section className="as-card">
         <h2 className="as-h2">{t('gann.notBuilt.heading')}</h2>
         <ul className="as-list">
-          {['layouts', 'annotations', 'providers', 'cycles'].map((key) => (
+          {['providers'].map((key) => (
             <li key={key}>{t(`gann.notBuilt.${key}` as 'gann.notBuilt.layouts')}</li>
           ))}
         </ul>

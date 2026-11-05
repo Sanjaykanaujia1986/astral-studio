@@ -58,6 +58,13 @@ export {
 } from './grid.js';
 
 export {
+  COMMON_COUNTS, InvalidAnchorError,
+  timeCounts, seasonalCounts, addDays, daysBetween,
+  type CountAnchor, type CountUnit, type SeasonalCount, type SeasonalDate,
+  type TimeCount,
+} from './counts.js';
+
+export {
   projectLongitude, projectAll, nearestTurn,
   type BodyLongitude, type LinearProjectionSettings, type ProjectedPrice,
   type ProjectionMethod, type ProjectionSettings, type SquareProjectionSettings,

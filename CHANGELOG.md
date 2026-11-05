@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 0.11.0 — 2026-11-05
+- **Annotations**: notes pinned to a bar and a price, or to a value on the spiral — in DATA coordinates, not pixels, so resizing the figure moves the drawing and leaves the note on its point. Drawn on the figure and listed beside it.
+- **Saved templates**: every setting of a construction — origin, increment, rings, winding, the fan's scale and anchor, the grid — stored and restored, so a drawing is rebuilt exactly rather than approximately. Saving under an existing name replaces it; two templates called "working" would be indistinguishable.
+- **Time counts**, which an earlier version deferred on purpose. They are a calendar, so they are here as dates, with the standing rule unchanged: nothing is called a turn, a pivot or a level, and no count is chosen by how well it fits the series. A count in **bars** and a count in **calendar days** are different questions, so the unit travels with every row.
+- Equinoxes and solstices come from the engine's ingress search — a solstice is the Sun entering Capricorn — rather than being computed a second time in the Gann package, so the product has one definition of each.
+- Notes and templates are validated on load, like the alerts: an entry from an older version cannot reach the figures and fail where the cause is hard to see.
+- FIX: `Omit` does not distribute over a union, so `Omit<GannAnnotation, 'id'>` collapsed to the two members' shared keys and the caller could pass neither `value` nor `barIndex`. Replaced with a distributive form.
+- FIX in a test, not the code: the source-offer test asserted `VITE_SOURCE_URL` was unset, so it began failing the moment the source was actually published — the one time the feature was working properly. It now asserts the invariant: exactly one of a resolving link or an "unconfigured" notice, never both and never neither.
+- Gann Lab's remaining gap is **market-data provider adapters** alone.
+
 ## 0.10.0 — 2026-11-05
 - **Alerts**, closing the Dashboard's last gap: the workspace is now **ready**. An alert is a saved question — "Saturn square my natal Mercury within 1°?" — re-asked from the ephemeris each time the page loads.
 - It says, above the list rather than in a footnote, that **nothing runs while the app is closed and nothing is sent to you**. There is no background job and no notification path in this build, and an "alert" that silently only fires when you look would stop a reader checking. Asserted by test.

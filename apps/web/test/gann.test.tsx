@@ -24,6 +24,7 @@ import { makeSeries, type Bar } from '@astro/research';
 import { GannPanel } from '../src/components/GannPanel.js';
 import { useSeriesStore } from '../src/state/series.js';
 import { useChartStore } from '../src/state/chart.js';
+import { useGannWorkspace } from '../src/state/gann-workspace.js';
 
 let provider: SwissEphWasmProvider;
 let chart: NatalChart;
@@ -63,6 +64,13 @@ beforeEach(() => {
   useChartStore.setState({ chart: null, busy: false, errorCode: null });
 });
 
+beforeEach(() => {
+  // Both persist to localStorage, so one test's template would otherwise
+  // appear in the next test's list.
+  localStorage.clear();
+  useGannWorkspace.setState({ templates: [], annotations: [] });
+});
+
 afterEach(cleanup);
 
 function renderPanel(locale: 'en' | 'hi' | 'gu' = 'en') {
@@ -98,8 +106,10 @@ describe('what the workspace says about itself', () => {
      * what genuinely is not there.
      */
     expect(screen.getByText(/Market-data provider/)).toBeInTheDocument();
-    expect(screen.getByText(/Annotations/)).toBeInTheDocument();
+    // Annotations, templates, export and the Square of 144 have all left the
+    // list since it was written. What remains is what genuinely is not there.
     expect(screen.queryByText(/Square of 144/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Annotations, saved templates/)).not.toBeInTheDocument();
   });
 });
 
@@ -278,6 +288,56 @@ describe('export', () => {
     renderPanel();
     expect(screen.getAllByRole('button', { name: 'Download SVG' }).length)
       .toBeGreaterThan(0);
+  });
+});
+
+describe('notes and templates', () => {
+  it('pins a note to a bar and a price, not to the canvas', async () => {
+    /*
+     * The distinction worth testing: a note fixed to a pixel drifts off its
+     * point the first time the figure is resized, and a note pointing at the
+     * wrong bar is worse than no note.
+     */
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+
+    await user.type(screen.getByLabelText('Note'), 'low of the move');
+    const bar = screen.getByLabelText('Bar');
+    await user.clear(bar);
+    await user.type(bar, '10');
+    await user.click(screen.getByRole('button', { name: 'Pin to the price chart' }));
+
+    // Twice over, and both matter: once drawn on the figure at its data
+    // point, once in the list where it can be removed.
+    const occurrences = screen.getAllByText('low of the move');
+    expect(occurrences).toHaveLength(2);
+    expect(occurrences.some((node) => node.tagName.toLowerCase() === 'text')).toBe(true);
+    expect(screen.getByText(/bar 10/)).toBeInTheDocument();
+  });
+
+  it('saves the settings as a template and puts them back', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+
+    const origin = screen.getByLabelText('Centre value');
+    await user.clear(origin);
+    await user.type(origin, '250');
+    await user.type(screen.getByLabelText('Template name'), 'wheat');
+    await user.click(screen.getByRole('button', { name: 'Save current settings' }));
+
+    // Change the setting, then restore it from the template.
+    await user.clear(origin);
+    await user.type(origin, '1');
+    expect(screen.getByText(/Origin 1, step 1/)).toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'wheat' }));
+    expect(screen.getByText(/Origin 250, step 1/)).toBeInTheDocument();
+  });
+
+  it('says where notes and templates are kept', () => {
+    renderPanel();
+    expect(screen.getByText(/kept in this browser only/i)).toBeInTheDocument();
   });
 });
 

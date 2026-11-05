@@ -26,6 +26,19 @@ export interface GannFanFigureProps {
   readonly fan?: Fan;
   /** Prices projected from planetary longitudes, drawn as horizontals. */
   readonly priceLines?: readonly { readonly price: number; readonly label: string }[];
+  /**
+   * Notes pinned to a bar and a price.
+   *
+   * Pinned in DATA coordinates, not pixels: a note fixed to the canvas would
+   * drift off its point the first time the figure was resized, and a note
+   * that points at the wrong bar is worse than no note.
+   */
+  readonly notes?: readonly {
+    readonly id: string;
+    readonly barIndex: number;
+    readonly price: number;
+    readonly text: string;
+  }[];
   readonly box?: PlotBox;
   readonly theme?: Partial<ChartTheme>;
   readonly scaleCaption?: string;
@@ -38,6 +51,7 @@ export function GannFanFigure({
   points,
   fan,
   priceLines = [],
+  notes = [],
   box = DEFAULT_PLOT,
   theme,
   scaleCaption,
@@ -49,6 +63,7 @@ export function GannFanFigure({
   const relevant = [
     ...points.map((p) => p.close),
     ...priceLines.map((l) => l.price),
+    ...notes.map((note) => note.price),
     ...(fan ? [fan.anchor.price] : []),
   ];
   const { minPrice, maxPrice } = priceDomain(relevant);
@@ -230,6 +245,29 @@ export function GannFanFigure({
           fill={colours.aspects.hard}
         />
       ) : null}
+
+      {/* Notes last, so they sit above the series they annotate. */}
+      {notes.map((note) => {
+        const x = scale.xOf(note.barIndex);
+        const y = scale.yOf(note.price);
+        if (x < box.padLeft || x > box.width - box.padRight) return null;
+        // Flip the label inboard near the right edge so it is not clipped.
+        const flip = x > box.width - box.padRight - 90;
+        return (
+          <g key={note.id}>
+            <circle cx={x} cy={y} r={3} fill={colours.aspects.soft} />
+            <text
+              x={flip ? x - 6 : x + 6}
+              y={y - 5}
+              textAnchor={flip ? 'end' : 'start'}
+              fontSize={10}
+              fill={colours.aspects.soft}
+            >
+              {note.text.length > 28 ? `${note.text.slice(0, 27)}…` : note.text}
+            </text>
+          </g>
+        );
+      })}
 
       <line
         x1={box.padLeft}

@@ -3,7 +3,7 @@
 Persistent. Updated at the end of each increment. `[x]` means built **and**
 verified by a test or a measurement, not merely written.
 
-Current version **0.10.0** · **998 unit tests** + **55 production smoke checks** ·
+Current version **0.11.0** · **1008 unit tests** + **55 production smoke checks** ·
 engine fingerprint `855fec9b`, verified in Node, in the browser and on the live
 deployment.
 
@@ -52,7 +52,8 @@ Run them with `npm test` and `npm run smoke`.
 - [x] Circular and polygon layouts (wheel of N, 3–12-sided spirals)
 - [x] Square of 144 — anchor, price per cell and bars per cell all required
 - [x] SVG export
-- [ ] Annotations and saved templates
+- [x] Annotations and saved templates
+- [x] Time counts — bars and calendar days kept distinct; seasonal dates from the engine
 - [ ] Market-data provider adapters
 
 ## Milestone 4 — professional and mobile

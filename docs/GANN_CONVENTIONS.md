@@ -250,10 +250,14 @@ Stated plainly so that an empty space is not mistaken for an oversight:
   current series and the current settings and keeps nothing.
 - **No market-data provider.** Prices come from a CSV the user supplies, parsed
   by `packages/research`, which reports every rejected row.
-- **No "natural" time cycles** — anniversary dates, 90-day counts, seasonal
-  pivots. They are arithmetic on dates and would be easy to add; they are also
-  the constructions most often presented as predictions, and they are not here
-  until the research module can measure one.
+- ~~No "natural" time cycles.~~ **Added**, having been deferred on the grounds
+  that they are the construction most often presented as a prediction. What
+  they actually are is a calendar, and a calendar is useful. They are computed
+  as dates and labelled as dates; nothing is called a turn, a pivot or a
+  level, and no count is selected by how well it fits a series. A count in
+  bars and a count in calendar days are kept distinct, because on any series
+  with weekends they are different questions. Seasonal dates are taken from
+  the engine's ingress search rather than recomputed here.
 - **No levels of support or resistance.** The module draws lines and prints
   values. It does not name any of them a level.
 

@@ -340,11 +340,17 @@ describe('the source offer', () => {
     expect(screen.getByText(/no warranty/i)).toBeInTheDocument();
   });
 
-  it('says the link is missing rather than showing a dead claim', () => {
+  it('makes exactly one honest statement about where the source is', () => {
     /*
-     * This build has no VITE_SOURCE_URL, so the app must say the offer is
-     * unconfigured. An "available" claim that points nowhere is worse than
-     * no claim: it reads as compliance while providing nothing.
+     * Either a link that resolves, or a notice that the link is not
+     * configured — never both, and never neither. An "available" claim
+     * pointing nowhere is worse than no claim: it reads as compliance while
+     * providing nothing.
+     *
+     * Written against the invariant rather than against one state, because
+     * VITE_SOURCE_URL is an environment variable: a test that assumed it was
+     * unset started failing the moment the source was actually published,
+     * which is the one time the feature was working properly.
      */
     render(
       <I18nProvider initialLocale="en">
@@ -353,8 +359,12 @@ describe('the source offer', () => {
         </MemoryRouter>
       </I18nProvider>,
     );
-    const alert = screen.getByRole('alert');
-    expect(alert.textContent).toMatch(/VITE_SOURCE_URL/);
-    expect(screen.queryByRole('link', { name: 'Source code' })).not.toBeInTheDocument();
+
+    const link = screen.queryByRole('link', { name: 'Source code' });
+    const notice = screen.queryAllByRole('alert')
+      .find((node) => /VITE_SOURCE_URL/.test(node.textContent ?? ''));
+
+    expect(Boolean(link) !== Boolean(notice), 'exactly one of link or notice').toBe(true);
+    if (link) expect(link.getAttribute('href')).toMatch(/^https?:\/\//);
   });
 });

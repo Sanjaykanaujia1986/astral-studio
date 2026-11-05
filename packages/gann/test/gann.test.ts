@@ -19,6 +19,7 @@ import {
   buildCircle, circleAngle, circleTurn, sameDegree, InvalidLayoutError,
   buildPolygon, polygonCellCount, polygonPoint, polygonCorners,
   buildGrid, diagonalPriceAt, cellOf,
+  timeCounts, seasonalCounts, addDays, daysBetween, COMMON_COUNTS, InvalidAnchorError,
 } from '../src/index.js';
 
 /**
@@ -594,5 +595,82 @@ describe('the Square of 144', () => {
     expect(() => buildGrid({ ...base, barsPerCell: -1 })).toThrow(InvalidLayoutError);
     expect(() => buildGrid({ ...base, size: 0 })).toThrow(InvalidLayoutError);
     expect(() => buildGrid({ ...base, pricePerCell: NaN })).toThrow(InvalidLayoutError);
+  });
+});
+
+/**
+ * Time counts.
+ *
+ * Arithmetic, and the point of testing it is the distinction the method
+ * usually blurs: a count in BARS and a count in CALENDAR DAYS are different
+ * questions and give different answers on any series with weekends in it.
+ */
+describe('time counts', () => {
+  const anchor = { barIndex: 100, date: '2024-01-15' };
+
+  it('counts calendar days as dates, crossing month and year ends', () => {
+    const counts = timeCounts(anchor, [1, 17, 90, 366]);
+    expect(counts.map((c) => c.date)).toEqual([
+      '2024-01-16',   // next day
+      '2024-02-01',   // over the month end
+      '2024-04-14',   // 90 days, through a leap February
+      '2025-01-15',   // 366 days: 2024 is a leap year, so back to the date
+    ]);
+    expect(counts.every((c) => c.barIndex === undefined)).toBe(true);
+  });
+
+  it('counts bars as bar indices, which is a different answer', () => {
+    // The distinction that matters: 90 bars is not 90 days unless the series
+    // has no gaps, and almost none do.
+    const bars = timeCounts(anchor, [90], 'bars')[0]!;
+    const days = timeCounts(anchor, [90], 'calendarDays')[0]!;
+    expect(bars.barIndex).toBe(190);
+    expect(bars.date).toBeUndefined();
+    expect(days.date).toBe('2024-04-14');
+    expect(days.barIndex).toBeUndefined();
+    // And the unit travels with the result rather than being inferred.
+    expect(bars.unit).toBe('bars');
+    expect(days.unit).toBe('calendarDays');
+  });
+
+  it('offers the circle’s own divisions as a starting set', () => {
+    expect(COMMON_COUNTS).toContain(90);
+    expect(COMMON_COUNTS).toContain(180);
+    expect(COMMON_COUNTS).toContain(360);
+    expect(timeCounts(anchor)).toHaveLength(COMMON_COUNTS.length);
+  });
+
+  it('returns them in order, whatever order they were given', () => {
+    expect(timeCounts(anchor, [360, 45, 180]).map((c) => c.count)).toEqual([45, 180, 360]);
+  });
+
+  it('is exact across a daylight-saving change, because it works in UTC', () => {
+    // A local-time implementation drifts by an hour here and can land on the
+    // wrong date; 31 March 2024 is the European clock change.
+    expect(addDays('2024-03-30', 2)).toBe('2024-04-01');
+    expect(daysBetween('2024-03-01', '2024-04-01')).toBe(31);
+  });
+
+  it('refuses a date it cannot parse rather than returning Invalid Date', () => {
+    expect(() => addDays('not-a-date', 1)).toThrow(InvalidAnchorError);
+    expect(() => daysBetween('2024-01-01', 'nope')).toThrow(InvalidAnchorError);
+  });
+
+  it('measures supplied seasonal dates against the anchor', () => {
+    /*
+     * The dates come from the engine's ingress search, not from here: a
+     * solstice is the Sun entering Capricorn, and computing it twice in one
+     * product is how the two copies end up disagreeing.
+     */
+    const seasonal = seasonalCounts(anchor, [
+      { date: '2024-06-20', label: 'June solstice' },
+      { date: '2024-03-20', label: 'March equinox' },
+      { date: '2023-12-22', label: 'December solstice' },
+    ]);
+    expect(seasonal.map((s) => s.label)).toEqual([
+      'December solstice', 'March equinox', 'June solstice',
+    ]);
+    expect(seasonal[0]!.daysFromAnchor).toBe(-24);   // before the anchor
+    expect(seasonal[1]!.daysFromAnchor).toBe(65);
   });
 });
