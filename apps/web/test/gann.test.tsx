@@ -96,20 +96,16 @@ describe('what the workspace says about itself', () => {
       .toBeInTheDocument();
   });
 
-  it('lists what it deliberately did not build', () => {
-    renderPanel();
-    expect(screen.getByText(/Not built in this release/i)).toBeInTheDocument();
+  it('no longer carries a "not built" list, because nothing is', () => {
     /*
-     * The list SHRINKS as things get built, which is the point of keeping it
-     * in the workspace rather than in a document: the circular and polygon
-     * layouts left it, then the Square of 144 and export. What remains is
-     * what genuinely is not there.
+     * The list shrank as each item was built — layouts, then the Square of
+     * 144 and export, then annotations, templates and time counts, then the
+     * market-data adapter — and has now gone. Keeping an empty "not built"
+     * heading would be its own small dishonesty.
      */
-    expect(screen.getByText(/Market-data provider/)).toBeInTheDocument();
-    // Annotations, templates, export and the Square of 144 have all left the
-    // list since it was written. What remains is what genuinely is not there.
+    renderPanel();
+    expect(screen.queryByText(/Not built in this release/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/Square of 144/)).not.toBeInTheDocument();
-    expect(screen.queryByText(/^Annotations, saved templates/)).not.toBeInTheDocument();
   });
 });
 

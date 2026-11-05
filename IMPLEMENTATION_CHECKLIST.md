@@ -3,7 +3,7 @@
 Persistent. Updated at the end of each increment. `[x]` means built **and**
 verified by a test or a measurement, not merely written.
 
-Current version **0.11.0** · **1008 unit tests** + **55 production smoke checks** ·
+Current version **0.12.0** · **1012 unit tests** + **55 production smoke checks** ·
 engine fingerprint `855fec9b`, verified in Node, in the browser and on the live
 deployment.
 
@@ -54,7 +54,7 @@ Run them with `npm test` and `npm run smoke`.
 - [x] SVG export
 - [x] Annotations and saved templates
 - [x] Time counts — bars and calendar days kept distinct; seasonal dates from the engine
-- [ ] Market-data provider adapters
+- [x] Market-data provider adapters — proxied server-side; provider is deployment configuration
 
 ## Milestone 4 — professional and mobile
 

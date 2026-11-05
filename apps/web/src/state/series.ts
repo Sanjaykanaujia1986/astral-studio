@@ -16,7 +16,10 @@
  * something they asked for.
  */
 import { create } from 'zustand';
-import { makeSeries, parseMarketCsv, CsvImportError, type Bar, type Series } from '@astro/research';
+import {
+  makeSeries, parseMarketCsv, CsvImportError, ProviderError,
+  type Bar, type MarketDataProvider, type Series,
+} from '@astro/research';
 
 export interface ParseChoices {
   readonly dayFirst: boolean;
@@ -28,11 +31,23 @@ interface SeriesState {
   /** Rows the parser could not use. Shown, never swallowed. */
   readonly rejected: number;
   readonly fileName: string | null;
+  /** Where the current series came from. */
+  readonly source: 'file' | 'provider' | null;
+  readonly providerName: string | null;
+  readonly busy: boolean;
   readonly choices: ParseChoices;
   /** Engine-style CODE, so the catalogue keeps ownership of the wording. */
   readonly errorCode: string | null;
   setChoices: (choices: Partial<ParseChoices>) => void;
   importCsv: (fileName: string, text: string) => void;
+  /**
+   * Fetch a symbol through a provider.
+   *
+   * Sets `source` so the reader — and a later study — can tell a fetched
+   * series from an imported file. A series whose origin is unrecorded cannot
+   * be reproduced.
+   */
+  fetchSymbol: (provider: MarketDataProvider, symbol: string) => Promise<void>;
   clear: () => void;
 }
 
@@ -40,6 +55,9 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
   series: null,
   rejected: 0,
   fileName: null,
+  source: null,
+  providerName: null,
+  busy: false,
   choices: { dayFirst: false, decimalComma: false },
   errorCode: null,
 
@@ -56,6 +74,8 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
         series: makeSeries(fileName.replace(/\.csv$/i, ''), parsed.bars),
         rejected: parsed.rejected.length,
         fileName,
+        source: 'file',
+        providerName: null,
         errorCode: null,
       });
     } catch (cause) {
@@ -68,8 +88,39 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
     }
   },
 
+  async fetchSymbol(provider, symbol) {
+    const trimmed = symbol.trim();
+    if (!trimmed) return;
+    set({ busy: true, errorCode: null });
+    try {
+      const fetched = await provider.fetchDaily(trimmed);
+      set({
+        series: makeSeries(trimmed.toUpperCase(), fetched.bars),
+        rejected: 0,
+        fileName: null,
+        source: 'provider',
+        // The name the SERVER reported, falling back to the adapter's own.
+        providerName: fetched.providerName ?? provider.describe.name,
+        errorCode: null,
+      });
+    } catch (cause) {
+      set({
+        series: null,
+        rejected: 0,
+        source: null,
+        providerName: provider.describe.name,
+        errorCode: cause instanceof ProviderError ? cause.code : 'unknown',
+      });
+    } finally {
+      set({ busy: false });
+    }
+  },
+
   clear() {
-    set({ series: null, rejected: 0, fileName: null, errorCode: null });
+    set({
+      series: null, rejected: 0, fileName: null,
+      source: null, providerName: null, errorCode: null,
+    });
   },
 }));
 

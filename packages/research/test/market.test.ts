@@ -15,6 +15,9 @@ import {
   CsvImportError,
 } from '../src/market/csv.js';
 import {
+  ProviderError, isProviderErrorCode, type MarketDataProvider,
+} from '../src/market/provider.js';
+import {
   makeSeries,
   logReturns,
   profileSeries,
@@ -268,3 +271,57 @@ function buildBars(start: string, count: number, spacingDays: number) {
     close: 100 + i,
   }));
 }
+
+/**
+ * The provider interface.
+ *
+ * It carries no provider, so what is testable here is the contract: that a
+ * provider has to declare its own name and whether looking something up
+ * sends the symbol off the machine. A series whose origin is unrecorded
+ * cannot be reproduced, and "I downloaded it from somewhere" is not a
+ * provenance.
+ */
+describe('market data providers', () => {
+  it('requires a provider to name itself and declare whether it is remote', () => {
+    const local: MarketDataProvider = {
+      describe: { name: 'Test fixture', remote: false },
+      fetchDaily: () => Promise.resolve({ bars: [{ date: '2024-01-01', close: 1 }] }),
+    };
+    expect(local.describe.name).toBe('Test fixture');
+    expect(local.describe.remote).toBe(false);
+  });
+
+  it('lets the response name the provider that actually answered', async () => {
+    /*
+     * With a proxied adapter the deployment chooses the upstream, so only
+     * the response knows which one served the request. Recording the
+     * adapter's own name would be recording the wrong provenance.
+     */
+    const proxied: MarketDataProvider = {
+      describe: { name: 'the configured provider', remote: true },
+      fetchDaily: () => Promise.resolve({
+        bars: [{ date: '2024-01-01', close: 1 }],
+        providerName: 'tiingo',
+      }),
+    };
+    const fetched = await proxied.fetchDaily('aapl');
+    expect(fetched.providerName).toBe('tiingo');
+    expect(fetched.providerName).not.toBe(proxied.describe.name);
+  });
+
+  it('carries the provider name on the error, so a failure says who failed', () => {
+    const error = new ProviderError('SYMBOL_NOT_FOUND', 'Stooq');
+    expect(error.code).toBe('SYMBOL_NOT_FOUND');
+    expect(error.provider).toBe('Stooq');
+    expect(error.message).toContain('Stooq');
+  });
+
+  it('recognises only the codes a caller can translate', () => {
+    // Anything else is a bug rather than a condition, and must not be
+    // rendered to a reader as though it were an explanation.
+    expect(isProviderErrorCode('SYMBOL_NOT_FOUND')).toBe(true);
+    expect(isProviderErrorCode('PROVIDER_TIMEOUT')).toBe(true);
+    expect(isProviderErrorCode('ENOTFOUND')).toBe(false);
+    expect(isProviderErrorCode(undefined)).toBe(false);
+  });
+});

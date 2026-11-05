@@ -952,16 +952,6 @@ export function GannPanel(): JSX.Element {
         <p className="as-fineprint mt-3">{t('gann.notes.kept')}</p>
       </section>
 
-      {/* What is deliberately absent, stated rather than left as a gap. */}
-      <section className="as-card">
-        <h2 className="as-h2">{t('gann.notBuilt.heading')}</h2>
-        <ul className="as-list">
-          {['providers'].map((key) => (
-            <li key={key}>{t(`gann.notBuilt.${key}` as 'gann.notBuilt.layouts')}</li>
-          ))}
-        </ul>
-      </section>
-
       <p className="as-fineprint">{t('gann.conventions')}</p>
     </div>
   );

@@ -27,6 +27,7 @@ import {
 import { useTranslator, type Translator } from '@astro/i18n';
 import { getProvider } from '../lib/engine.js';
 import { useSeriesStore } from '../state/series.js';
+import { apiProvider } from '../lib/prices.js';
 
 /**
  * The signals offered.
@@ -79,8 +80,11 @@ export function ResearchPanel(): JSX.Element {
    * to the same file, and importing it twice would let the two workspaces
    * disagree about the data they are both describing.
    */
-  const { series, rejected, choices, errorCode: importErrorCode, setChoices, importCsv: ingest }
-    = useSeriesStore();
+  const {
+    series, rejected, choices, errorCode: importErrorCode, source, providerName,
+    busy: fetching, setChoices, importCsv: ingest, fetchSymbol,
+  } = useSeriesStore();
+  const [symbol, setSymbol] = useState('');
   const { dayFirst, decimalComma } = choices;
   const [selected, setSelected] = useState<readonly string[]>(['mercury-rx', 'full-moon']);
   const [holdoutPercent, setHoldoutPercent] = useState(30);
@@ -110,11 +114,18 @@ export function ResearchPanel(): JSX.Element {
 
   // The store reports a parse failure as a CODE; the wording stays here, with
   // the catalogue, exactly as the engine's errors do.
+  const PROVIDER_CODES = [
+    'PROVIDER_NOT_CONFIGURED', 'PROVIDER_UNKNOWN', 'PROVIDER_KEY_MISSING',
+    'INVALID_SYMBOL', 'SYMBOL_NOT_FOUND', 'PROVIDER_UNAVAILABLE',
+    'PROVIDER_TIMEOUT', 'MALFORMED_RESPONSE',
+  ];
   const csvError = importErrorCode === null
     ? null
     : importErrorCode === 'unknown'
       ? t('error.unknown')
-      : t(`csvError.${importErrorCode}` as 'csvError.EMPTY_FILE');
+      : PROVIDER_CODES.includes(importErrorCode)
+        ? t(`provider.error.${importErrorCode}` as 'provider.error.SYMBOL_NOT_FOUND')
+        : t(`csvError.${importErrorCode}` as 'csvError.EMPTY_FILE');
 
   const run = useCallback(async () => {
     if (!series || selected.length === 0) return;
@@ -232,6 +243,35 @@ export function ResearchPanel(): JSX.Element {
           </label>
         </div>
 
+        <div className="mt-3 flex flex-wrap items-end gap-2">
+          <label className="text-sm">
+            <span className="block font-medium text-slate-700">
+              {t('provider.symbol')}
+            </span>
+            <input
+              type="text"
+              value={symbol}
+              onChange={(event) => setSymbol(event.target.value)}
+              placeholder="aapl.us"
+              className={FIELD}
+            />
+          </label>
+          <button
+            type="button"
+            className="as-button-secondary"
+            disabled={fetching || symbol.trim().length === 0}
+            onClick={() => void fetchSymbol(apiProvider, symbol)}
+          >
+            {fetching ? t('provider.fetching') : t('provider.fetch')}
+          </button>
+        </div>
+
+        <p className="mt-2 text-xs text-slate-500">
+          {t('provider.sendsSymbol', { provider: apiProvider.describe.name })}
+          {' '}
+          {t('provider.configuration')}
+        </p>
+
         {csvError ? <p role="alert" className="text-sm text-rose-700">{csvError}</p> : null}
         {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
 
@@ -244,6 +284,11 @@ export function ResearchPanel(): JSX.Element {
               last: profile.lastDate,
               frequency: frequency.label,
             })}
+            {source === 'provider' && providerName ? (
+              <span className="ml-2 text-xs text-slate-500">
+                {t('provider.loadedFrom', { provider: providerName })}
+              </span>
+            ) : null}
             {rejected > 0 ? (
               <span className="ml-2 text-amber-700">
                 {t('research.rejected', { count: n(rejected) })}

@@ -144,10 +144,10 @@ describe('the navigation rail', () => {
   it('labels unfinished workspaces in the navigation itself', () => {
     renderShell();
     const rail = screen.getByRole('navigation', { name: 'Workspaces' });
-    // One planned (clients) and one partial (gann, which still has no
-    // market-data adapter). Dashboard became ready when alerts landed.
+    // Clients alone, and it is blocked on the accounts decision rather than
+    // on code. Nothing is partial any more.
     expect(within(rail).getAllByText('Planned')).toHaveLength(1);
-    expect(within(rail).getAllByText('Partial')).toHaveLength(1);
+    expect(within(rail).queryAllByText('Partial')).toHaveLength(0);
   });
 
   it('keeps an accessible name on every item when collapsed', async () => {

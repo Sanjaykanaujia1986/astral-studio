@@ -93,12 +93,8 @@ export const WORKSPACES: readonly Workspace[] = [
     id: 'gann',
     path: '/gann',
     labelKey: 'nav.gannLab',
-    status: 'partial',
+    status: 'ready',
     primary: false,
-    // Square of Nine, anchored fans and planetary projections are built and
-    // tested; circular and polygon layouts, annotations and saved templates
-    // are not, and the workspace lists them rather than leaving a gap.
-    milestone: 3,
     icon: 'M3 3h18v18H3V3Zm2 2v14h14V5H5Zm2 2h10v10H7V7Zm2 2v6h6V9H9Z',
   },
   {

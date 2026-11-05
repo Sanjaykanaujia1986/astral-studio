@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 0.12.0 — 2026-11-05
+- **Market-data adapters**, the last Gann Lab gap. The workspace is now **ready** and its "not built" list is gone rather than left empty.
+- A provider interface in `packages/research` that carries no provider, no endpoint and no credentials: the research code must not depend on where prices came from. A provider has to declare its own name and **whether fetching sends the symbol off the machine**.
+- `/api/prices` proxies the request server-side, so the CSP stays `connect-src 'self'` and "the client makes no external requests" — a property the smoke test checks — remains true. The browser talks to this origin; this origin talks to the provider.
+- The upstream is configuration, not a default: `MARKET_DATA_PROVIDER` and `MARKET_DATA_KEY`. With neither set the endpoint answers PROVIDER_NOT_CONFIGURED and the panel says so. Fetching sends a symbol to a third party, and which third party is the deployment's decision.
+- Adapters for Alpha Vantage and Tiingo. Both answer a bad key or a rate limit with HTTP 200 and a non-CSV body, so the response shape is checked rather than assumed — otherwise a configuration problem renders as an empty chart.
+- **Stooq is deliberately absent.** It was the obvious keyless candidate and, as of November 2026, answers non-browser clients with a JavaScript proof-of-work challenge instead of data. Getting around that is circumventing bot detection; the adapter would be permanently broken, and is better absent than present and failing. Found by calling it, not by assuming.
+- A fetched series is parsed by the SAME parser as an imported file, so the two cannot drift apart on a decimal comma or a date order, and the store records which provider actually answered rather than which adapter asked.
+
 ## 0.11.0 — 2026-11-05
 - **Annotations**: notes pinned to a bar and a price, or to a value on the spiral — in DATA coordinates, not pixels, so resizing the figure moves the drawing and leaves the note on its point. Drawn on the figure and listed beside it.
 - **Saved templates**: every setting of a construction — origin, increment, rings, winding, the fan's scale and anchor, the grid — stored and restored, so a drawing is rebuilt exactly rather than approximately. Saving under an existing name replaces it; two templates called "working" would be indistinguishable.

@@ -37,6 +37,12 @@ export {
   type Bar, type CsvErrorCode, type ParsedCsv, type ParseOptions, type RejectedRow,
 } from './market/csv.js';
 export {
+  ProviderError, PROVIDER_ERROR_CODES, isProviderErrorCode,
+  type FetchedBars, type FetchedSeries, type MarketDataProvider,
+  type ProviderDescription,
+  type ProviderErrorCode,
+} from './market/provider.js';
+export {
   makeSeries, logReturns, toSimpleReturn, profileSeries, inferPeriodsPerYear, daysBetween,
   type ReturnPoint, type Series, type SeriesProfile,
 } from './market/series.js';
