@@ -81,6 +81,7 @@ export function SettingsPanel(): JSX.Element {
           onChange={(e) => settings.set('theme', e.target.value as ChartThemeName)}
           className={FIELD}
         >
+          <option value="auto">{t('settings.theme.auto')}</option>
           <option value="light">{t('settings.theme.light')}</option>
           <option value="dark">{t('settings.theme.dark')}</option>
           <option value="print">{t('settings.theme.print')}</option>

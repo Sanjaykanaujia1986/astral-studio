@@ -1,7 +1,16 @@
 /**
  * Astral Studio design tokens.
  *
- * Deep navy, warm ivory, muted gold.
+ * Deep violet on near-black, with a lavender day mode.
+ *
+ * ## The palette changed, and why that was allowed to break a rule
+ *
+ * An earlier spec said "deep navy, warm ivory, muted gold — no cosmic
+ * backgrounds". The product owner asked for the cosmic treatment, which is
+ * their call. What did NOT change is that contrast is measured: every value
+ * below was computed against WCAG before it was written here, not picked
+ * because it looked right on one monitor. Violet on near-black is precisely
+ * the palette where legibility fails quietly.
  *
  * ## Why these are literal values in TypeScript
  *
@@ -45,13 +54,22 @@ export interface ColorTokens {
    * the decorative hairline and is deliberately exempt.
    */
   readonly borderStrong: string;
-  /** Muted gold. Used for emphasis, never as body text. */
+  /** Neon violet. Used for emphasis and CTAs, never as body text. */
   readonly accent: string;
   /** Accent on a surface, darkened enough to read as text. */
   readonly accentInk: string;
-  /** Navy brand tone, for the nav rail and headers. */
+  /** The deepest tone, for the nav rail and headers. */
   readonly brand: string;
   readonly onBrand: string;
+  /**
+   * The accent, lightened to read on `brand`.
+   *
+   * The rail is a dark ground in BOTH modes, while `accent` flips with the
+   * page. Using `accent` for the wordmark therefore measured 3.68:1 in light
+   * mode — a dark violet on a dark rail. This token is held to 4.5:1 against
+   * `brand` in both themes instead.
+   */
+  readonly accentOnBrand: string;
   /** Status colours. `*Ink` variants are the readable-on-surface forms. */
   readonly danger: string;
   readonly dangerInk: string;
@@ -64,60 +82,66 @@ export interface ColorTokens {
 }
 
 /**
- * Light theme — warm ivory ground.
+ * Light theme — pale lavender ground.
  *
- * Ivory rather than white on purpose: a chart wheel printed on pure white has
- * no visual containment, and long tables of degrees are easier on an off-white.
+ * Tinted rather than pure white on purpose: a chart wheel printed on pure
+ * white has no visual containment, long tables of degrees are easier on an
+ * off-white, and the violet cast keeps the two modes recognisably one product
+ * rather than two.
  */
 export const LIGHT_TOKENS: ColorTokens = {
-  canvas: '#f7f4ed',
-  surface: '#fffdf8',
+  canvas: '#f4f1fb',
+  surface: '#fdfcff',
   raised: '#ffffff',
-  ink: '#161d2b',
-  inkMuted: '#5a6271',
-  onAccent: '#1a1206',
-  border: '#ddd6c7',
-  borderStrong: '#8c8371',
-  accent: '#a98437',
-  accentInk: '#6d5420',
-  brand: '#141d32',
-  onBrand: '#f2efe6',
+  ink: '#1a1033',
+  inkMuted: '#595073',
+  onAccent: '#ffffff',
+  border: '#ded6f0',
+  borderStrong: '#8a7fae',
+  accent: '#7c3aed',
+  accentInk: '#6425d0',
+  brand: '#1b0f3a',
+  onBrand: '#f3effc',
+  accentOnBrand: '#c4a0ff',
   danger: '#b3261e',
   dangerInk: '#8c1d17',
   warning: '#8a5a00',
   warningInk: '#6b4600',
   success: '#1c6b45',
   successInk: '#145235',
-  focus: '#2f5fb3',
+  focus: '#5b2bc4',
 };
 
 /**
- * Dark theme — deep navy ground.
+ * Dark theme — near-black violet ground. The primary mode: the references
+ * this was designed against are all night skies.
  *
- * Not a mechanical inversion. Gold has to lighten considerably to read on
- * navy, and the status colours need their own dark-ground values; swapping the
+ * Not a mechanical inversion. The accent violet has to lighten considerably
+ * to read as text, which is why `accentInk` exists and differs from `accent`,
+ * and the status colours need their own dark-ground values; swapping the
  * light ones would put several below 4.5:1.
  */
 export const DARK_TOKENS: ColorTokens = {
-  canvas: '#0d1322',
-  surface: '#151d30',
-  raised: '#1d273e',
-  ink: '#eceadf',
-  inkMuted: '#a7b0c2',
-  onAccent: '#161004',
-  border: '#2b3650',
-  borderStrong: '#6b7896',
-  accent: '#d9b367',
-  accentInk: '#e4c488',
-  brand: '#0a0f1c',
-  onBrand: '#eceadf',
-  danger: '#ef8a80',
-  dangerInk: '#f4a69e',
-  warning: '#e0b25c',
-  warningInk: '#ecc689',
-  success: '#6fcf9b',
-  successInk: '#8fdbb1',
-  focus: '#7aa7f0',
+  canvas: '#0a0616',
+  surface: '#140c2b',
+  raised: '#1f1342',
+  ink: '#f3effc',
+  inkMuted: '#b6abd6',
+  onAccent: '#12031f',
+  border: '#2e2050',
+  borderStrong: '#7a6aa8',
+  accent: '#a855f7',
+  accentInk: '#cba6ff',
+  brand: '#080412',
+  onBrand: '#f3effc',
+  accentOnBrand: '#cba6ff',
+  danger: '#ff8f8a',
+  dangerInk: '#ffaba6',
+  warning: '#f0c069',
+  warningInk: '#f6d394',
+  success: '#6fe0a8',
+  successInk: '#93ebc0',
+  focus: '#b98cff',
 };
 
 /** Spacing scale, in rem. A 4px base at the default root size. */

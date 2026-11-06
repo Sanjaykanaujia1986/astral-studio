@@ -11,8 +11,7 @@ import { Link } from 'react-router-dom';
 import { GEONAMES_ATTRIBUTION } from '@astro/locations';
 import { useTranslator } from '@astro/i18n';
 import {
-  ChartWheel, PlanetTable, HouseTable, AspectTable,
-  formatOffset, LIGHT_THEME, DARK_THEME, PRINT_THEME,
+  ChartWheel, PlanetTable, HouseTable, AspectTable, formatOffset,
 } from '@astro/ui';
 import { BirthForm } from '../components/BirthForm.js';
 import { SettingsPanel } from '../components/SettingsPanel.js';
@@ -30,11 +29,11 @@ import { DashboardPanel } from '../components/DashboardPanel.js';
 import { SavedChartsPanel } from '../components/SavedChartsPanel.js';
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
+import { useChartTheme } from '../lib/chart-theme.js';
 import { WORKSPACES } from './workspaces.js';
 import { PlannedWorkspace } from './PlannedWorkspace.js';
 import { BRAND } from '../brand.js';
 
-const CHART_THEMES = { light: LIGHT_THEME, dark: DARK_THEME, print: PRINT_THEME };
 const byId = (id: string) => WORKSPACES.find((w) => w.id === id)!;
 
 /** Page scaffold: heading, optional lede, content. */
@@ -131,6 +130,7 @@ export function DashboardRoute(): JSX.Element {
 export function ChartStudioRoute(): JSX.Element {
   const { t } = useTranslator();
   const settings = useSettings();
+  const chartTheme = useChartTheme();
   const { chart, busy, errorCode, cast } = useChartStore();
 
   return (
@@ -174,7 +174,7 @@ export function ChartStudioRoute(): JSX.Element {
                   chart={chart}
                   {...(chart.input.name ? { subjectName: chart.input.name } : {})}
                   size={900}
-                  theme={CHART_THEMES[settings.theme]}
+                  theme={chartTheme}
                   glyphStyle={settings.glyphStyle}
                   className="mx-auto max-w-[680px]"
                 />

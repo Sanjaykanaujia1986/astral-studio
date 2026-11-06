@@ -83,6 +83,24 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (mode: ThemeMode)
   });
 });
 
+describe('text on the nav rail', () => {
+  /*
+   * The rail is a dark ground in BOTH themes while `accent` flips with the
+   * page, so the wordmark once measured 3.68:1 in light mode — a dark violet
+   * on a dark rail. `accentOnBrand` exists for that, and is held to body-text
+   * contrast against `brand` in both.
+   */
+  it.each(['light', 'dark'] as const)('keeps %s accentOnBrand readable on brand', (mode) => {
+    const t = TOKENS[mode];
+    expect(contrastRatio(t.accentOnBrand, t.brand)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it.each(['light', 'dark'] as const)('keeps %s onBrand readable on brand', (mode) => {
+    const t = TOKENS[mode];
+    expect(contrastRatio(t.onBrand, t.brand)).toBeGreaterThanOrEqual(4.5);
+  });
+});
+
 describe('the two themes are genuinely different', () => {
   it('inverts the ground', () => {
     expect(relativeLuminance(LIGHT_TOKENS.canvas)).toBeGreaterThan(0.5);

@@ -31,8 +31,8 @@ export interface ChartTheme {
 export const LIGHT_THEME: ChartTheme = {
   surface: '#ffffff',
   ink: '#1f2937',
-  muted: '#8b93a1',
-  faint: '#d8dce3',
+  muted: '#8b8299',
+  faint: '#ded6f0',
   elements: {
     fire: '#d1442f',
     earth: '#1f7a4d',
@@ -48,11 +48,20 @@ export const LIGHT_THEME: ChartTheme = {
   signTintOpacity: 0.13,
 };
 
+/*
+ * Violet-grounded, to match the app's own dark palette.
+ *
+ * The earlier values were a blue-grey that predated the cosmic direction, so
+ * the wheel painted a slate panel onto a violet page and read as a pasted
+ * screenshot rather than part of the product. The element and aspect hues are
+ * unchanged — they carry meaning, and re-tinting them towards the brand would
+ * make fire and air harder to tell apart to serve a background.
+ */
 export const DARK_THEME: ChartTheme = {
-  surface: '#111827',
-  ink: '#e5e7eb',
-  muted: '#8f97a6',
-  faint: '#374151',
+  surface: '#140c2b',
+  ink: '#efeafb',
+  muted: '#9f93c4',
+  faint: '#36275c',
   elements: {
     fire: '#f0785f',
     earth: '#4cb583',

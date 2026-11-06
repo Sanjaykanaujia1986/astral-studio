@@ -12,6 +12,7 @@ import {
 import { SelfTestPanel } from './components/SelfTestPanel.js';
 import './index.css';
 import './shell/shell.css';
+import './shell/cosmic.css';
 
 const container = document.getElementById('root');
 if (!container) throw new Error('#root not found in index.html');

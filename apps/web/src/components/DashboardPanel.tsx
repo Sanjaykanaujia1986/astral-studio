@@ -34,6 +34,7 @@ import { CloudError, getChartSettings, listCharts, type SavedChartSummary } from
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
 import { AlertsPanel } from './AlertsPanel.js';
+import { HeroPanel } from './HeroPanel.js';
 
 const TH = 'px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wide';
 const TD = 'px-2 py-1.5 whitespace-nowrap tabular-nums';
@@ -194,6 +195,13 @@ export function DashboardPanel(): JSX.Element {
 
   return (
     <div className="flex flex-col gap-5">
+      {/*
+        The welcome only while there is nothing to welcome you back to. Once
+        a chart exists the dashboard has real content and a marketing panel
+        above it is in the way on every visit.
+      */}
+      {!natal ? <HeroPanel /> : null}
+
       {/* ----------------------------------------------- today's sky */}
       <section className="as-card">
         <h2 className="as-h2">{t('dashboard.today.heading')}</h2>

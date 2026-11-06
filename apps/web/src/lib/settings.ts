@@ -13,7 +13,12 @@ import { create } from 'zustand';
 import type { DegreePrecision } from '@astro/ui';
 
 export type GlyphStyle = 'symbol' | 'abbreviation';
-export type ChartThemeName = 'light' | 'dark' | 'print';
+/**
+ * `auto` follows the page. It is the default because the chart theme and the
+ * page theme were independent, and a light wheel on a dark page reads as a
+ * pasted screenshot rather than part of the product.
+ */
+export type ChartThemeName = 'auto' | 'light' | 'dark' | 'print';
 export type OrbProfileId = 'standard' | 'tight' | 'wide';
 
 export interface DisplaySettings {
@@ -26,7 +31,7 @@ export interface DisplaySettings {
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   precision: 'minute',
   glyphStyle: 'symbol',
-  theme: 'light',
+  theme: 'auto',
   orbProfile: 'standard',
 };
 

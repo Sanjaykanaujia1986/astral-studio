@@ -123,7 +123,19 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
   const secondary = WORKSPACES.filter((w) => !w.primary);
 
   return (
-    <div className="as-shell" lang={locale.intlTag}>
+    <>
+      {/*
+        The sky. A sibling of the shell rather than a child, so it is not
+        inside the grid and cannot affect layout; fixed, behind, and
+        pointer-events: none. `aria-hidden` because it is decoration and a
+        screen reader announcing "image" here would be noise.
+      */}
+      <div className="as-sky" aria-hidden="true">
+        <div className="as-nebula as-nebula-a" />
+        <div className="as-nebula as-nebula-b" />
+      </div>
+
+      <div className="as-shell" lang={locale.intlTag}>
       <a href="#workspace" className="as-skip">
         {t('nav.skipToContent')}
       </a>
@@ -212,6 +224,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
           </ul>
         </div>
       ) : null}
-    </div>
+      </div>
+    </>
   );
 }

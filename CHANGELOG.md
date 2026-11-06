@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 0.13.0 — 2026-11-06
+- **Visual redesign to a deep-violet night sky**, replacing navy/ivory/gold. This reverses §4 of the spec, which said "no cosmic backgrounds, particles or glass" — at the product owner's request, recorded here rather than quietly overwritten.
+- What did NOT change is that **contrast is computed, not eyeballed**. Every value in the new palette was measured against WCAG before it was written, and the theme test now covers the nav rail as well.
+- FOUND BY MEASURING: the brand wordmark used `accent`, which flips with the page — but the rail is a dark ground in BOTH modes, so light mode put a dark violet on a dark rail at **3.68:1**. New `accentOnBrand` token, held to 4.5:1 against `brand` in both themes, with a test.
+- FOUND BY LOOKING: the chart theme defaulted to `light` and never followed the page, so the wheel painted a white disc onto the night sky and read as a pasted screenshot. New default `auto` follows the page and re-resolves when the system theme changes; `light`, `dark` and `print` remain explicit, because someone printing wants the print palette whatever their screen is doing.
+- The chart `DARK_THEME` moved from blue-grey to the violet ground. Element and aspect hues are unchanged — they carry meaning, and re-tinting them to match a background would make fire and air harder to tell apart.
+- **Welcome hero** on the dashboard, shown only while there is no chart. Its wheel is the real `ChartWheel` drawn for this moment from the bundled ephemeris, not an illustration: a reader cannot tell a picture of a chart from a chart, which is exactly why it has to be one.
+- Starfield and nebulae are pure CSS gradients — no images and no web fonts, because the app is verified to make zero external requests and the smoke test checks it. Everything that moves sits behind `prefers-reduced-motion`, and the decorative layer is `pointer-events: none` behind the shell.
+- The gradient-clipped hero title falls back to a solid colour under `forced-colors`, where background images are discarded and it would otherwise vanish entirely.
+
 ## 0.12.0 — 2026-11-05
 - **Market-data adapters**, the last Gann Lab gap. The workspace is now **ready** and its "not built" list is gone rather than left empty.
 - A provider interface in `packages/research` that carries no provider, no endpoint and no credentials: the research code must not depend on where prices came from. A provider has to declare its own name and **whether fetching sends the symbol off the machine**.

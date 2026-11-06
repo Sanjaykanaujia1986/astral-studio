@@ -169,7 +169,14 @@ glyph style, theme) are per device.
 
 ## 4. Design system
 
-`packages/ui/src/theme/tokens.ts`. Deep navy, warm ivory, muted gold.
+`packages/ui/src/theme/tokens.ts`. Deep violet on near-black, with a pale
+lavender day mode.
+
+**This reverses an earlier rule.** The first version of this section said
+"deep navy, warm ivory, muted gold" and "no cosmic backgrounds, particles or
+glass". The product owner asked for the cosmic treatment on 6 Nov 2026 and
+that is their call; the reversal is recorded rather than quietly overwritten,
+because a spec that silently matches whatever was built last is not a spec.
 
 - Light and dark, both with tokens defined explicitly rather than derived, so a
   print or rasteriser path with no cascade still resolves them — the same rule
@@ -177,7 +184,9 @@ glyph style, theme) are per device.
 - Contrast is asserted by test against WCAG AA (4.5:1 body, 3:1 large text and
   UI boundaries), computed from the tokens rather than eyeballed.
 - Minimal motion, with `prefers-reduced-motion` honoured.
-- No cosmic backgrounds, particles or glass.
+- Starfield, nebulae and glass are pure CSS — no images, no web fonts,
+  because zero external requests is a property the smoke test checks.
+- Everything that moves is behind `prefers-reduced-motion`.
 
 ---
 

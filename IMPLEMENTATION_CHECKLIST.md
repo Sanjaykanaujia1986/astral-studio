@@ -3,7 +3,7 @@
 Persistent. Updated at the end of each increment. `[x]` means built **and**
 verified by a test or a measurement, not merely written.
 
-Current version **0.12.0** · **1012 unit tests** + **55 production smoke checks** ·
+Current version **0.13.0** · **1016 unit tests** + **55 production smoke checks** ·
 engine fingerprint `855fec9b`, verified in Node, in the browser and on the live
 deployment.
 
