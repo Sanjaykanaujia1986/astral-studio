@@ -83,6 +83,7 @@ export function ResearchPanel(): JSX.Element {
   const {
     series, rejected, choices, errorCode: importErrorCode, source, providerName,
     busy: fetching, setChoices, importCsv: ingest, fetchSymbol,
+    descriptor, remember, setRemember, tooLargeToRemember,
   } = useSeriesStore();
   const [symbol, setSymbol] = useState('');
   const { dayFirst, decimalComma } = choices;
@@ -241,7 +242,42 @@ export function ResearchPanel(): JSX.Element {
             />
             {t('research.import.decimalComma')}
           </label>
+          <label className="flex items-center gap-2 text-sm">
+            <input
+              type="checkbox"
+              checked={remember}
+              onChange={() => setRemember(!remember)}
+              className="h-4 w-4 rounded border-slate-300"
+            />
+            {t('research.remember')}
+          </label>
         </div>
+        {/*
+          Said in full, next to the control. The asymmetry with the chart is
+          the thing a reader notices, so it is the thing explained.
+        */}
+        <p className="text-xs text-slate-500">{t('research.remember.hint')}</p>
+        {tooLargeToRemember ? (
+          <p role="alert" className="text-xs text-amber-700">
+            {t('research.remember.tooLarge')}
+          </p>
+        ) : null}
+
+        {/*
+          After a reload with nothing remembered: name what was open instead
+          of showing the same blank import box as a first visit, which read
+          as though the import had failed.
+        */}
+        {!series && descriptor ? (
+          <p className="text-sm text-slate-700">
+            {t('series.wasLoaded', {
+              symbol: descriptor.symbol,
+              bars: n(descriptor.bars),
+              first: descriptor.firstDate,
+              last: descriptor.lastDate,
+            })}
+          </p>
+        ) : null}
 
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="text-sm">

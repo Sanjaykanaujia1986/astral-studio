@@ -24,6 +24,7 @@ import { BRAND } from '../brand.js';
 import { PRIMARY_WORKSPACES, WORKSPACES, workspaceByPath, type Workspace } from './workspaces.js';
 import { WorkspaceBoundary } from './WorkspaceBoundary.js';
 import { useChartStore } from '../state/chart.js';
+import { useSeriesStore } from '../state/series.js';
 
 const RAIL_STORAGE = 'astral.rail.collapsed';
 
@@ -97,6 +98,9 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
    */
   useEffect(() => {
     void useChartStore.getState().restore();
+    // The series only comes back if the reader asked for it to; the call is
+    // what reads that choice and settles the hydrating flag either way.
+    useSeriesStore.getState().restore();
   }, []);
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {

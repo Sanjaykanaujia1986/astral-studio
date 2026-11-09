@@ -408,6 +408,10 @@ export const en = {
   'research.import.hint':
     'A CSV with a date column and a closing price. Nothing is uploaded — the file is read in your browser.',
   'research.import.choose': 'Choose CSV file',
+  'research.remember': 'Keep this series in this browser',
+  'research.remember.hint': 'Off by default. Your chart comes back after a reload because what is stored is the birth data you typed; a price series would mean storing the market data itself, so that is your choice to make. Nothing is sent anywhere either way.',
+  'research.remember.tooLarge': 'This series is too large to keep in this browser, so it was not stored. It is still loaded.',
+  'series.wasLoaded': '{symbol} — {bars} bars, {first} to {last} — was open before this reload. The prices were not kept in this browser, so load it again to continue. Your import settings have been restored.',
   'research.import.dayFirst': 'Slash dates are DD/MM/YYYY',
   'research.import.decimalComma': 'Comma is the decimal separator',
   'research.loaded':

@@ -80,6 +80,7 @@ export function GannPanel(): JSX.Element {
   const { t, n, d } = useTranslator();
   const settings = useSettings();
   const series = useSeriesStore((s) => s.series);
+  const seriesWas = useSeriesStore((s) => s.descriptor);
   const chart = useChartStore((s) => s.chart);
 
   // Square of Nine
@@ -469,7 +470,20 @@ export function GannPanel(): JSX.Element {
 
         {!series ? (
           <>
-            <p className="as-body">{t('gann.fan.needsSeries')}</p>
+            {/*
+              A reader who had a series a moment ago is told which one, not
+              handed the same blank prompt as on their first visit.
+            */}
+            <p className="as-body">
+              {seriesWas
+                ? t('series.wasLoaded', {
+                  symbol: seriesWas.symbol,
+                  bars: n(seriesWas.bars),
+                  first: seriesWas.firstDate,
+                  last: seriesWas.lastDate,
+                })
+                : t('gann.fan.needsSeries')}
+            </p>
             <Link to="/research" className="as-button-secondary">{t('gann.fan.openResearch')}</Link>
           </>
         ) : (

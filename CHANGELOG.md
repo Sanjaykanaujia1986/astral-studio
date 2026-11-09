@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 0.15.0 — 2026-11-09
+- **The reload asymmetry is resolved.** Since 0.14.0 a chart survived a refresh and a price series did not, so Gann Lab came back with your chart intact and the same blank "import a CSV" you saw on your first visit — which reads as though the import had failed.
+- It is not one answer for both, because they are not the same thing. A chart's INPUT is a few dozen bytes of birth data the reader typed. A series' input **is** the market data, so bringing it back means storing that, and storing someone's market data is a decision they should make in words rather than one inferred from the fact that they used the feature.
+- **The descriptor is always kept** — symbol, bar count, date range, source, and the parse choices. Metadata, never prices. After a reload both workspaces name the series that was open and say the prices were not kept, and the import settings come back so re-importing is one click rather than a second guess at the date order.
+- **The bars are kept only on request.** A "Keep this series in this browser" checkbox, off by default, with the reasoning stated next to it. Ticking it stores a series already open; unticking it deletes what was stored immediately, because an opt-out that leaves the data behind is not an opt-out.
+- Bars are capped at 4 MB before writing — roughly fifty thousand daily bars. `localStorage` throws its quota error on whatever write comes next, so an oversized series would have surfaced as a failure to save an alert. Over the cap the panel says the series was not stored and leaves it loaded.
+- Verified in a browser on a real 745-bar series, not only in tests: with the default settings the only key written is the descriptor and no close price appears anywhere in storage; with the box ticked, 89 kB of bars are stored and a hard reload brings the fan back with identical numbers (719 bars, 1×1 at 1,832.25).
+- A test asserts the blunt version of the privacy property — that no closing price appears in **any** storage key under the defaults — so a future change to the descriptor's shape cannot quietly start keeping prices.
+
 ## 0.14.1 — 2026-11-09
 - Both fixes below were found by running Gann Lab against a **real price series** — 745 daily RELIANCE bars — rather than the round numbers the tests use. Neither was visible in synthetic data.
 - FIX: **the Square of 144 caption stated something false.** It said "the grid's diagonal is the 1×1 on this scale, which is why the two agree", while the grid started at 0.5 price per cell and the fan at 1 price per bar — so the diagonal was drawn exactly on top of the fan's 1×2. Measured in the browser from the rendered line slopes: ten diagonals, and the duplicate was the 1×2's, not the 1×1's.
