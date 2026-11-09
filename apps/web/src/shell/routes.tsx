@@ -6,7 +6,7 @@
  * render `PlannedWorkspace`, which states scope and milestone rather than
  * showing a mock.
  */
-import type { JSX, ReactNode } from 'react';
+import { Suspense, lazy, type JSX, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
 import { GEONAMES_ATTRIBUTION } from '@astro/locations';
 import { useTranslator } from '@astro/i18n';
@@ -21,12 +21,29 @@ import { ReturnsPanel } from '../components/ReturnsPanel.js';
 import { SynastryPanel } from '../components/SynastryPanel.js';
 import { CyclesPanel } from '../components/CyclesPanel.js';
 import { SkyEventsPanel } from '../components/SkyEventsPanel.js';
-import { ReportPanel } from '../components/ReportPanel.js';
-import { ResearchPanel } from '../components/ResearchPanel.js';
-import { VedicPanel } from '../components/VedicPanel.js';
-import { GannPanel } from '../components/GannPanel.js';
 import { DashboardPanel } from '../components/DashboardPanel.js';
 import { SavedChartsPanel } from '../components/SavedChartsPanel.js';
+/*
+ * Split at the route.
+ *
+ * Each of these drags a whole package in behind it — Vedic pulls
+ * @astro/vedic, Gann pulls @astro/gann, Research pulls the statistics and
+ * backtest code, Reports pulls the print document. Bundled together they put
+ * all of it in front of someone who only wanted a natal chart: the single
+ * chunk measured 961 kB raw, 280 kB over the wire.
+ *
+ * Named exports rather than default, so each import is mapped rather than
+ * the components being rewritten to suit the loader.
+ */
+const VedicPanel = lazy(() =>
+  import('../components/VedicPanel.js').then((m) => ({ default: m.VedicPanel })));
+const GannPanel = lazy(() =>
+  import('../components/GannPanel.js').then((m) => ({ default: m.GannPanel })));
+const ResearchPanel = lazy(() =>
+  import('../components/ResearchPanel.js').then((m) => ({ default: m.ResearchPanel })));
+const ReportPanel = lazy(() =>
+  import('../components/ReportPanel.js').then((m) => ({ default: m.ReportPanel })));
+
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
@@ -35,6 +52,24 @@ import { PlannedWorkspace } from './PlannedWorkspace.js';
 import { BRAND } from '../brand.js';
 
 const byId = (id: string) => WORKSPACES.find((w) => w.id === id)!;
+
+/**
+ * Fallback for a split route.
+ *
+ * Reserves height rather than collapsing to nothing: a zero-height
+ * placeholder lets the page jump when the chunk lands, which is the layout
+ * shift Core Web Vitals measures.
+ */
+function PanelFallback(): JSX.Element {
+  const { t } = useTranslator();
+  return (
+    <section className="as-card" style={{ minHeight: '12rem' }} aria-busy="true">
+      <p className="as-body" style={{ color: 'var(--as-ink-muted)' }}>
+        {t('app.loadingWorkspace')}
+      </p>
+    </section>
+  );
+}
 
 /** Page scaffold: heading, optional lede, content. */
 function Page({
@@ -62,7 +97,14 @@ function Page({
  */
 function RequireChart({ children }: { children: (chart: NonNullable<ReturnType<typeof useChartStore.getState>['chart']>) => ReactNode }): JSX.Element {
   const chart = useChartStore((s) => s.chart);
+  const hydrating = useChartStore((s) => s.hydrating);
   const { t } = useTranslator();
+  /*
+   * A stored chart is still being recast. Telling the reader to go and cast
+   * one, a moment before their own chart appears, sends them away from the
+   * page they deep-linked to.
+   */
+  if (!chart && hydrating) return <PanelFallback />;
   if (!chart) {
     return (
       <section className="as-card">
@@ -249,7 +291,9 @@ export function CalendarRoute(): JSX.Element {
 export function VedicRoute(): JSX.Element {
   return (
     <Page titleKey="nav.vedic" ledeKey="vedic.lede">
-      <RequireChart>{(chart) => <VedicPanel chart={chart} />}</RequireChart>
+      <Suspense fallback={<PanelFallback />}>
+        <RequireChart>{(chart) => <VedicPanel chart={chart} />}</RequireChart>
+      </Suspense>
     </Page>
   );
 }
@@ -257,7 +301,9 @@ export function VedicRoute(): JSX.Element {
 export function GannLabRoute(): JSX.Element {
   return (
     <Page titleKey="nav.gannLab" ledeKey="gann.lede">
-      <GannPanel />
+      <Suspense fallback={<PanelFallback />}>
+        <GannPanel />
+      </Suspense>
     </Page>
   );
 }
@@ -265,7 +311,9 @@ export function GannLabRoute(): JSX.Element {
 export function ResearchRoute(): JSX.Element {
   return (
     <Page titleKey="nav.research" ledeKey="research.lede">
-      <ResearchPanel />
+      <Suspense fallback={<PanelFallback />}>
+        <ResearchPanel />
+      </Suspense>
     </Page>
   );
 }
@@ -285,7 +333,9 @@ export function ClientsRoute(): JSX.Element {
 export function ReportsRoute(): JSX.Element {
   return (
     <Page titleKey="nav.reports" ledeKey="reports.lede">
-      <RequireChart>{(chart) => <ReportPanel chart={chart} />}</RequireChart>
+      <Suspense fallback={<PanelFallback />}>
+        <RequireChart>{(chart) => <ReportPanel chart={chart} />}</RequireChart>
+      </Suspense>
     </Page>
   );
 }

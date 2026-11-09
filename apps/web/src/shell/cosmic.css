@@ -155,16 +155,16 @@ body {
  */
 .as-card {
   background: color-mix(in srgb, var(--as-surface) 82%, transparent);
-  backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
+  backdrop-filter: blur(14px);
   border-color: color-mix(in srgb, var(--as-border-strong) 38%, transparent);
   box-shadow: inset 0 1px 0 0 color-mix(in srgb, var(--as-ink) 6%, transparent);
 }
 
 .as-rail {
   background: color-mix(in srgb, var(--as-brand) 72%, transparent);
-  backdrop-filter: blur(18px);
   -webkit-backdrop-filter: blur(18px);
+  backdrop-filter: blur(18px);
 }
 
 /* ----------------------------------------------------------------- buttons */
@@ -200,8 +200,8 @@ body {
 
 .as-button-secondary {
   background: color-mix(in srgb, var(--as-raised) 55%, transparent);
-  backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
   transition: background 180ms ease-out, border-color 180ms ease-out;
 }
 .as-button-secondary:hover {
@@ -321,4 +321,99 @@ body {
     opacity: 1;
     transform: none;
   }
+}
+
+
+/* ------------------------------------------------------------------- print */
+
+/*
+ * The night sky does not print.
+ *
+ * This block exists because the redesign broke a shipped feature. The
+ * unconditional `html, body` gradient above sits LATER in the stylesheet than
+ * index.css's `@media print { body { background: white } }`, at equal
+ * specificity, so it won and pages printed violet. A4/A3 report printing has
+ * been a deliverable since Milestone 2; the regression was invisible on
+ * screen and found by reading the built CSS, not by looking at the app.
+ *
+ * `!important` rather than a specificity war: these are the last word on
+ * paper, and a future rule added above should not be able to reintroduce the
+ * bug silently.
+ */
+@media print {
+  html,
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  /* Decoration has no business on paper, and a fixed layer repeats on every
+     sheet. */
+  .as-sky {
+    display: none !important;
+  }
+
+  /*
+   * Cards go opaque and lose their blur. A translucent card over a white
+   * page prints as a grey wash, and `backdrop-filter` in a print context is
+   * both meaningless and slow.
+   */
+  .as-card {
+    background: #ffffff !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+    border-color: #cccccc !important;
+    box-shadow: none !important;
+  }
+
+  .as-rail {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  /*
+   * The entrance animation must not run for print. A sheet captured mid-fade
+   * prints at partial opacity, and `backwards` fill means an element whose
+   * delay has not elapsed prints invisible.
+   */
+  .as-page > * {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  /* A gradient-clipped heading prints as nothing: the background image is
+     dropped and the text is transparent. */
+  .as-hero-accent {
+    background: none !important;
+    color: #000000 !important;
+    -webkit-text-fill-color: #000000 !important;
+  }
+}
+
+/* ----------------------------------------------------- touch comfort */
+
+/*
+ * Form controls meet WCAG 2.5.8 at 24px, which they already did. This raises
+ * them to the 44px touch guidance on COARSE pointers only, so a mouse user
+ * keeps the denser layout and a thumb gets a target it can actually hit.
+ * Measured at 375px before this: selects 35px, number inputs 34px.
+ */
+@media (pointer: coarse) {
+  .as-shell :is(input, select, textarea),
+  .as-button-primary,
+  .as-button-secondary {
+    min-height: 2.75rem;
+  }
+}
+
+/*
+ * The skip link is the first thing a keyboard user reaches and was 24px
+ * tall. It is also the one control whose target size matters most, because
+ * it is hit without being seen first.
+ */
+.as-skip:focus {
+  min-height: 2.75rem;
+  display: inline-flex;
+  align-items: center;
 }

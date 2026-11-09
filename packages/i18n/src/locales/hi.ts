@@ -13,6 +13,7 @@ import type { Catalog } from './en.js';
 export const hi: Catalog = {
   'app.title': 'एस्ट्रो',
   'app.subtitle': 'जन्म कुंडली गणक',
+  'app.loadingWorkspace': 'यह कार्यक्षेत्र लोड हो रहा है…',
   'app.emptyState': 'कुंडली बनाने के लिए जन्म विवरण भरें और जन्मस्थान चुनें।',
   'app.attribution': 'ग्रह स्थितियाँ स्विस एफेमेरिस से गणना की गई हैं। {geonames}।',
 

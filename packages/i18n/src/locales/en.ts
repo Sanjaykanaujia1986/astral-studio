@@ -14,6 +14,7 @@ export const en = {
   // --- application chrome ---
   'app.title': 'Astro',
   'app.subtitle': 'Natal chart calculator',
+  'app.loadingWorkspace': 'Loading this workspace…',
   'app.emptyState': 'Enter birth details and select a birthplace to cast a chart.',
   'app.attribution':
     'Positions computed with the Swiss Ephemeris. {geonames}.',

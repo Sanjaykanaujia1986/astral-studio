@@ -86,6 +86,7 @@ export function DashboardPanel(): JSX.Element {
   const settings = useSettings();
   const navigate = useNavigate();
   const natal = useChartStore((s) => s.chart);
+  const hydrating = useChartStore((s) => s.hydrating);
   const cast = useChartStore((s) => s.cast);
 
   const [sky, setSky] = useState<Sky | null>(null);
@@ -199,8 +200,12 @@ export function DashboardPanel(): JSX.Element {
         The welcome only while there is nothing to welcome you back to. Once
         a chart exists the dashboard has real content and a marketing panel
         above it is in the way on every visit.
+
+        `hydrating` is the reload case: a stored chart takes a moment to
+        recast, and without this gate a returning reader is greeted by "cast
+        your first chart" every time they refresh.
       */}
-      {!natal ? <HeroPanel /> : null}
+      {!natal && !hydrating ? <HeroPanel /> : null}
 
       {/* ----------------------------------------------- today's sky */}
       <section className="as-card">
@@ -264,7 +269,9 @@ export function DashboardPanel(): JSX.Element {
           {t('dashboard.upcoming.heading', { days: n(LOOKAHEAD_DAYS) })}
         </h2>
 
-        {!natal ? (
+        {hydrating ? (
+          <p className="as-body" style={mutedStyle}>{t('app.loadingWorkspace')}</p>
+        ) : !natal ? (
           <>
             <p className="as-body">{t('dashboard.upcoming.needsChart')}</p>
             <Link to="/chart" className="as-button-secondary">{t('nav.chartStudio')}</Link>

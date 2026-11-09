@@ -69,7 +69,9 @@ beforeEach(() => {
   useAlerts.setState({ alerts: [] });
   listCharts.mockReset();
   listCharts.mockResolvedValue([]);
-  useChartStore.setState({ chart: null, busy: false, errorCode: null });
+  // `hydrating` included explicitly: it is resolved at module load from
+  // localStorage, and a test that left it true would hide the hero.
+  useChartStore.setState({ chart: null, busy: false, hydrating: false, errorCode: null });
 });
 
 afterEach(cleanup);

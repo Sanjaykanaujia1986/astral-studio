@@ -2,6 +2,19 @@
 
 Newest first.
 
+## 0.14.0 — 2026-11-09
+- **The active chart survives a reload.** It lived only in memory, and the welcome hero made that visible: refresh and a reader who had worked on a chart all morning was greeted by "cast your first chart".
+- What is stored is the **birth data, not the chart**. A stored `NatalChart` is a snapshot of one engine version's output, and after an ephemeris or house-code change it would keep rendering with full confidence while being wrong — a reader cannot tell a stale chart from a fresh one. Recasting costs 1.6 ms and can only produce a chart this build stands behind.
+- The stored input is validated like the alerts and the Gann templates. Six malformed shapes have tests, because each of them used to reach the engine and throw somewhere the reader could make no sense of — on a page they had not asked to calculate anything on.
+- A restore that fails is **silent**: the stored input is dropped and no banner appears. The reader did not ask for that calculation, and an error about a chart they cast last week is noise they cannot act on.
+- A `hydrating` flag resolved before the first paint, so the hero and every "you need a chart first" empty state wait for the recast instead of flashing the wrong advice. Without it a deep link into a restored chart looked like a dead end.
+- **Route-level code splitting** for Vedic, Gann, Research and Reports, each of which drags a whole package in behind it. Measured rather than assumed: the single chunk was 961 kB raw / 280 kB gzipped; the five deferred chunks come to 87 kB raw / 30 kB gzipped. The remaining 877 kB is React plus the engine, and the dashboard genuinely needs the engine — Today's Sky is computed, so there is no honest way to defer it.
+- FOUND BY MEASURING, not by reading: the glass cards had **no blur at all**. `CSS.supports('-webkit-backdrop-filter', 'blur(4px)')` is false in current Chrome while the unprefixed property is true, and the minifier had kept only the prefixed declaration of each pair. Reordered so the standard property comes last and wins.
+- FIX: printing the night sky. A `@media print` block forces a white ground, hides the starfield, makes the cards opaque, disables the entrance animation and gives the gradient-clipped hero title a solid colour. Introduced with the redesign three days ago.
+- FIX: two `<h1>`s on the dashboard — the page scaffold's and the hero's. The hero's is now an `<h2>`; the visual weight was always the class, not the level.
+- FIX: touch targets. Inputs, selects and both button classes reach 44 px under `pointer: coarse`, and so does the skip link, which was a 20 px-tall target for the first thing a keyboard user meets.
+- CORRECTION to my own audit: I attributed the 1.9 MB ephemeris download to the new hero. The dashboard already loads it unconditionally for Today's Sky, so the hero costs nothing extra.
+
 ## 0.13.0 — 2026-11-06
 - **Visual redesign to a deep-violet night sky**, replacing navy/ivory/gold. This reverses §4 of the spec, which said "no cosmic backgrounds, particles or glass" — at the product owner's request, recorded here rather than quietly overwritten.
 - What did NOT change is that **contrast is computed, not eyeballed**. Every value in the new palette was measured against WCAG before it was written, and the theme test now covers the nav rail as well.

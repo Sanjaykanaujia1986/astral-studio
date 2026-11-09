@@ -13,6 +13,7 @@ import type { Catalog } from './en.js';
 export const gu: Catalog = {
   'app.title': 'એસ્ટ્રો',
   'app.subtitle': 'જન્મ કુંડળી ગણક',
+  'app.loadingWorkspace': 'આ કાર્યક્ષેત્ર લોડ થઈ રહ્યું છે…',
   'app.emptyState': 'કુંડળી બનાવવા માટે જન્મ વિગતો ભરો અને જન્મસ્થળ પસંદ કરો.',
   'app.attribution': 'ગ્રહ સ્થિતિઓ સ્વિસ એફેમેરિસથી ગણવામાં આવી છે. {geonames}.',
 

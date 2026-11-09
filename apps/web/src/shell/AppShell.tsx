@@ -23,6 +23,7 @@ import { useTranslator } from '@astro/i18n';
 import { BRAND } from '../brand.js';
 import { PRIMARY_WORKSPACES, WORKSPACES, workspaceByPath, type Workspace } from './workspaces.js';
 import { WorkspaceBoundary } from './WorkspaceBoundary.js';
+import { useChartStore } from '../state/chart.js';
 
 const RAIL_STORAGE = 'astral.rail.collapsed';
 
@@ -85,6 +86,18 @@ export interface AppShellProps {
 
 export function AppShell({ children }: AppShellProps): JSX.Element {
   const { t, locale } = useTranslator();
+
+  /*
+   * Bring back the chart the reader last cast.
+   *
+   * Here rather than in the dashboard: every workspace that needs a chart
+   * sends you to Chart Studio when there isn't one, so a restore that only
+   * ran on the dashboard would make a deep link into a restored chart look
+   * like a dead end. Idempotent, so StrictMode's double-invoke is harmless.
+   */
+  useEffect(() => {
+    void useChartStore.getState().restore();
+  }, []);
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
     try {

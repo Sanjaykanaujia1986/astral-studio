@@ -71,12 +71,18 @@ export function HeroPanel(): JSX.Element {
   return (
     <section className="as-hero">
       <div>
-        <h1 className="as-hero-title">
+        {/*
+          An h2, not an h1. The page scaffold already emits "Dashboard" as
+          the document heading, and two h1s on one page is a heading-order
+          defect a screen-reader user hits before anyone else notices. The
+          visual weight is the class, not the level.
+        */}
+        <h2 className="as-hero-title">
           {t('hero.welcome')}
           <br />
           <span className="as-hero-accent">{lead}</span>
           {rest.length > 0 ? ` ${rest.join(' ')}` : null}
-        </h1>
+        </h2>
 
         <p className="as-hero-lede">{t('hero.lede')}</p>
 
