@@ -47,6 +47,21 @@ export interface ProjectedPrice {
   readonly derivation: string;
 }
 
+/**
+ * A number as a reader would write it.
+ *
+ * The derivation exists to be checked by hand, and real price feeds carry
+ * float32 artifacts — a close of 1226.40 arrives as 1226.4000244140625 and
+ * printed seventeen digits of it into a line of arithmetic whose result was
+ * shown to two. Four decimals keeps anything a price can genuinely carry,
+ * including forex, and drops the binary tail. The CALCULATION is untouched;
+ * only the restatement of it is trimmed.
+ */
+function readable(value: number): string {
+  if (!Number.isFinite(value)) return String(value);
+  return String(Number(value.toFixed(4)));
+}
+
 export function projectLongitude(
   body: string,
   longitude: Degrees,
@@ -65,8 +80,8 @@ export function projectLongitude(
       method: 'linear',
       zodiac,
       derivation:
-        `${settings.basePrice} + (${lon.toFixed(4)}° − ${settings.baseLongitude}°)`
-        + ` × ${settings.unitsPerDegree}`,
+        `${readable(settings.basePrice)} + (${lon.toFixed(4)}° − ${readable(settings.baseLongitude)}°)`
+        + ` × ${readable(settings.unitsPerDegree)}`,
     };
   }
 
@@ -78,7 +93,7 @@ export function projectLongitude(
     method: 'square',
     zodiac,
     derivation:
-      `(√${settings.originValue} + ${lon.toFixed(4)}°/180°`
+      `(√${readable(settings.originValue)} + ${lon.toFixed(4)}°/180°`
       + ` + 2×${settings.turns})²`,
   };
 }

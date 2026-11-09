@@ -261,21 +261,62 @@ describe('the Square of 144', () => {
     expect(screen.queryByLabelText('Price per cell')).not.toBeInTheDocument();
     await user.click(screen.getByLabelText(/Overlay a price.time grid/));
 
-    // None of the three has a default worth guessing, so all three are shown.
+    // All three stay visible and editable. Two of them now START on the
+    // fan's scale rather than at a second, silent default of their own.
     expect(screen.getByLabelText('Price per cell')).toBeInTheDocument();
     expect(screen.getByLabelText('Bars per cell')).toBeInTheDocument();
     expect(screen.getByLabelText('Cells per side')).toBeInTheDocument();
     expect(screen.getByText(/144×144 from the fan/)).toBeInTheDocument();
   });
 
-  it('says that its diagonal is the 1×1 on the same scale', () => {
-    // Two statements of the same price-per-bar. A reader offered both without
-    // being told they agree would reasonably assume they are independent.
+  /*
+   * These replace a test that asserted the sentence "the grid's diagonal is
+   * the 1×1 on this scale" was on the page. It was — hardcoded — while the
+   * grid started at 0.5 price per cell and the fan at 1 price per bar, so
+   * the diagonal was drawn on top of the 1×2 and the caption said otherwise.
+   * Found by measuring the rendered line slopes in a browser, not by
+   * reading. Assert the geometry, never the sentence.
+   */
+  it('starts on the fan’s own scale, so the diagonal IS the 1×1', async () => {
+    const user = userEvent.setup();
     loadSeries();
     renderPanel();
-    return userEvent.click(screen.getByLabelText(/Overlay a price.time grid/)).then(() => {
-      expect(screen.getByText(/diagonal is the 1×1 on this scale/)).toBeInTheDocument();
-    });
+    await user.click(screen.getByLabelText(/Overlay a price.time grid/));
+
+    expect(screen.getByLabelText('Price per cell')).toHaveValue(1);
+    expect(screen.getByLabelText('Bars per cell')).toHaveValue(1);
+    expect(screen.getByText(/the same line, at 1 price per bar/)).toBeInTheDocument();
+  });
+
+  it('follows the fan when the fan’s scale changes', async () => {
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+    await user.click(screen.getByLabelText(/Overlay a price.time grid/));
+
+    const priceUnits = screen.getByLabelText('Price units');
+    await user.clear(priceUnits);
+    await user.type(priceUnits, '2');
+
+    expect(screen.getByLabelText('Price per cell')).toHaveValue(2);
+    expect(screen.getByText(/the same line, at 2 price per bar/)).toBeInTheDocument();
+  });
+
+  it('says so plainly when the reader puts the two on different scales', async () => {
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+    await user.click(screen.getByLabelText(/Overlay a price.time grid/));
+
+    const perCell = screen.getByLabelText('Price per cell');
+    await user.clear(perCell);
+    await user.type(perCell, '0.5');
+
+    // The old defaults, now reachable only by choosing them.
+    expect(screen.queryByText(/the same line/)).not.toBeInTheDocument();
+    const caption = screen.getByText(/so they are different lines/);
+    expect(caption.textContent).toContain('0.5 price per bar');
+    expect(caption.textContent).toContain('1');
   });
 });
 

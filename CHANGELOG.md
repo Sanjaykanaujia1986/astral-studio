@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.14.1 — 2026-11-09
+- Both fixes below were found by running Gann Lab against a **real price series** — 745 daily RELIANCE bars — rather than the round numbers the tests use. Neither was visible in synthetic data.
+- FIX: **the Square of 144 caption stated something false.** It said "the grid's diagonal is the 1×1 on this scale, which is why the two agree", while the grid started at 0.5 price per cell and the fan at 1 price per bar — so the diagonal was drawn exactly on top of the fan's 1×2. Measured in the browser from the rendered line slopes: ten diagonals, and the duplicate was the 1×2's, not the 1×1's.
+- The grid's scale now **follows the fan's** until the reader overrides it, which is what the engine's `diagonalScale` was built to express, and the caption is **computed rather than asserted** — it names both slopes and says plainly when they are different lines.
+- The test that covered this asserted the SENTENCE was on the page, and the sentence was hardcoded, so it passed throughout. Replaced with three that assert the geometry.
+- FIX: **a price feed's float noise reached the UI.** A real close of 1226.40 arrives from the feed as `1226.4000244140625`, and it was printed verbatim into the projection's arithmetic column — the one column whose job is to be checkable by hand — beside a result shown to two decimals. The derivation is now trimmed to four decimals, which keeps anything a price can genuinely carry, including forex pips. The calculation is untouched.
+- Everything else checked out against independently computed ground truth: the anchor picked the true lowest close (bar 25, 2023-10-26, 1113.25), all nine fan lines reproduce exactly, the measured move and its nearest standard ratio reproduce, the time counts are right across a leap February, the eight equinoxes and solstices come from the real ingress search, and the spiral angle of 1,226.4 is 3.599° by hand.
+
 ## 0.14.0 — 2026-11-09
 - **The active chart survives a reload.** It lived only in memory, and the welcome hero made that visible: refresh and a reader who had worked on a chart all morning was greeted by "cast your first chart".
 - What is stored is the **birth data, not the chart**. A stored `NatalChart` is a snapshot of one engine version's output, and after an ephemeris or house-code change it would keep rendering with full confidence while being wrong — a reader cannot tell a stale chart from a fresh one. Recasting costs 1.6 ms and can only produce a chart this build stands behind.

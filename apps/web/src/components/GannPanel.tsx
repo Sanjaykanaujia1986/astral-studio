@@ -104,10 +104,17 @@ export function GannPanel(): JSX.Element {
   const [fanDirection, setFanDirection] = useState<FanDirection>('up');
 
   // Projection
-  // Square of 144. Three inputs, none defaulted — see the conventions.
+  /*
+   * Square of 144. The scale is still required — see the conventions — but
+   * `null` means "whatever the fan is using" rather than a second, silent
+   * default. It used to start at 0.5 price per cell while the fan started at
+   * 1 price per bar, so the grid's diagonal was drawn on top of the fan's
+   * 1×2 while the caption claimed it was the 1×1. Following the fan is what
+   * the engine's `diagonalScale` was built to express.
+   */
   const [showGrid, setShowGrid] = useState(false);
-  const [pricePerCell, setPricePerCell] = useState(0.5);
-  const [barsPerCell, setBarsPerCell] = useState(1);
+  const [pricePerCell, setPricePerCell] = useState<number | null>(null);
+  const [barsPerCell, setBarsPerCell] = useState<number | null>(null);
   const [gridSize, setGridSize] = useState(144);
 
   const {
@@ -150,6 +157,11 @@ export function GannPanel(): JSX.Element {
   const lastClose = bars[bars.length - 1]?.close;
 
   const resolvedAnchor = anchorIndex ?? extremes.lowIndex;
+
+  // The grid follows the fan's scale until the reader overrides it, so the
+  // square's diagonal and the 1×1 stay the same line by construction.
+  const resolvedPricePerCell = pricePerCell ?? priceUnits;
+  const resolvedBarsPerCell = barsPerCell ?? timeUnits;
   const anchorBar = bars[resolvedAnchor];
 
   const scale: GannScale = { priceUnits, timeUnits };
@@ -165,15 +177,18 @@ export function GannPanel(): JSX.Element {
   }, [anchorBar, resolvedAnchor, priceUnits, timeUnits, fanDirection, scaleUsable]);
 
   const grid = useMemo(() => {
-    if (!showGrid || !anchorBar || pricePerCell <= 0 || barsPerCell <= 0) return undefined;
+    if (!showGrid || !anchorBar || resolvedPricePerCell <= 0 || resolvedBarsPerCell <= 0) {
+      return undefined;
+    }
     return buildGrid({
       anchor: { barIndex: resolvedAnchor, price: anchorBar.close },
-      pricePerCell,
-      barsPerCell,
+      pricePerCell: resolvedPricePerCell,
+      barsPerCell: resolvedBarsPerCell,
       size: gridSize,
       rising: fanDirection === 'up',
     });
-  }, [showGrid, anchorBar, resolvedAnchor, pricePerCell, barsPerCell, gridSize, fanDirection]);
+  }, [showGrid, anchorBar, resolvedAnchor, resolvedPricePerCell, resolvedBarsPerCell,
+      gridSize, fanDirection]);
 
   const points: readonly GannFanPoint[] = useMemo(
     () => bars.map((bar, index) => ({ barIndex: index, date: bar.date, close: bar.close })),
@@ -192,7 +207,15 @@ export function GannPanel(): JSX.Element {
     );
   }, [anchorBar, resolvedAnchor, bars, priceUnits, timeUnits, scaleUsable]);
 
-  const resolvedBasePrice = basePrice ?? lastClose ?? 0;
+  /*
+   * Rounded when it comes from the series. A real feed delivers a close of
+   * 1226.40 as 1226.4000244140625, and that landed in the input box and in
+   * the line of arithmetic beside it — seventeen digits of float32 artifact
+   * presented as the reader's own setting. A value the reader types is left
+   * exactly as typed.
+   */
+  const resolvedBasePrice = basePrice
+    ?? (lastClose === undefined ? 0 : Number(lastClose.toFixed(4)));
   const projectionSettings: ProjectionSettings = method === 'linear'
     ? { method: 'linear', basePrice: resolvedBasePrice, baseLongitude, unitsPerDegree }
     : { method: 'square', originValue, turns };
@@ -223,7 +246,7 @@ export function GannPanel(): JSX.Element {
   const currentSettings: GannTemplateSettings = {
     layout, originValue, increment, rings, direction, divisions, sides,
     priceUnits, timeUnits, fanDirection, anchorIndex, showGrid,
-    pricePerCell, barsPerCell, gridSize,
+    pricePerCell: resolvedPricePerCell, barsPerCell: resolvedBarsPerCell, gridSize,
   };
 
   const applyTemplate = (settings: GannTemplateSettings) => {
@@ -511,11 +534,11 @@ export function GannPanel(): JSX.Element {
               {showGrid ? (
                 <>
                   <NumberField
-                    label={t('gann.grid.pricePerCell')} value={pricePerCell}
+                    label={t('gann.grid.pricePerCell')} value={resolvedPricePerCell}
                     onChange={setPricePerCell} step={0.1} min={0}
                   />
                   <NumberField
-                    label={t('gann.grid.barsPerCell')} value={barsPerCell}
+                    label={t('gann.grid.barsPerCell')} value={resolvedBarsPerCell}
                     onChange={(v) => setBarsPerCell(Math.max(1, Math.round(v)))} min={1}
                   />
                   <NumberField
@@ -530,11 +553,24 @@ export function GannPanel(): JSX.Element {
               <p className="as-fineprint mb-3">
                 {t('gann.grid.caption', {
                   size: n(gridSize),
-                  price: n(pricePerCell),
-                  bars: n(barsPerCell),
+                  price: n(resolvedPricePerCell),
+                  bars: n(resolvedBarsPerCell),
                   half: n(grid.levels.find((l) => l.label === '1/2')?.price ?? 0,
                     { maximumFractionDigits: 2 }),
                 })}
+                {' '}
+                {/*
+                  Computed, not asserted. The diagonal equals the 1×1 only
+                  while the two scales agree, and both are editable.
+                */}
+                {grid.diagonalSlopePerBar === priceUnits / timeUnits
+                  ? t('gann.grid.diagonalSame', {
+                    slope: n(grid.diagonalSlopePerBar, { maximumFractionDigits: 4 }),
+                  })
+                  : t('gann.grid.diagonalDiffers', {
+                    grid: n(grid.diagonalSlopePerBar, { maximumFractionDigits: 4 }),
+                    fan: n(priceUnits / timeUnits, { maximumFractionDigits: 4 }),
+                  })}
               </p>
             ) : null}
 

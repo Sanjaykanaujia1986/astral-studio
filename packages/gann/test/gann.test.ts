@@ -343,6 +343,35 @@ describe('planetary projections', () => {
     expect(p.derivation).toContain('500');
   });
 
+  it('states the arithmetic without a price feed’s float noise', () => {
+    /*
+     * A real NSE close of 1226.40 arrives from the feed as
+     * 1226.4000244140625 — a float32 artifact in the source data, not ours.
+     * It was printed verbatim into a line of arithmetic whose result was
+     * shown to two decimals, so the one column meant to be checkable by hand
+     * was the only one claiming seventeen digits.
+     */
+    const p = projectLongitude('sun', 294.951, {
+      method: 'linear',
+      basePrice: 1226.4000244140625,
+      baseLongitude: 0,
+      unitsPerDegree: 1,
+    }, tropical);
+
+    expect(p.derivation).toContain('1226.4');
+    expect(p.derivation).not.toContain('1226.4000244140625');
+    // The computation keeps every digit; only the restatement is trimmed.
+    expect(p.price).toBeCloseTo(1521.3510244140625, 9);
+  });
+
+  it('keeps decimals a price can genuinely carry', () => {
+    // Forex, where the fourth decimal is the pip and not an artifact.
+    const p = projectLongitude('sun', 0, {
+      method: 'linear', basePrice: 1.2345, baseLongitude: 0, unitsPerDegree: 1,
+    }, tropical);
+    expect(p.derivation).toContain('1.2345');
+  });
+
   it('maps longitude onto the square at the requested turn', () => {
     // 0° on turn 1 from origin 1 is the second odd square: (1 + 2)² = 9.
     const p = projectLongitude('sun', 0, {
