@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 0.15.1 — 2026-11-12
+- FIX: **the Language menu was unreadable.** On the dark theme the dropdown opened as a white list with the page's light ink on it, so "English" was legible on the selection highlight and the two draft locales were invisible beside it.
+- The dropdown a `<select>` opens is painted by the browser and does not inherit the card it sits on. Its options inherited `color` from the page but had no background of their own, and Chrome treats an author-coloured option as author-styled — so it paints the list on white and puts the ink on the one background it was never measured against. `color-scheme: dark` on the root does not rescue it: naming a colour is what opts the list out of the system rendering in the first place.
+- Both are now set together from the tokens, so the popup follows the theme. Measured live rather than eyeballed: **15.09:1** on dark (`ink` on `raised`), **18.01:1** on light, across all five selects on the page. Not scoped to the shell — a select rendered anywhere else had the same problem.
+- New stylesheet tests for the three rules that no rendered test can reach, because jsdom has no print mode, no native select popup and no backdrop filter. Each covers something that shipped broken: the option colour pair, the print rules from 0.14.0, and the `-webkit-backdrop-filter` ordering from 0.14.0. Checked by mutation — removing the background from the rule fails two of them — because an assertion that passes on a broken input is worth nothing.
+- Checked the rest of the page while there: no other text on Settings falls under 4.5:1 in either theme. The muted labels look dim and measure fine.
+
 ## 0.15.0 — 2026-11-09
 - **The reload asymmetry is resolved.** Since 0.14.0 a chart survived a refresh and a price series did not, so Gann Lab came back with your chart intact and the same blank "import a CSV" you saw on your first visit — which reads as though the import had failed.
 - It is not one answer for both, because they are not the same thing. A chart's INPUT is a few dozen bytes of birth data the reader typed. A series' input **is** the market data, so bringing it back means storing that, and storing someone's market data is a decision they should make in words rather than one inferred from the fact that they used the feature.

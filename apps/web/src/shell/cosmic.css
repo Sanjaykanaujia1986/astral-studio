@@ -417,3 +417,30 @@ body {
   display: inline-flex;
   align-items: center;
 }
+
+/* --------------------------------------------- native select popups */
+
+/*
+ * The dropdown list a <select> opens is painted by the browser, not by the
+ * page, and it does not inherit the card it sits on.
+ *
+ * An <option> here inherits `color` from the page — light ink on the dark
+ * theme — but has no background of its own. Chrome on Windows treats an
+ * author-coloured option as author-styled and paints the list on WHITE, so
+ * the ink lands on the one background it was never measured against. The
+ * result was a Language menu with "English" legible on the selection
+ * highlight and the two draft locales invisible beside it. `color-scheme:
+ * dark` on the root does not save it: naming a colour is what opts the list
+ * out of the system rendering in the first place.
+ *
+ * So the pair is set together, from the tokens, in both themes. Anything
+ * that sets one without the other is how this happened.
+ *
+ * Not scoped to `.as-shell`: a select in a dialog or a panel rendered
+ * outside the shell has exactly the same problem.
+ */
+select option,
+select optgroup {
+  background-color: var(--as-raised);
+  color: var(--as-ink);
+}
