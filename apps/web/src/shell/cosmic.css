@@ -162,7 +162,18 @@ body {
 }
 
 .as-rail {
-  background: color-mix(in srgb, var(--as-brand) 72%, transparent);
+  /*
+   * The opacity comes from the tokens (`--as-rail-opacity`), because it
+   * decides whether the text on the rail is readable and the contrast test
+   * composites with the same number. At the 72% this shipped with, the brand
+   * wordmark measured 3.59:1 over the light canvas while the token test
+   * reported 8.35:1 against the pure brand colour.
+   */
+  background: color-mix(
+    in srgb,
+    var(--as-brand) calc(var(--as-rail-opacity) * 100%),
+    transparent
+  );
   -webkit-backdrop-filter: blur(18px);
   backdrop-filter: blur(18px);
 }
@@ -444,3 +455,10 @@ select optgroup {
   background-color: var(--as-raised);
   color: var(--as-ink);
 }
+
+/*
+ * The role-named text utilities (.as-text, .as-text-muted, .as-text-danger,
+ * and the border/surface ones) are emitted from the UI package's `themeCss()`,
+ * beside the tokens they read, so the report document and anything rendered
+ * outside this shell gets them too.
+ */

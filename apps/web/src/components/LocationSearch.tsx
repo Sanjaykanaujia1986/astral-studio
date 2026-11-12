@@ -105,15 +105,15 @@ export function LocationSearch({ value, onChange, error }: LocationSearchProps) 
 
   return (
     <div ref={containerRef} className="relative">
-      <label htmlFor={inputId} className="block text-sm font-medium text-slate-700">
+      <label htmlFor={inputId} className="block text-sm font-medium as-text">
         {t('form.birthplace')}
       </label>
 
       {value ? (
-        <div className="mt-1 flex items-center justify-between gap-2 rounded-md border border-slate-300 bg-slate-50 px-3 py-2">
+        <div className="mt-1 flex items-center justify-between gap-2 rounded-md border border-slate-300 as-surface-inset px-3 py-2">
           <div className="min-w-0">
-            <div className="truncate text-sm font-medium text-slate-900">{value.label}</div>
-            <div className="truncate text-xs text-slate-500 tabular-nums">
+            <div className="truncate text-sm font-medium as-text">{value.label}</div>
+            <div className="truncate text-xs as-text-muted tabular-nums">
               {value.latitude.toFixed(4)}°, {value.longitude.toFixed(4)}° · {value.timezone}
             </div>
           </div>
@@ -122,7 +122,7 @@ export function LocationSearch({ value, onChange, error }: LocationSearchProps) 
             onClick={() => onChange(null)}
             // min-h-6 rather than more padding: the target grows to the 24 px
             // WCAG 2.5.8 minimum without the label looking oversized.
-            className="min-h-6 shrink-0 rounded px-3 py-1 text-xs text-slate-600 hover:bg-slate-200"
+            className="min-h-6 shrink-0 rounded px-3 py-1 text-xs as-text-muted as-hover-tint"
           >
             {t('form.birthplace.change')}
           </button>
@@ -146,20 +146,20 @@ export function LocationSearch({ value, onChange, error }: LocationSearchProps) 
             }}
             onFocus={() => setOpen(true)}
             onKeyDown={onKeyDown}
-            className="mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500"
+            className="mt-1 w-full rounded-md border as-border-strong px-3 py-2 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500"
           />
 
           {open && query.trim().length >= MIN_QUERY_LENGTH ? (
             <ul
               id={listId}
               role="listbox"
-              className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-md border border-slate-300 bg-white shadow-lg"
+              className="absolute z-20 mt-1 max-h-72 w-full overflow-auto rounded-md border as-border-strong as-surface-solid shadow-lg"
             >
               {searching && results.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-slate-500">{t('form.birthplace.searching')}</li>
+                <li className="px-3 py-2 text-sm as-text-muted">{t('form.birthplace.searching')}</li>
               ) : null}
               {!searching && results.length === 0 ? (
-                <li className="px-3 py-2 text-sm text-slate-500">
+                <li className="px-3 py-2 text-sm as-text-muted">
                   {t('form.birthplace.noMatch')}
                 </li>
               ) : null}
@@ -172,14 +172,14 @@ export function LocationSearch({ value, onChange, error }: LocationSearchProps) 
                     onMouseEnter={() => setHighlighted(index)}
                     onClick={() => select(city)}
                     className={`block w-full px-3 py-2 text-left text-sm ${
-                      index === highlighted ? 'bg-slate-100' : ''
+                      index === highlighted ? 'as-surface-inset' : ''
                     }`}
                   >
-                    <span className="font-medium text-slate-900">{city.name}</span>
-                    <span className="text-slate-500">
+                    <span className="font-medium as-text">{city.name}</span>
+                    <span className="as-text-muted">
                       {city.admin1 ? `, ${city.admin1}` : ''}, {city.countryName}
                     </span>
-                    <span className="ml-2 text-xs text-slate-400 tabular-nums">
+                    <span className="ml-2 text-xs as-text-muted tabular-nums">
                       {city.timezone}
                     </span>
                   </button>
@@ -190,8 +190,8 @@ export function LocationSearch({ value, onChange, error }: LocationSearchProps) 
         </>
       )}
 
-      {loadError ? <p className="mt-1 text-xs text-rose-600">{loadError}</p> : null}
-      {error ? <p className="mt-1 text-xs text-rose-600">{error}</p> : null}
+      {loadError ? <p className="mt-1 text-xs as-text-danger">{loadError}</p> : null}
+      {error ? <p className="mt-1 text-xs as-text-danger">{error}</p> : null}
     </div>
   );
 }

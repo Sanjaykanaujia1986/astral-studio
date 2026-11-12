@@ -25,7 +25,7 @@ export interface PlanetTableProps {
   readonly className?: string;
 }
 
-const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-slate-500';
+const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide as-text-muted';
 const TD = 'px-3 py-2 whitespace-nowrap tabular-nums';
 
 function BodyCell({ placed, label }: { placed: PlacedBody; label: string }): JSX.Element {
@@ -57,7 +57,7 @@ export function PlanetTable({
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{t('table.caption.planets')}</caption>
         <thead>
-          <tr className="border-b border-slate-300">
+          <tr className="border-b as-border-strong">
             <th scope="col" className={TH}>{t('table.column.body')}</th>
             <th scope="col" className={TH}>{t('table.column.position')}</th>
             {hasHouses ? <th scope="col" className={TH}>{t('table.column.house')}</th> : null}
@@ -71,35 +71,35 @@ export function PlanetTable({
           {chart.bodies.map((placed) => {
             const p = placed.position;
             return (
-              <tr key={p.body} className="border-b border-slate-100 last:border-0">
+              <tr key={p.body} className="border-b as-border-hair last:border-0">
                 <BodyCell placed={placed} label={t(`body.${p.body}`)} />
                 <td className={TD}>
                   {formatLongitude(p.longitude, { precision, signLabel: t(`sign.${placed.sign.sign}`) })}
                 </td>
                 {hasHouses ? (
-                  <td className={`${TD} text-slate-600`}>
+                  <td className={`${TD} as-text-muted`}>
                     {placed.house === undefined ? '—' : n(placed.house)}
                   </td>
                 ) : null}
                 <td className={TD}>
                   {p.stationary ? (
-                    <span className="text-amber-700">{t('motion.stationary')}</span>
+                    <span className="as-text-warning">{t('motion.stationary')}</span>
                   ) : p.retrograde ? (
-                    <span className="text-rose-700">℞ {t('motion.retrograde')}</span>
+                    <span className="as-text-danger">℞ {t('motion.retrograde')}</span>
                   ) : (
-                    <span className="text-slate-500">{t('motion.direct')}</span>
+                    <span className="as-text-muted">{t('motion.direct')}</span>
                   )}
                 </td>
                 {detailed ? (
-                  <td className={`${TD} text-slate-600`}>
+                  <td className={`${TD} as-text-muted`}>
                     {p.stationary ? t('motion.stationary') : formatSpeed(p.longitudeSpeed)}
                   </td>
                 ) : null}
                 {detailed ? (
-                  <td className={`${TD} text-slate-600`}>{formatSignedDegrees(p.latitude)}</td>
+                  <td className={`${TD} as-text-muted`}>{formatSignedDegrees(p.latitude)}</td>
                 ) : null}
                 {detailed ? (
-                  <td className={`${TD} text-slate-600`}>
+                  <td className={`${TD} as-text-muted`}>
                     {p.equatorial ? formatSignedDegrees(p.equatorial.declination) : '—'}
                   </td>
                 ) : null}

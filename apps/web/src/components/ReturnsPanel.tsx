@@ -43,7 +43,7 @@ interface Outcome {
 }
 
 const FIELD =
-  'rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
+  'rounded-md border as-border-strong px-3 py-1.5 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
 
 function todayIsoDate(): string {
   return new Date().toISOString().slice(0, 10);
@@ -125,7 +125,7 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
     <div className="space-y-4">
       <div className="flex flex-wrap items-end gap-3 px-3 pt-2">
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('returns.technique')}</span>
+          <span className="block font-medium as-text">{t('returns.technique')}</span>
           <select
             value={technique}
             onChange={(e) => { setTechnique(e.target.value as Technique); setOutcome(null); }}
@@ -138,7 +138,7 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
         </label>
 
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('returns.forDate')}</span>
+          <span className="block font-medium as-text">{t('returns.forDate')}</span>
           <input
             type="date"
             value={dateText}
@@ -149,7 +149,7 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
 
         {technique === 'progressed' || technique === 'solarArc' ? (
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">{t('progression.yearLength')}</span>
+            <span className="block font-medium as-text">{t('progression.yearLength')}</span>
             <select
               value={useJulianYear ? 'julian' : 'tropical'}
               onChange={(e) => setUseJulianYear(e.target.value === 'julian')}
@@ -172,19 +172,19 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
       </div>
 
       {technique === 'solar' ? (
-        <p className="px-3 text-xs text-slate-500">{t('returns.notBirthday')}</p>
+        <p className="px-3 text-xs as-text-muted">{t('returns.notBirthday')}</p>
       ) : null}
       {technique === 'solarArc' ? (
-        <p className="px-3 text-xs text-slate-500">{t('progression.directedNote')}</p>
+        <p className="px-3 text-xs as-text-muted">{t('progression.directedNote')}</p>
       ) : null}
 
-      {error ? <p role="alert" className="px-3 text-sm text-rose-700">{error}</p> : null}
+      {error ? <p role="alert" className="px-3 text-sm as-text-danger">{error}</p> : null}
 
       {outcome ? (
         <div className="space-y-4">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-2 px-3 text-sm sm:grid-cols-4">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-500">
+              <dt className="text-xs uppercase tracking-wide as-text-muted">
                 {outcome.technique === 'progressed'
                   ? t('progression.progressedDate')
                   : t('returns.exactMoment')}
@@ -196,18 +196,18 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-500">{t('returns.age')}</dt>
+              <dt className="text-xs uppercase tracking-wide as-text-muted">{t('returns.age')}</dt>
               <dd className="tabular-nums">
                 {n(outcome.ageYears, { maximumFractionDigits: 2 })}
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-500">{t('returns.place')}</dt>
+              <dt className="text-xs uppercase tracking-wide as-text-muted">{t('returns.place')}</dt>
               <dd className="truncate">{chart.place.label ?? t('returns.place.birth')}</dd>
             </div>
             {outcome.directed ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-slate-500">{t('returns.arc')}</dt>
+                <dt className="text-xs uppercase tracking-wide as-text-muted">{t('returns.arc')}</dt>
                 <dd className="tabular-nums">{formatAngle(outcome.directed.arc, 'minute')}</dd>
               </div>
             ) : null}
@@ -215,8 +215,8 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
 
           {outcome.chart ? (
             <>
-              <p className="px-3 text-xs text-slate-500">{t('returns.place.note')}</p>
-              <div className="rounded-lg border border-slate-200 p-3">
+              <p className="px-3 text-xs as-text-muted">{t('returns.place.note')}</p>
+              <div className="rounded-lg border as-border-hair p-3">
                 <ChartWheel
                   chart={outcome.chart}
                   size={760}
@@ -233,28 +233,28 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <thead>
-                  <tr className="border-b border-slate-300">
-                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+                  <tr className="border-b as-border-strong">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide as-text-muted">
                       {t('table.column.body')}
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide as-text-muted">
                       {t('table.column.position')}
                     </th>
-                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500">
+                    <th className="px-3 py-2 text-left text-xs font-medium uppercase tracking-wide as-text-muted">
                       {t('returns.arc')}
                     </th>
                   </tr>
                 </thead>
                 <tbody>
                   {outcome.directed.positions.map((position) => (
-                    <tr key={position.body} className="border-b border-slate-100 last:border-0">
+                    <tr key={position.body} className="border-b as-border-hair last:border-0">
                       <th scope="row" className="px-3 py-2 text-left font-normal">
                         {t(`body.${position.body}`)}
                       </th>
                       <td className="px-3 py-2 tabular-nums">
                         {formatLongitude(position.longitude, { precision: settings.precision })}
                       </td>
-                      <td className="px-3 py-2 tabular-nums text-slate-500">
+                      <td className="px-3 py-2 tabular-nums as-text-muted">
                         {formatLongitude(position.natalLongitude, { precision: 'degree' })} →
                       </td>
                     </tr>

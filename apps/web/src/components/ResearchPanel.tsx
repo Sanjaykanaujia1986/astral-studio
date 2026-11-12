@@ -52,8 +52,8 @@ const AVAILABLE_SIGNALS: readonly SignalSpec[] = [
 ];
 
 const FIELD =
-  'rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
-const TH = 'px-2 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500';
+  'rounded-md border as-border-strong px-3 py-1.5 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
+const TH = 'px-2 py-2 text-left text-xs font-medium uppercase tracking-wide as-text-muted';
 const TD = 'px-2 py-2 whitespace-nowrap tabular-nums';
 
 function warningText(warning: StudyWarning, t: Translator['t'], n: Translator['n']): string {
@@ -205,6 +205,8 @@ export function ResearchPanel(): JSX.Element {
         role="note"
         className="rounded-lg border border-amber-300 bg-amber-50 p-3"
       >
+        {/* Paired with `bg-amber-50` on the box: both halves are set
+            together, so this one is deliberately not a token. */}
         <h3 className="text-sm font-semibold text-amber-900">
           {t('research.disclaimer.heading')}
         </h3>
@@ -214,8 +216,8 @@ export function ResearchPanel(): JSX.Element {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">{t('research.import')}</h3>
-        <p className="text-xs text-slate-500">{t('research.import.hint')}</p>
+        <h3 className="text-sm font-semibold as-text">{t('research.import')}</h3>
+        <p className="text-xs as-text-muted">{t('research.import.hint')}</p>
         <div className="flex flex-wrap items-center gap-4">
           <input
             type="file"
@@ -229,7 +231,7 @@ export function ResearchPanel(): JSX.Element {
               type="checkbox"
               checked={dayFirst}
               onChange={() => setChoices({ dayFirst: !dayFirst })}
-              className="h-4 w-4 rounded border-slate-300"
+              className="h-4 w-4 rounded as-border-strong"
             />
             {t('research.import.dayFirst')}
           </label>
@@ -238,7 +240,7 @@ export function ResearchPanel(): JSX.Element {
               type="checkbox"
               checked={decimalComma}
               onChange={() => setChoices({ decimalComma: !decimalComma })}
-              className="h-4 w-4 rounded border-slate-300"
+              className="h-4 w-4 rounded as-border-strong"
             />
             {t('research.import.decimalComma')}
           </label>
@@ -247,7 +249,7 @@ export function ResearchPanel(): JSX.Element {
               type="checkbox"
               checked={remember}
               onChange={() => setRemember(!remember)}
-              className="h-4 w-4 rounded border-slate-300"
+              className="h-4 w-4 rounded as-border-strong"
             />
             {t('research.remember')}
           </label>
@@ -256,9 +258,9 @@ export function ResearchPanel(): JSX.Element {
           Said in full, next to the control. The asymmetry with the chart is
           the thing a reader notices, so it is the thing explained.
         */}
-        <p className="text-xs text-slate-500">{t('research.remember.hint')}</p>
+        <p className="text-xs as-text-muted">{t('research.remember.hint')}</p>
         {tooLargeToRemember ? (
-          <p role="alert" className="text-xs text-amber-700">
+          <p role="alert" className="text-xs as-text-warning">
             {t('research.remember.tooLarge')}
           </p>
         ) : null}
@@ -269,7 +271,7 @@ export function ResearchPanel(): JSX.Element {
           as though the import had failed.
         */}
         {!series && descriptor ? (
-          <p className="text-sm text-slate-700">
+          <p className="text-sm as-text">
             {t('series.wasLoaded', {
               symbol: descriptor.symbol,
               bars: n(descriptor.bars),
@@ -281,7 +283,7 @@ export function ResearchPanel(): JSX.Element {
 
         <div className="mt-3 flex flex-wrap items-end gap-2">
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">
+            <span className="block font-medium as-text">
               {t('provider.symbol')}
             </span>
             <input
@@ -302,17 +304,17 @@ export function ResearchPanel(): JSX.Element {
           </button>
         </div>
 
-        <p className="mt-2 text-xs text-slate-500">
+        <p className="mt-2 text-xs as-text-muted">
           {t('provider.sendsSymbol', { provider: apiProvider.describe.name })}
           {' '}
           {t('provider.configuration')}
         </p>
 
-        {csvError ? <p role="alert" className="text-sm text-rose-700">{csvError}</p> : null}
-        {error ? <p role="alert" className="text-sm text-rose-700">{error}</p> : null}
+        {csvError ? <p role="alert" className="text-sm as-text-danger">{csvError}</p> : null}
+        {error ? <p role="alert" className="text-sm as-text-danger">{error}</p> : null}
 
         {series && profile && frequency ? (
-          <p className="text-sm text-slate-700">
+          <p className="text-sm as-text">
             {t('research.loaded', {
               symbol: series.symbol,
               bars: n(profile.bars),
@@ -321,12 +323,12 @@ export function ResearchPanel(): JSX.Element {
               frequency: frequency.label,
             })}
             {source === 'provider' && providerName ? (
-              <span className="ml-2 text-xs text-slate-500">
+              <span className="ml-2 text-xs as-text-muted">
                 {t('provider.loadedFrom', { provider: providerName })}
               </span>
             ) : null}
             {rejected > 0 ? (
-              <span className="ml-2 text-amber-700">
+              <span className="ml-2 as-text-warning">
                 {t('research.rejected', { count: n(rejected) })}
               </span>
             ) : null}
@@ -335,8 +337,8 @@ export function ResearchPanel(): JSX.Element {
       </section>
 
       <section className="space-y-2">
-        <h3 className="text-sm font-semibold text-slate-700">{t('research.signals')}</h3>
-        <p className="text-xs text-slate-500">{t('research.signals.hint')}</p>
+        <h3 className="text-sm font-semibold as-text">{t('research.signals')}</h3>
+        <p className="text-xs as-text-muted">{t('research.signals.hint')}</p>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {AVAILABLE_SIGNALS.map((spec) => (
             <label key={spec.id} className="flex items-center gap-2 text-sm">
@@ -350,7 +352,7 @@ export function ResearchPanel(): JSX.Element {
                       : [...current, spec.id],
                   )
                 }
-                className="h-4 w-4 rounded border-slate-300"
+                className="h-4 w-4 rounded as-border-strong"
               />
               <span className="font-mono text-xs">{describeSignal(spec)}</span>
             </label>
@@ -359,7 +361,7 @@ export function ResearchPanel(): JSX.Element {
 
         <div className="flex flex-wrap items-end gap-3 pt-2">
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">{t('research.holdout')}</span>
+            <span className="block font-medium as-text">{t('research.holdout')}</span>
             <input
               type="number"
               min={0}
@@ -372,7 +374,7 @@ export function ResearchPanel(): JSX.Element {
             />
           </label>
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">{t('research.alpha')}</span>
+            <span className="block font-medium as-text">{t('research.alpha')}</span>
             <select
               value={alpha}
               onChange={(e) => setAlpha(Number(e.target.value))}
@@ -395,16 +397,16 @@ export function ResearchPanel(): JSX.Element {
       </section>
 
       {!series || selected.length === 0 ? (
-        <p className="py-6 text-sm text-slate-500">{t('research.empty')}</p>
+        <p className="py-6 text-sm as-text-muted">{t('research.empty')}</p>
       ) : null}
 
       {result ? (
         <section className="space-y-3">
-          <div className="rounded-lg border border-slate-300 bg-slate-50 p-3">
-            <h4 className="text-sm font-semibold text-slate-800">
+          <div className="rounded-lg border border-slate-300 as-surface-inset p-3">
+            <h4 className="text-sm font-semibold as-text">
               {t('research.correction.heading')}
             </h4>
-            <p className="mt-1 text-xs leading-relaxed text-slate-700">
+            <p className="mt-1 text-xs leading-relaxed as-text">
               {t('research.correction.body', {
                 tested: n(result.correction.tested),
                 expected: n(result.correction.expectedByChance, { maximumFractionDigits: 2 }),
@@ -428,7 +430,7 @@ export function ResearchPanel(): JSX.Element {
             <table className="w-full border-collapse text-sm">
               <caption className="sr-only">{t('research.title')}</caption>
               <thead>
-                <tr className="border-b border-slate-300">
+                <tr className="border-b as-border-strong">
                   <th className={TH}>{t('research.column.signal')}</th>
                   <th className={TH}>{t('research.column.activeBars')}</th>
                   <th className={TH}>{t('research.column.meanIn')}</th>
@@ -445,12 +447,12 @@ export function ResearchPanel(): JSX.Element {
                 {result.signals.map((study) => {
                   const survives = (study.falseDiscoveryRate ?? 1) <= result.alpha;
                   return (
-                    <tr key={study.signalId} className="border-b border-slate-100 last:border-0">
+                    <tr key={study.signalId} className="border-b as-border-hair last:border-0">
                       <th scope="row" className={`${TD} text-left font-normal`}>
                         <span className="font-mono text-xs">{describeSignal(study.spec)}</span>
                         {study.warnings.length > 0 ? (
                           <span
-                            className="ml-1 cursor-help text-amber-600"
+                            className="ml-1 cursor-help as-text-warning"
                             title={study.warnings.map((w) => warningText(w, t, n)).join('\n')}
                           >
                             ⚠
@@ -468,20 +470,20 @@ export function ResearchPanel(): JSX.Element {
                         p-value sitting on its own floor carries no information,
                         and the two numbers only mean something together.
                       */}
-                      <td className={`${TD} text-slate-400`}>{pValue(study.rotationFloor)}</td>
-                      <td className={`${TD} ${survives ? 'font-semibold text-slate-900' : 'text-slate-500'}`}>
+                      <td className={`${TD} as-text-muted`}>{pValue(study.rotationFloor)}</td>
+                      <td className={`${TD} ${survives ? 'font-semibold as-text' : 'as-text-muted'}`}>
                         {study.falseDiscoveryRate === undefined
                           ? '—'
                           : pValue(study.falseDiscoveryRate)}
                       </td>
-                      <td className={`${TD} text-slate-500`}>
+                      <td className={`${TD} as-text-muted`}>
                         {study.familyWiseAdjusted === undefined
                           ? '—'
                           : pValue(study.familyWiseAdjusted)}
                       </td>
                       <td className={TD}>
                         {study.outOfSample ? (
-                          <span className={study.outOfSample.signAgrees ? '' : 'text-slate-400'}>
+                          <span className={study.outOfSample.signAgrees ? '' : 'as-text-muted'}>
                             {meanPercent(Math.expm1(study.outOfSample.difference))}
                             {study.outOfSample.signAgrees ? ' ✓' : ' ✗'}
                           </span>
@@ -494,7 +496,7 @@ export function ResearchPanel(): JSX.Element {
                           type="button"
                           onClick={() => void runBacktestFor(study.spec)}
                           disabled={busy}
-                          className="rounded border border-slate-300 px-2 py-1 text-xs hover:bg-slate-100 disabled:opacity-50"
+                          className="rounded border as-border-strong px-2 py-1 text-xs as-hover-inset disabled:opacity-50"
                         >
                           {t('research.backtest')}
                         </button>
@@ -506,23 +508,23 @@ export function ResearchPanel(): JSX.Element {
             </table>
           </div>
 
-          <p className="text-xs leading-relaxed text-slate-500">
+          <p className="text-xs leading-relaxed as-text-muted">
             {t('research.method.rotation')}
           </p>
-          <p className="text-xs text-slate-400">{t('research.seed', { seed: n(result.seed) })}</p>
+          <p className="text-xs as-text-muted">{t('research.seed', { seed: n(result.seed) })}</p>
         </section>
       ) : null}
 
       {backtest ? (
-        <section className="space-y-2 rounded-lg border border-slate-200 p-3">
-          <h4 className="text-sm font-semibold text-slate-800">
+        <section className="space-y-2 rounded-lg border as-border-hair p-3">
+          <h4 className="text-sm font-semibold as-text">
             {t('research.backtest')} — <span className="font-mono text-xs">{backtest.id}</span>
           </h4>
-          <p className="text-xs leading-relaxed text-slate-500">{t('research.backtest.note')}</p>
+          <p className="text-xs leading-relaxed as-text-muted">{t('research.backtest.note')}</p>
           <div className="overflow-x-auto">
             <table className="w-full border-collapse text-sm">
               <thead>
-                <tr className="border-b border-slate-300">
+                <tr className="border-b as-border-strong">
                   <th className={TH} />
                   <th className={TH}>{t('research.backtest.strategy')}</th>
                   <th className={TH}>{t('research.backtest.buyHold')}</th>
@@ -534,18 +536,18 @@ export function ResearchPanel(): JSX.Element {
                   ['research.backtest.volatility', backtest.result.annualisedVolatility, backtest.result.buyAndHold.annualisedVolatility, percent],
                   ['research.backtest.maxDrawdown', backtest.result.maxDrawdown, backtest.result.buyAndHold.maxDrawdown, percent],
                 ] as const).map(([key, strategy, hold, format]) => (
-                  <tr key={key} className="border-b border-slate-100 last:border-0">
+                  <tr key={key} className="border-b as-border-hair last:border-0">
                     <th scope="row" className={`${TD} text-left font-normal`}>{t(key)}</th>
                     <td className={TD}>{format(strategy)}</td>
-                    <td className={`${TD} text-slate-500`}>{format(hold)}</td>
+                    <td className={`${TD} as-text-muted`}>{format(hold)}</td>
                   </tr>
                 ))}
-                <tr className="border-b border-slate-100">
+                <tr className="border-b as-border-hair">
                   <th scope="row" className={`${TD} text-left font-normal`}>
                     {t('research.backtest.sharpe')}
                   </th>
                   <td className={TD}>{n(backtest.result.sharpe, { maximumFractionDigits: 2 })}</td>
-                  <td className={`${TD} text-slate-500`}>
+                  <td className={`${TD} as-text-muted`}>
                     {n(backtest.result.buyAndHold.sharpe, { maximumFractionDigits: 2 })}
                   </td>
                 </tr>
@@ -554,7 +556,7 @@ export function ResearchPanel(): JSX.Element {
                     {t('research.backtest.exposure')}
                   </th>
                   <td className={TD}>{percent(backtest.result.exposure)}</td>
-                  <td className={`${TD} text-slate-500`}>{percent(1)}</td>
+                  <td className={`${TD} as-text-muted`}>{percent(1)}</td>
                 </tr>
               </tbody>
             </table>

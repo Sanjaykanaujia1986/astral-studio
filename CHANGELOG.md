@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 0.17.0 — 2026-11-12
+- **The contrast audit is cleared.** Re-measured in a browser across all eleven pages in both themes: **0 failures on dark, 0 on light.** Before: 14 distinct failing colour pairs on dark, worst at 1.84:1.
+- The cause was one thing throughout: ~250 hardcoded Tailwind palette classes (`text-slate-700`, `text-rose-700`, `bg-sky-50`, `border-slate-300`, ...) chosen against the original ivory theme and never re-measured after the redesign. They are replaced by utilities named after a **role** — `as-text`, `as-text-muted`, `as-text-danger`, `as-surface-inset` — which read the tokens, so their contrast is whatever the theme test measures and cannot drift from it.
+- The utilities are emitted from the UI package's `themeCss()`, beside the tokens they read, rather than written into the app's stylesheet — the report document needs them too.
+- **`.as-paper`**: the report renders the SAME table components as the app, so switching those tables to tokens would have printed the dark theme's near-white ink onto white paper. The light tokens are redeclared on the report subtree. Verified live: with the page dark, the preview's `--as-ink` is `#1a1033` while the page's is `#f3effc`.
+- FIX: **the nav rail's own contrast test was measuring the wrong thing.** It checked `accentOnBrand` against the pure `brand` token — 8.35:1 — while the rail that ships is translucent and composited to **3.59:1** over the light canvas. The opacity is now a shared constant (`RAIL_OPACITY`, emitted as `--as-rail-opacity`), the stylesheet reads it, and the test composites with the same number. Raised 0.72 → 0.88, which brings the wordmark to 6.1:1; a test asserts the old value would fail.
+- The "Planned" tag in the rail used `ink-muted`, which flips with the page while the rail is dark in both themes — **1.04:1** in light mode. It now draws from `onBrand`.
+- The Calendar's density bands were three fixed pale blues; they are now three steps of accent mixed into an opaque surface, so a busy day reads as busy in either theme instead of leaving a near-white cell on the night sky with themed ink on it at 1.06:1.
+- The aspectarian coloured its aspect names from `LIGHT_THEME` unconditionally. It now takes the palette the page is showing, like the wheel does.
+- Self-contained callouts — the amber disclaimer, the rose failure box — are deliberately untouched. They set a background AND a text colour together, so they were never part of this defect; one heading that the sweep did convert has been put back, with a comment saying why.
+- Harness note: the audit ignores `background-image`, so the primary button reported 1.1:1 against the card behind its gradient. Measured against the gradient's own stops it is **5.04–5.73:1**. Recorded because the next person running this will hit the same false positive.
+
 ## 0.16.0 — 2026-11-12
 - **Chart view controls in Chart Studio**: aspect lines on or off, degree ticks on or off, and the figure at Compact / Standard / Large. The choices persist like the glyph style and the precision.
 - They change the **drawing and nothing else**, and the panel says so where the controls are: every aspect is computed whatever the checkbox says, and which ones exist is the orb profile's decision in Settings. The test that matters asserts exactly that — hiding the lines removes lines from the figure and **not one row** from the aspect table. A reader who unticks a box and watches a table shrink has been told by the product that an aspect stopped existing.

@@ -267,11 +267,16 @@ body {
 .as-tag-partial {
   border: 1px solid currentColor;
 }
+/*
+ * On the rail, which is a dark ground in BOTH themes. `ink-muted` and
+ * `accent` flip with the page, so in light mode they put a dark grey and a
+ * dark violet onto a dark rail — the planned tag measured 1.04:1.
+ */
 .as-tag-planned {
-  color: var(--as-ink-muted);
+  color: color-mix(in srgb, var(--as-on-brand) 82%, var(--as-brand));
 }
 .as-tag-partial {
-  color: var(--as-accent);
+  color: var(--as-accent-on-brand);
 }
 /* On a surface rather than the navy rail, the readable forms apply. */
 .as-sheet .as-tag-planned {

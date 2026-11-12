@@ -95,7 +95,7 @@ export function SelfTestPanel(): JSX.Element {
     <div className="mx-auto max-w-3xl space-y-4 p-6 font-mono text-sm">
       <header>
         <h1 className="text-lg font-semibold">Engine self-test</h1>
-        <p className="mt-1 text-xs text-slate-600">
+        <p className="mt-1 text-xs as-text-muted">
           Runs {8} reference charts and fingerprints every position, cusp and
           aspect. The result must equal the fingerprint recorded by CI for this
           commit.
@@ -140,7 +140,7 @@ export function SelfTestPanel(): JSX.Element {
       {result ? (
         <table className="w-full border-collapse text-xs">
           <thead>
-            <tr className="border-b border-slate-300 text-left">
+            <tr className="border-b as-border-strong text-left">
               <th className="py-1">case</th>
               <th className="py-1">digest</th>
               <th className="py-1">source</th>
@@ -150,10 +150,10 @@ export function SelfTestPanel(): JSX.Element {
           </thead>
           <tbody>
             {result.cases.map((testCase) => (
-              <tr key={testCase.id} className="border-b border-slate-100">
+              <tr key={testCase.id} className="border-b as-border-hair">
                 <td className="py-1">{testCase.id}</td>
                 <td className="py-1">{testCase.digest}</td>
-                <td className={`py-1 ${testCase.source === 'swiss' ? '' : 'text-amber-700'}`}>
+                <td className={`py-1 ${testCase.source === 'swiss' ? '' : 'as-text-warning'}`}>
                   {testCase.source}
                 </td>
                 <td className="py-1">{testCase.bodies}</td>
@@ -169,7 +169,7 @@ export function SelfTestPanel(): JSX.Element {
           <h2 className="font-semibold">Bundled assets</h2>
           <ul className="mt-1 space-y-0.5 text-xs">
             {assets.map((asset) => (
-              <li key={asset.url} className={asset.ok ? '' : 'text-rose-700'}>
+              <li key={asset.url} className={asset.ok ? '' : 'as-text-danger'}>
                 {asset.ok ? '✓' : '✗'} {asset.url}
                 {asset.bytes !== undefined
                   ? ` — ${(asset.bytes / 1048576).toFixed(2)} MB`
@@ -187,7 +187,7 @@ export function SelfTestPanel(): JSX.Element {
           <dl className="mt-1 space-y-0.5 text-xs">
             {Object.entries(environment).map(([key, value]) => (
               <div key={key} className="flex gap-2">
-                <dt className="w-24 shrink-0 text-slate-500">{key}</dt>
+                <dt className="w-24 shrink-0 as-text-muted">{key}</dt>
                 <dd className="break-all">{String(value)}</dd>
               </div>
             ))}
@@ -198,7 +198,7 @@ export function SelfTestPanel(): JSX.Element {
             "online: false" beside a passing fingerprint is the result worth
             having, not a problem.
           */}
-          <p className="mt-2 text-xs text-slate-500">
+          <p className="mt-2 text-xs as-text-muted">
             A passing fingerprint with <code>online: false</code> is the offline
             proof: nothing here is fetched from the network.
           </p>

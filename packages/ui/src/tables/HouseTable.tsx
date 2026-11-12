@@ -18,7 +18,7 @@ export interface HouseTableProps {
   readonly className?: string;
 }
 
-const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-slate-500';
+const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide as-text-muted';
 const TD = 'px-3 py-2 whitespace-nowrap tabular-nums';
 
 /** Message keys for the four cardinal cusps. */
@@ -44,7 +44,7 @@ export function HouseTable({
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{t('table.caption.houses')}</caption>
         <thead>
-          <tr className="border-b border-slate-300">
+          <tr className="border-b as-border-strong">
             <th scope="col" className={TH}>{t('table.column.house')}</th>
             <th scope="col" className={TH}>{t('table.column.cusp')}</th>
             {showSpan ? <th scope="col" className={TH}>{t('table.column.span')}</th> : null}
@@ -62,12 +62,12 @@ export function HouseTable({
             return (
               <tr
                 key={houseNumber}
-                className={`border-b border-slate-100 last:border-0 ${angleKey ? 'font-medium' : ''}`}
+                className={`border-b as-border-hair last:border-0 ${angleKey ? 'font-medium' : ''}`}
               >
                 <th scope="row" className={`${TD} text-left`}>
                   {n(houseNumber)}
                   {angleKey ? (
-                    <span className="ml-2 rounded bg-slate-100 px-1.5 py-0.5 text-xs text-slate-600">
+                    <span className="ml-2 rounded as-surface-inset px-1.5 py-0.5 text-xs as-text-muted">
                       {t(angleKey)}
                     </span>
                   ) : null}
@@ -79,7 +79,7 @@ export function HouseTable({
                   })}
                 </td>
                 {showSpan ? (
-                  <td className={`${TD} text-slate-500`}>{formatAngle(span, 'minute')}</td>
+                  <td className={`${TD} as-text-muted`}>{formatAngle(span, 'minute')}</td>
                 ) : null}
               </tr>
             );

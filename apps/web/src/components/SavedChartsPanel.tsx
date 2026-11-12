@@ -144,15 +144,15 @@ export function SavedChartsPanel({ chart, onOpen }: SavedChartsPanelProps): JSX.
         {busy ? t('cloud.working') : t('cloud.save')}
       </button>
 
-      {status ? <p role="status" className="text-xs text-emerald-700">{status}</p> : null}
-      {error ? <p role="alert" className="text-xs text-rose-700">{error}</p> : null}
+      {status ? <p role="status" className="text-xs as-text-success">{status}</p> : null}
+      {error ? <p role="alert" className="text-xs as-text-danger">{error}</p> : null}
 
       {!Array.isArray(charts) ? (
-        <p className="text-xs text-slate-500">{t('cloud.loading')}</p>
+        <p className="text-xs as-text-muted">{t('cloud.loading')}</p>
       ) : charts.length === 0 ? (
-        <p className="text-xs text-slate-500">{t('cloud.empty')}</p>
+        <p className="text-xs as-text-muted">{t('cloud.empty')}</p>
       ) : (
-        <ul className="divide-y divide-slate-100 rounded border border-slate-200">
+        <ul className="divide-y divide-slate-100 rounded border as-border-hair">
           {charts.map((saved) => (
             <li key={saved.id} className="flex items-center gap-2 p-2">
               <button
@@ -162,7 +162,7 @@ export function SavedChartsPanel({ chart, onOpen }: SavedChartsPanelProps): JSX.
                 className="min-h-6 min-w-0 flex-1 text-left hover:underline"
               >
                 <span className="block truncate font-medium">{saved.name}</span>
-                <span className="block truncate text-xs text-slate-500">
+                <span className="block truncate text-xs as-text-muted">
                   {[saved.summary.sun, saved.summary.moon, saved.summary.ascendant]
                     .map((sign, i) => (sign ? `${['☉', '☽', 'AC'][i]} ${t(`sign.${sign}` as 'sign.aries')}` : null))
                     .filter(Boolean)
@@ -185,29 +185,29 @@ export function SavedChartsPanel({ chart, onOpen }: SavedChartsPanelProps): JSX.
         </ul>
       )}
 
-      <p className="text-xs leading-relaxed text-slate-500">{t('cloud.privacy')}</p>
+      <p className="text-xs leading-relaxed as-text-muted">{t('cloud.privacy')}</p>
 
       <details open={showKey} onToggle={(e) => setShowKey((e.target as HTMLDetailsElement).open)}>
-        <summary className="cursor-pointer text-xs text-slate-600">{t('cloud.key.title')}</summary>
+        <summary className="cursor-pointer text-xs as-text-muted">{t('cloud.key.title')}</summary>
         <div className="mt-2 space-y-2">
-          <p className="text-xs text-slate-500">{t('cloud.key.explain')}</p>
+          <p className="text-xs as-text-muted">{t('cloud.key.explain')}</p>
           {showKey ? (
-            <code className="block break-all rounded bg-slate-100 p-2 text-[11px]">{getOwnerKey()}</code>
+            <code className="block break-all rounded as-surface-inset p-2 text-[11px]">{getOwnerKey()}</code>
           ) : null}
           <label className="block text-xs">
-            <span className="text-slate-600">{t('cloud.key.restore')}</span>
+            <span className="as-text-muted">{t('cloud.key.restore')}</span>
             <input
               value={keyInput}
               onChange={(e) => setKeyInput(e.target.value)}
               spellCheck={false}
-              className="mt-1 w-full rounded border border-slate-300 px-2 py-1 font-mono text-[11px]"
+              className="mt-1 w-full rounded border as-border-strong px-2 py-1 font-mono text-[11px]"
             />
           </label>
           <button
             type="button"
             onClick={() => void restoreKey()}
             disabled={keyInput.trim().length === 0}
-            className="min-h-6 rounded border border-slate-300 px-3 py-1 text-xs hover:bg-slate-100 disabled:opacity-50"
+            className="min-h-6 rounded border as-border-strong px-3 py-1 text-xs as-hover-inset disabled:opacity-50"
           >
             {t('cloud.key.apply')}
           </button>

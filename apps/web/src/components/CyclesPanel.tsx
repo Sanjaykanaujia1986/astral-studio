@@ -29,8 +29,8 @@ const CYCLE_BODIES: readonly Body[] = [
 const DIVISION_CHOICES = [1, 4, 8] as const;
 
 const FIELD =
-  'rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
-const TH = 'px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500';
+  'rounded-md border as-border-strong px-3 py-1.5 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
+const TH = 'px-3 py-2 text-left text-xs font-medium uppercase tracking-wide as-text-muted';
 const TD = 'px-3 py-2 whitespace-nowrap';
 
 function todayJd(): number {
@@ -92,11 +92,11 @@ export function CyclesPanel(): JSX.Element {
 
   return (
     <div className="space-y-4">
-      <p className="px-3 pt-2 text-xs text-slate-500">{t('cycles.note')}</p>
+      <p className="px-3 pt-2 text-xs as-text-muted">{t('cycles.note')}</p>
 
       <div className="flex flex-wrap items-end gap-3 px-3">
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('cycles.faster')}</span>
+          <span className="block font-medium as-text">{t('cycles.faster')}</span>
           <select value={fast} onChange={(e) => setFast(e.target.value as Body)} className={`mt-1 ${FIELD}`}>
             {CYCLE_BODIES.map((body) => (
               <option key={body} value={body}>{t(`body.${body}`)}</option>
@@ -105,7 +105,7 @@ export function CyclesPanel(): JSX.Element {
         </label>
 
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('cycles.slower')}</span>
+          <span className="block font-medium as-text">{t('cycles.slower')}</span>
           <select value={slow} onChange={(e) => setSlow(e.target.value as Body)} className={`mt-1 ${FIELD}`}>
             {CYCLE_BODIES.map((body) => (
               <option key={body} value={body}>{t(`body.${body}`)}</option>
@@ -114,7 +114,7 @@ export function CyclesPanel(): JSX.Element {
         </label>
 
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('cycles.divisions')}</span>
+          <span className="block font-medium as-text">{t('cycles.divisions')}</span>
           <select
             value={divisions}
             onChange={(e) => setDivisions(Number(e.target.value))}
@@ -129,7 +129,7 @@ export function CyclesPanel(): JSX.Element {
         </label>
 
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('cycles.years')}</span>
+          <span className="block font-medium as-text">{t('cycles.years')}</span>
           <input
             type="number"
             min={1}
@@ -151,7 +151,7 @@ export function CyclesPanel(): JSX.Element {
       </div>
 
       {estimate !== null ? (
-        <p className="px-3 text-xs text-slate-500">
+        <p className="px-3 text-xs as-text-muted">
           <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
             {glyph(fast)} {glyph(slow)}
           </span>{' '}
@@ -161,13 +161,13 @@ export function CyclesPanel(): JSX.Element {
         </p>
       ) : null}
 
-      {error ? <p role="alert" className="px-3 text-sm text-rose-700">{error}</p> : null}
+      {error ? <p role="alert" className="px-3 text-sm as-text-danger">{error}</p> : null}
 
       {result ? (
         <div className="space-y-4">
           <dl className="grid grid-cols-2 gap-x-6 gap-y-2 px-3 text-sm sm:grid-cols-3">
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-500">
+              <dt className="text-xs uppercase tracking-wide as-text-muted">
                 {t('cycles.period.observed')}
               </dt>
               <dd className="tabular-nums">
@@ -179,14 +179,14 @@ export function CyclesPanel(): JSX.Element {
               </dd>
             </div>
             <div>
-              <dt className="text-xs uppercase tracking-wide text-slate-500">
+              <dt className="text-xs uppercase tracking-wide as-text-muted">
                 {t('cycles.conjunctions')}
               </dt>
               <dd className="tabular-nums">{n(result.conjunctions.length)}</dd>
             </div>
             {phase ? (
               <div>
-                <dt className="text-xs uppercase tracking-wide text-slate-500">
+                <dt className="text-xs uppercase tracking-wide as-text-muted">
                   {t('cycles.currentPhase')}
                 </dt>
                 <dd className="tabular-nums">
@@ -204,13 +204,13 @@ export function CyclesPanel(): JSX.Element {
           ) : null}
 
           {result.events.length === 0 ? (
-            <p className="px-3 py-6 text-sm text-slate-500">{t('cycles.empty')}</p>
+            <p className="px-3 py-6 text-sm as-text-muted">{t('cycles.empty')}</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
                 <caption className="sr-only">{t('cycles.title')}</caption>
                 <thead>
-                  <tr className="border-b border-slate-300">
+                  <tr className="border-b as-border-strong">
                     <th className={TH}>{t('transit.column.date')}</th>
                     <th className={TH}>{t('cycles.divisions')}</th>
                     <th className={TH}>{t('transit.column.pass')}</th>
@@ -220,18 +220,18 @@ export function CyclesPanel(): JSX.Element {
                   {result.events.slice(0, 200).map((event) => (
                     <tr
                       key={`${event.phase}-${event.jd}`}
-                      className="border-b border-slate-100 last:border-0"
+                      className="border-b as-border-hair last:border-0"
                     >
                       <td className={`${TD} tabular-nums`}>
                         {d(event.utcIso, { dateStyle: 'medium', timeStyle: 'short', timeZone: 'UTC' })}
                       </td>
                       <td className={TD}>
-                        <span className="tabular-nums text-slate-400">
+                        <span className="tabular-nums as-text-muted">
                           {n(event.phase)}°
                         </span>{' '}
                         {t(`phase.${event.label as 'conjunction'}`)}
                       </td>
-                      <td className={`${TD} text-slate-500`}>
+                      <td className={`${TD} as-text-muted`}>
                         {event.totalPasses > 1
                           ? t('transit.pass.of', {
                               index: n(event.passIndex), total: n(event.totalPasses),

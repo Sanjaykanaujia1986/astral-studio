@@ -13,9 +13,9 @@ import { LOCALE_LIST, useI18n } from '@astro/i18n';
 import { useSettings, type ChartThemeName, type GlyphStyle, type OrbProfileId } from '../lib/settings.js';
 import type { DegreePrecision } from '@astro/ui';
 
-const LABEL = 'block text-sm font-medium text-slate-700';
+const LABEL = 'block text-sm font-medium as-text';
 const FIELD =
-  'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
+  'mt-1 w-full rounded-md border as-border-strong px-3 py-2 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
 
 export function SettingsPanel(): JSX.Element {
   const { translator, setLocale } = useI18n();
@@ -40,7 +40,7 @@ export function SettingsPanel(): JSX.Element {
           ))}
         </select>
         {!translator.locale.reviewed ? (
-          <p className="mt-1 text-xs text-amber-700">
+          <p className="mt-1 text-xs as-text-warning">
             {t('settings.language.draftNotice')}
           </p>
         ) : null}
@@ -105,7 +105,7 @@ export function SettingsPanel(): JSX.Element {
       <button
         type="button"
         onClick={() => settings.reset()}
-        className="text-sm text-slate-600 underline hover:text-slate-900"
+        className="text-sm as-text-muted underline hover:as-text"
       >
         {t('settings.reset')}
       </button>

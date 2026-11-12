@@ -22,6 +22,8 @@ import {
   themeCss,
   type ColorTokens,
   type ThemeMode,
+  RAIL_OPACITY,
+  compositeOver,
 } from '../src/theme/tokens.js';
 
 const BODY = 4.5;
@@ -50,6 +52,34 @@ function pairings(t: ColorTokens): readonly [string, string, string, number][] {
     ['accent on surface', t.accent, t.surface, LARGE],
   ];
 }
+
+/*
+ * The rail is translucent, so what a reader sees is `brand` composited over
+ * the page behind it. Measuring the pure token reported 8.35:1 for the brand
+ * wordmark while the rendered rail was at 3.59:1 — the test passed and the
+ * wordmark was unreadable. These measure what ships.
+ */
+describe.each(['light', 'dark'] as const)('%s theme, as the RAIL renders', (mode: ThemeMode) => {
+  const t = TOKENS[mode];
+  const rail = compositeOver(t.brand, t.canvas, RAIL_OPACITY);
+
+  it('puts readable text on the composited rail', () => {
+    expect(contrastRatio(t.onBrand, rail)).toBeGreaterThanOrEqual(BODY);
+  });
+
+  it('keeps the brand wordmark readable on the composited rail', () => {
+    expect(contrastRatio(t.accentOnBrand, rail)).toBeGreaterThanOrEqual(BODY);
+  });
+
+  it('would fail at the opacity this shipped with', () => {
+    // Guards the fix rather than the number: if someone lowers the opacity
+    // back toward 0.72 the two tests above start failing, and this one says
+    // why in one line.
+    const asShipped = compositeOver(t.brand, t.canvas, 0.72);
+    const ok = contrastRatio(t.accentOnBrand, asShipped) >= BODY;
+    expect(mode === 'light' ? ok : true).toBe(mode === 'light' ? false : true);
+  });
+});
 
 describe.each(['light', 'dark'] as const)('%s theme contrast', (mode: ThemeMode) => {
   const tokens = TOKENS[mode];
@@ -166,8 +196,10 @@ describe('themeCss', () => {
       // `--as-ink-muted`, so matching the bare name counted eight where there
       // are four. The test was wrong, not the stylesheet.
       const occurrences = css.split(`${cssVariableName(token)}:`).length - 1;
-      // :root, the prefers-color-scheme block, [data-theme=dark], [data-theme=light]
-      expect(occurrences, token).toBe(4);
+      // :root, the prefers-color-scheme block, [data-theme=dark],
+      // [data-theme=light], and `.as-paper`, which redeclares the light
+      // tokens on the report subtree.
+      expect(occurrences, token).toBe(5);
     }
   });
 
@@ -188,10 +220,41 @@ describe('themeCss', () => {
     expect(css).toContain('color-scheme: dark');
   });
 
-  it('contains no unresolved value', () => {
-    // Every declaration must be a literal; a `var()` here would defeat the
-    // reason these tokens exist.
-    expect(css).not.toContain('var(');
+  it('redeclares the light tokens for paper', () => {
+    /*
+     * The report renders the same table components as the app, so without a
+     * light subtree the dark theme's near-white ink would print onto white
+     * paper. Asserted as a block that carries the tokens, not as a class name
+     * someone could add empty.
+     */
+    const paper = /\.as-paper \{([^}]*)\}/.exec(css)?.[1] ?? '';
+    expect(paper).toContain(`${cssVariableName('ink')}: ${LIGHT_TOKENS.ink}`);
+    expect(paper).toContain(`${cssVariableName('canvas')}: ${LIGHT_TOKENS.canvas}`);
+    expect(paper).toContain('color-scheme: light');
+  });
+
+  it('exposes the tokens as role-named utilities', () => {
+    // The classes that replaced `text-slate-700` and friends. They are the
+    // only place `var()` is allowed below.
+    for (const cls of ['.as-text ', '.as-text-muted ', '.as-text-danger ',
+      '.as-text-warning ', '.as-text-success ', '.as-text-accent ']) {
+      expect(css).toContain(cls);
+    }
+  });
+
+  it('contains no unresolved value in a TOKEN declaration', () => {
+    /*
+     * Every `--as-*` declaration must be a literal; a `var()` there would
+     * defeat the reason these tokens exist. The utility rules underneath are
+     * exempt by definition — reading the tokens through `var()` is their
+     * entire job — so they are stripped before the check rather than the
+     * check being weakened.
+     */
+    const tokensOnly = css
+      .split('\n')
+      .filter((line) => /^\s*(--as-|color-scheme)/.test(line))
+      .join('\n');
+    expect(tokensOnly).not.toContain('var(');
     expect(css).not.toMatch(/:\s*;/);
   });
 });

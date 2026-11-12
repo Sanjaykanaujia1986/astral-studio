@@ -46,7 +46,7 @@ interface Comparison {
   readonly davison: DavisonChart;
 }
 
-const TH = 'px-3 py-2 text-left text-xs font-medium uppercase tracking-wide text-slate-500';
+const TH = 'px-3 py-2 text-left text-xs font-medium uppercase tracking-wide as-text-muted';
 const TD = 'px-3 py-2 whitespace-nowrap';
 
 export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
@@ -107,19 +107,19 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
     <div className="space-y-4">
       {!comparison ? (
         <div className="px-3 pt-2">
-          <h3 className="mb-1 text-sm font-semibold text-slate-700">
+          <h3 className="mb-1 text-sm font-semibold as-text">
             {t('synastry.secondPerson')}
           </h3>
-          <p className="mb-3 text-xs text-slate-500">{t('synastry.needsSecond')}</p>
+          <p className="mb-3 text-xs as-text-muted">{t('synastry.needsSecond')}</p>
           <div className="max-w-md">
             <BirthForm onSubmit={compare} busy={busy} />
           </div>
-          {error ? <p role="alert" className="mt-2 text-sm text-rose-700">{error}</p> : null}
+          {error ? <p role="alert" className="mt-2 text-sm as-text-danger">{error}</p> : null}
         </div>
       ) : (
         <>
           <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
-            <div className="flex rounded-md border border-slate-300">
+            <div className="flex rounded-md border as-border-strong">
               {VIEWS.map((option) => (
                 <button
                   key={option}
@@ -127,7 +127,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                   onClick={() => setView(option)}
                   aria-pressed={view === option}
                   className={`px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md ${
-                    view === option ? 'bg-slate-900 text-white' : 'hover:bg-slate-100'
+                    view === option ? 'bg-slate-900 text-white' : 'as-hover-inset'
                   }`}
                 >
                   {t(`synastry.view.${option}`)}
@@ -137,7 +137,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
             <button
               type="button"
               onClick={() => setComparison(null)}
-              className="ml-auto rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100"
+              className="ml-auto rounded-md border as-border-strong px-3 py-1.5 text-sm as-hover-inset"
             >
               {t('form.birthplace.change')}
             </button>
@@ -145,11 +145,11 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
 
           {view === 'aspects' ? (
             <div>
-              <p className="px-3 pb-2 text-xs text-slate-500">{t('synastry.noMotion')}</p>
+              <p className="px-3 pb-2 text-xs as-text-muted">{t('synastry.noMotion')}</p>
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-slate-300">
+                    <tr className="border-b as-border-strong">
                       <th className={TH}>{t('synastry.column.from')}</th>
                       <th className={TH}>{t('table.column.aspect')}</th>
                       <th className={TH}>{t('synastry.column.to')}</th>
@@ -161,7 +161,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                     {comparison.synastry.aspects.slice(0, 60).map((hit) => (
                       <tr
                         key={`${hit.from.id}-${hit.aspect}-${hit.to.id}`}
-                        className="border-b border-slate-100 last:border-0"
+                        className="border-b as-border-hair last:border-0"
                       >
                         <th scope="row" className={`${TD} text-left font-normal`}>
                           {pointLabel(hit.from)}
@@ -169,7 +169,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                         <td className={TD}>{t(`aspect.${hit.aspect}`)}</td>
                         <td className={TD}>{pointLabel(hit.to)}</td>
                         <td className={`${TD} tabular-nums`}>{formatAngle(hit.orb, 'minute')}</td>
-                        <td className={`${TD} tabular-nums text-slate-500`}>
+                        <td className={`${TD} tabular-nums as-text-muted`}>
                           {n(hit.strength, { style: 'percent', maximumFractionDigits: 0 })}
                         </td>
                       </tr>
@@ -187,14 +187,14 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                 ['synastry.overlay.bInA', comparison.synastry.overlayBinA],
               ] as const).map(([labelKey, entries]) => (
                 <div key={labelKey}>
-                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide as-text-muted">
                     {t(labelKey)}
                   </h4>
                   <ul className="space-y-1 text-sm">
                     {entries.map((entry) => (
                       <li key={entry.body} className="flex justify-between gap-4">
                         <span>{t(`body.${entry.body}`)}</span>
-                        <span className="tabular-nums text-slate-500">
+                        <span className="tabular-nums as-text-muted">
                           {formatLongitude(entry.longitude, { precision: 'degree' })}
                         </span>
                         <span className="tabular-nums font-medium">{n(entry.house)}</span>
@@ -208,7 +208,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
 
           {view === 'composite' ? (
             <div className="space-y-3">
-              <p className="px-3 text-xs text-slate-500">{t('composite.note')}</p>
+              <p className="px-3 text-xs as-text-muted">{t('composite.note')}</p>
               {comparison.composite.cuspsDegenerate ? (
                 <p className="mx-3 rounded border border-amber-200 bg-amber-50 p-2 text-xs text-amber-800">
                   {t('composite.degenerate')}
@@ -223,7 +223,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
               <div className="overflow-x-auto">
                 <table className="w-full border-collapse text-sm">
                   <thead>
-                    <tr className="border-b border-slate-300">
+                    <tr className="border-b as-border-strong">
                       <th className={TH}>{t('table.column.body')}</th>
                       <th className={TH}>{t('composite.column.a')}</th>
                       <th className={TH}>{t('composite.column.b')}</th>
@@ -233,14 +233,14 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                   </thead>
                   <tbody>
                     {comparison.composite.positions.map((position) => (
-                      <tr key={position.body} className="border-b border-slate-100 last:border-0">
+                      <tr key={position.body} className="border-b as-border-hair last:border-0">
                         <th scope="row" className={`${TD} text-left font-normal`}>
                           {t(`body.${position.body}`)}
                         </th>
-                        <td className={`${TD} tabular-nums text-slate-500`}>
+                        <td className={`${TD} tabular-nums as-text-muted`}>
                           {formatLongitude(position.longitudeA, { precision: 'degree' })}
                         </td>
-                        <td className={`${TD} tabular-nums text-slate-500`}>
+                        <td className={`${TD} tabular-nums as-text-muted`}>
                           {formatLongitude(position.longitudeB, { precision: 'degree' })}
                         </td>
                         <td className={`${TD} tabular-nums font-medium`}>
@@ -259,10 +259,10 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
 
           {view === 'davison' ? (
             <div className="space-y-3">
-              <p className="px-3 text-xs text-slate-500">{t('davison.note')}</p>
+              <p className="px-3 text-xs as-text-muted">{t('davison.note')}</p>
               <dl className="grid grid-cols-2 gap-x-6 gap-y-2 px-3 text-sm">
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-500">
+                  <dt className="text-xs uppercase tracking-wide as-text-muted">
                     {t('davison.moment')}
                   </dt>
                   <dd className="tabular-nums">
@@ -272,7 +272,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                   </dd>
                 </div>
                 <div>
-                  <dt className="text-xs uppercase tracking-wide text-slate-500">
+                  <dt className="text-xs uppercase tracking-wide as-text-muted">
                     {t('davison.place')}
                   </dt>
                   <dd className="tabular-nums">
@@ -281,7 +281,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                   </dd>
                 </div>
               </dl>
-              <div className="rounded-lg border border-slate-200 p-3">
+              <div className="rounded-lg border as-border-hair p-3">
                 <ChartWheel
                   chart={comparison.davison.chart}
                   size={760}

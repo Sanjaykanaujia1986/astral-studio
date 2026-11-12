@@ -59,9 +59,9 @@ export interface BirthFormProps {
   readonly busy?: boolean;
 }
 
-const LABEL = 'block text-sm font-medium text-slate-700';
+const LABEL = 'block text-sm font-medium as-text';
 const FIELD =
-  'mt-1 w-full rounded-md border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
+  'mt-1 w-full rounded-md border as-border-strong px-3 py-2 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
 
 export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
   const { t } = useTranslator();
@@ -132,7 +132,7 @@ export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
     <form onSubmit={handleSubmit(submit)} className="space-y-4">
       <div>
         <label htmlFor="name" className={LABEL}>
-          {t('form.name')} <span className="text-slate-400">{t('form.name.optional')}</span>
+          {t('form.name')} <span className="as-text-muted">{t('form.name.optional')}</span>
         </label>
         <input id="name" type="text" {...register('name')} className={FIELD} />
       </div>
@@ -141,7 +141,7 @@ export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
         <div>
           <label htmlFor="date" className={LABEL}>{t('form.date')}</label>
           <input id="date" type="date" {...register('date')} className={FIELD} />
-          {errors.date ? <p className="mt-1 text-xs text-rose-600">{errors.date.message}</p> : null}
+          {errors.date ? <p className="mt-1 text-xs as-text-danger">{errors.date.message}</p> : null}
         </div>
         <div>
           <label htmlFor="time" className={LABEL}>{t('form.time')}</label>
@@ -150,13 +150,13 @@ export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
             type="time"
             disabled={!timeKnown}
             {...register('time')}
-            className={`${FIELD} disabled:bg-slate-100 disabled:text-slate-400`}
+            className={`${FIELD} as-surface-inset disabled:as-text-muted`}
           />
-          {errors.time ? <p className="mt-1 text-xs text-rose-600">{errors.time.message}</p> : null}
+          {errors.time ? <p className="mt-1 text-xs as-text-danger">{errors.time.message}</p> : null}
         </div>
       </div>
 
-      <label className="flex items-start gap-2 text-sm text-slate-700">
+      <label className="flex items-start gap-2 text-sm as-text">
         {/*
           Sized explicitly. An unstyled checkbox renders at 13 px, below the
           24x24 CSS px minimum WCAG 2.5.8 asks for, and this one gates whether
@@ -166,12 +166,12 @@ export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
         <input
           type="checkbox"
           {...register('timeKnown')}
-          className="mt-0.5 h-6 w-6 shrink-0 rounded border-slate-300"
+          className="mt-0.5 h-6 w-6 shrink-0 rounded as-border-strong"
         />
         <span>
           {t('form.timeKnown')}
           {!timeKnown ? (
-            <span className="mt-0.5 block text-xs text-amber-700">
+            <span className="mt-0.5 block text-xs as-text-warning">
               {t('form.timeUnknown.explain')}
             </span>
           ) : null}
@@ -180,7 +180,7 @@ export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
 
       <LocationSearch value={city} onChange={setCity} error={cityError} />
 
-      <fieldset className="grid grid-cols-2 gap-3 border-t border-slate-200 pt-4">
+      <fieldset className="grid grid-cols-2 gap-3 border-t as-border-hair pt-4">
         <legend className="sr-only">{t('form.section.settings')}</legend>
         <div>
           <label htmlFor="houseSystem" className={LABEL}>{t('form.houseSystem')}</label>
@@ -201,7 +201,7 @@ export function BirthForm({ onSubmit, busy = false }: BirthFormProps) {
             <option value="true">{t('nodeType.true')}</option>
             <option value="mean">{t('nodeType.mean')}</option>
           </select>
-          <p className="mt-1 text-xs text-slate-500">{t('form.nodeType.explain')}</p>
+          <p className="mt-1 text-xs as-text-muted">{t('form.nodeType.explain')}</p>
         </div>
 
         <div>

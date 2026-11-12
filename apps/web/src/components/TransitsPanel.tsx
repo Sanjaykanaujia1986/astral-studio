@@ -41,7 +41,7 @@ const RANGES = [
 ];
 
 const FIELD =
-  'rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
+  'rounded-md border as-border-strong px-3 py-1.5 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
 
 export function TransitsPanel({ chart }: TransitsPanelProps): JSX.Element {
   const { t } = useTranslator();
@@ -88,7 +88,7 @@ export function TransitsPanel({ chart }: TransitsPanelProps): JSX.Element {
     <div className="space-y-3">
       <div className="flex flex-wrap items-end gap-3 px-3 pt-2">
         <label className="text-sm">
-          <span className="block font-medium text-slate-700">{t('transit.range')}</span>
+          <span className="block font-medium as-text">{t('transit.range')}</span>
           <select
             value={months}
             onChange={(e) => setMonths(Number(e.target.value))}
@@ -104,7 +104,7 @@ export function TransitsPanel({ chart }: TransitsPanelProps): JSX.Element {
           </select>
         </label>
 
-        <label className="flex items-center gap-2 pb-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 pb-2 text-sm as-text">
           <input
             type="checkbox"
             checked={includeFast}
@@ -124,7 +124,7 @@ export function TransitsPanel({ chart }: TransitsPanelProps): JSX.Element {
       </div>
 
       {error ? (
-        <p role="alert" className="px-3 text-sm text-rose-700">{error}</p>
+        <p role="alert" className="px-3 text-sm as-text-danger">{error}</p>
       ) : null}
 
       {hits ? <TransitTable hits={hits} /> : null}

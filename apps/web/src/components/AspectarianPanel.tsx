@@ -37,6 +37,7 @@ import {
   type PeriodKind,
 } from '@astro/ui';
 import { searchAspectarian } from '../lib/search.js';
+import { useChartTheme } from '../lib/chart-theme.js';
 
 const CORE_BODIES: readonly Body[] = [
   'sun', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto',
@@ -54,10 +55,12 @@ function jdFromMs(ms: number): number {
 }
 
 const BUTTON =
-  'rounded-md border border-slate-300 px-3 py-1.5 text-sm hover:bg-slate-100 disabled:opacity-50';
+  'rounded-md border as-border-strong px-3 py-1.5 text-sm as-hover-inset disabled:opacity-50';
 
 export function AspectarianPanel(): JSX.Element {
   const { t, d, locale } = useTranslator();
+  // The aspect hues follow the page, like the wheel's do.
+  const chartTheme = useChartTheme();
 
   const [period, setPeriod] = useState<PeriodKind>('month');
   const [anchor, setAnchor] = useState(() => new Date());
@@ -149,7 +152,7 @@ export function AspectarianPanel(): JSX.Element {
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap items-center gap-2 px-3 pt-2">
-        <div className="flex rounded-md border border-slate-300">
+        <div className="flex rounded-md border as-border-strong">
           {PERIODS.map((option) => (
             <button
               key={option}
@@ -157,7 +160,7 @@ export function AspectarianPanel(): JSX.Element {
               onClick={() => setPeriod(option)}
               aria-pressed={period === option}
               className={`px-3 py-1.5 text-sm first:rounded-l-md last:rounded-r-md ${
-                period === option ? 'bg-slate-900 text-white' : 'hover:bg-slate-100'
+                period === option ? 'bg-slate-900 text-white' : 'as-hover-inset'
               }`}
             >
               {t(`aspectarian.period.${option}`)}
@@ -175,13 +178,13 @@ export function AspectarianPanel(): JSX.Element {
           {t('aspectarian.next')} →
         </button>
 
-        <span className="ml-2 text-sm font-medium text-slate-700">{heading}</span>
+        <span className="ml-2 text-sm font-medium as-text">{heading}</span>
         {busy ? (
-          <span className="text-xs text-slate-500">{t('transit.calculating')}</span>
+          <span className="text-xs as-text-muted">{t('transit.calculating')}</span>
         ) : null}
       </div>
 
-      <div className="flex flex-wrap gap-4 px-3 text-sm text-slate-700">
+      <div className="flex flex-wrap gap-4 px-3 text-sm as-text">
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
@@ -210,7 +213,7 @@ export function AspectarianPanel(): JSX.Element {
         />
       ) : null}
 
-      <AspectarianList events={visibleEvents} />
+      <AspectarianList events={visibleEvents} theme={chartTheme} />
     </div>
   );
 }

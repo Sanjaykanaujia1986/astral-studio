@@ -17,7 +17,7 @@ export interface TransitTableProps {
   readonly className?: string;
 }
 
-const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-slate-500';
+const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide as-text-muted';
 const TD = 'px-3 py-2 whitespace-nowrap';
 
 const ANGLE_KEYS = new Set(['asc', 'mc', 'dsc', 'ic']);
@@ -40,7 +40,7 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
 
   if (hits.length === 0) {
     return (
-      <p className={`px-3 py-6 text-sm text-slate-500 ${className ?? ''}`}>{t('transit.empty')}</p>
+      <p className={`px-3 py-6 text-sm as-text-muted ${className ?? ''}`}>{t('transit.empty')}</p>
     );
   }
 
@@ -49,14 +49,14 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
   return (
     <div className={className}>
       {anyMultiPass ? (
-        <p className="px-3 pb-2 pt-1 text-xs text-slate-500">{t('transit.note.retrograde')}</p>
+        <p className="px-3 pb-2 pt-1 text-xs as-text-muted">{t('transit.note.retrograde')}</p>
       ) : null}
 
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-sm">
           <caption className="sr-only">{t('transit.heading')}</caption>
           <thead>
-            <tr className="border-b border-slate-300">
+            <tr className="border-b as-border-strong">
               <th scope="col" className={TH}>{t('transit.column.date')}</th>
               <th scope="col" className={TH}>{t('transit.column.transiting')}</th>
               <th scope="col" className={TH}>{t('table.column.aspect')}</th>
@@ -75,7 +75,7 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
               return (
                 <tr
                   key={`${hit.transitBody}-${hit.aspect}-${hit.target.id}-${hit.exactJd}`}
-                  className="border-b border-slate-100 last:border-0"
+                  className="border-b as-border-hair last:border-0"
                 >
                   <td className={`${TD} tabular-nums`}>
                     {d(hit.exactUtcIso, {
@@ -115,12 +115,12 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
                   </td>
                   <td className={TD}>
                     {hit.direction === 'retrograde' ? (
-                      <span className="text-rose-700">℞ {t('motion.retrograde')}</span>
+                      <span className="as-text-danger">℞ {t('motion.retrograde')}</span>
                     ) : (
-                      <span className="text-slate-500">{t('motion.direct')}</span>
+                      <span className="as-text-muted">{t('motion.direct')}</span>
                     )}
                   </td>
-                  <td className={`${TD} text-slate-500`}>
+                  <td className={`${TD} as-text-muted`}>
                     {hit.totalPasses > 1
                       ? t('transit.pass.of', { index: hit.passIndex, total: hit.totalPasses })
                       : t('transit.pass.single')}

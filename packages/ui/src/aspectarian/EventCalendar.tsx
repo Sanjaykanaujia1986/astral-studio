@@ -32,10 +32,10 @@ export interface EventCalendarProps {
  * "some / more / many" and stop there.
  */
 function densityClass(count: number): string {
-  if (count === 0) return 'bg-white';
-  if (count <= 2) return 'bg-sky-50';
-  if (count <= 5) return 'bg-sky-100';
-  return 'bg-sky-200';
+  if (count === 0) return 'as-surface-solid';
+  if (count <= 2) return 'as-density-1';
+  if (count <= 5) return 'as-density-2';
+  return 'as-density-3';
 }
 
 export function EventCalendar({
@@ -55,7 +55,7 @@ export function EventCalendar({
   return (
     <div className={className}>
       <table className="w-full table-fixed border-collapse">
-        <caption className="px-3 pb-2 text-left text-xs text-slate-500">
+        <caption className="px-3 pb-2 text-left text-xs as-text-muted">
           {t('calendar.legend')}
         </caption>
         <thead>
@@ -64,7 +64,7 @@ export function EventCalendar({
               <th
                 key={label}
                 scope="col"
-                className="px-1 pb-1 text-center text-xs font-medium uppercase tracking-wide text-slate-500"
+                className="px-1 pb-1 text-center text-xs font-medium uppercase tracking-wide as-text-muted"
               >
                 {label}
               </th>
@@ -96,9 +96,9 @@ export function EventCalendar({
                       className={[
                         'flex h-14 w-full flex-col items-start rounded border px-1.5 py-1 text-left transition',
                         densityClass(count),
-                        cell.inMonth ? 'text-slate-900' : 'text-slate-300',
-                        isSelected ? 'border-slate-900 ring-1 ring-slate-900' : 'border-slate-200',
-                        'hover:border-slate-400',
+                        cell.inMonth ? 'as-text' : 'as-text-muted',
+                        isSelected ? 'as-border-strong ring-1 ring-slate-900' : 'as-border-hair',
+                        'hover:as-border-strong',
                       ].join(' ')}
                     >
                       <span
@@ -107,7 +107,7 @@ export function EventCalendar({
                         {n(cell.date.getUTCDate())}
                       </span>
                       {count > 0 && cell.inMonth ? (
-                        <span className="mt-auto text-xs font-medium text-sky-800 tabular-nums">
+                        <span className="mt-auto text-xs font-medium as-text-accent tabular-nums">
                           {n(count)}
                         </span>
                       ) : null}

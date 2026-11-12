@@ -183,6 +183,31 @@ export const TOKENS: Readonly<Record<ThemeMode, ColorTokens>> = {
 };
 
 /** Token name -> CSS custom property name. */
+/**
+ * How opaque the nav rail is over the page behind it.
+ *
+ * It lives here, beside the tokens, because it is part of what decides
+ * whether the text on the rail is readable. The rail shipped at 0.72 and the
+ * contrast test passed the whole time — the test measured `accentOnBrand`
+ * against the pure `brand` token at 8.35:1, while the rail a reader actually
+ * saw composited to 3.59:1 over the light canvas.
+ *
+ * So the stylesheet reads it from `--as-rail-opacity` and the test composites
+ * with the same number. One value, or the two drift again.
+ */
+export const RAIL_OPACITY = 0.88;
+
+/** `base` laid over `behind` at `alpha`, the way CSS composites in sRGB. */
+export function compositeOver(base: string, behind: string, alpha: number): string {
+  const channels = (h: string): number[] =>
+    [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const a = channels(base);
+  const b = channels(behind);
+  return `#${a
+    .map((v, i) => Math.round(v * alpha + b[i]! * (1 - alpha)).toString(16).padStart(2, '0'))
+    .join('')}`;
+}
+
 export function cssVariableName(token: keyof ColorTokens): string {
   return `--as-${token.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`)}`;
 }
@@ -206,6 +231,7 @@ export function themeCss(): string {
     `  --as-font-sans: ${FONTS.sans};`,
     `  --as-font-serif: ${FONTS.serif};`,
     `  --as-font-numeric: ${FONTS.numeric};`,
+    `  --as-rail-opacity: ${RAIL_OPACITY};`,
     '  color-scheme: light;',
     '}',
     '',
@@ -224,6 +250,67 @@ export function themeCss(): string {
     ':root[data-theme="light"] {',
     declarations(LIGHT_TOKENS, '  '),
     '  color-scheme: light;',
+    '}',
+    '',
+    /*
+     * Paper.
+     *
+     * A printed document is on white whatever the screen is doing, and the
+     * report reuses the SAME table components as the app. Without this the
+     * tables would inherit the dark theme's near-white ink onto paper. The
+     * light tokens are redeclared on the subtree rather than on the root, so
+     * the document is light while the page around it stays as the reader set
+     * it.
+     */
+    '.as-paper {',
+    declarations(LIGHT_TOKENS, '  '),
+    '  color-scheme: light;',
+    '}',
+    '',
+    /*
+     * Utilities named after a ROLE, not a swatch.
+     *
+     * Emitted beside the tokens so they cannot drift from them, and so the
+     * report document gets them too. The palette classes they replace
+     * (`text-slate-700`, `text-rose-700`, ...) were chosen against the
+     * original ivory theme and never re-measured after the redesign: on the
+     * dark theme they came out at 1.84:1 and 3.16:1.
+     */
+    '.as-text { color: var(--as-ink); }',
+    '.as-text-muted { color: var(--as-ink-muted); }',
+    '.as-text-danger { color: var(--as-danger-ink); }',
+    '.as-text-warning { color: var(--as-warning-ink); }',
+    '.as-text-success { color: var(--as-success-ink); }',
+    '.as-text-accent { color: var(--as-accent-ink); }',
+    '.as-border-strong { border-color: var(--as-border-strong); }',
+    '.as-border-hair { border-color: var(--as-border); }',
+    '.as-surface-solid { background-color: var(--as-raised); }',
+    // A panel set INTO a card, and the hover tint. Both derive from the ink,
+    // so they darken a light theme and lighten a dark one without naming a
+    // colour for either.
+    '.as-surface-inset {',
+    '  background-color: color-mix(in srgb, var(--as-ink) 7%, transparent);',
+    '}',
+    /*
+     * Calendar density bands. Three steps of accent mixed INTO an opaque
+     * surface, rather than three fixed pale blues — those were chosen for the
+     * ivory theme and left a near-white cell on the night sky, with themed
+     * ink on top of it at 1.06:1.
+     */
+    '.as-density-1 {',
+    '  background-color: color-mix(in srgb, var(--as-accent) 14%, var(--as-raised));',
+    '}',
+    '.as-density-2 {',
+    '  background-color: color-mix(in srgb, var(--as-accent) 26%, var(--as-raised));',
+    '}',
+    '.as-density-3 {',
+    '  background-color: color-mix(in srgb, var(--as-accent) 40%, var(--as-raised));',
+    '}',
+    '.as-hover-inset:hover {',
+    '  background-color: color-mix(in srgb, var(--as-ink) 10%, transparent);',
+    '}',
+    '.as-hover-tint:hover {',
+    '  background-color: color-mix(in srgb, var(--as-ink) 12%, transparent);',
     '}',
   ].join('\n');
 }

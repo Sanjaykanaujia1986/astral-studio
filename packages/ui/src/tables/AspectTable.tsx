@@ -20,29 +20,29 @@ export interface AspectTableProps {
   readonly className?: string;
 }
 
-const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide text-slate-500';
+const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide as-text-muted';
 const TD = 'px-3 py-2 whitespace-nowrap tabular-nums';
 
 function MotionCell({ hit, t }: { hit: AspectHit; t: Translator['t'] }): JSX.Element {
   if (hit.exact) {
-    return <span className="font-medium text-emerald-700">{t('motion.exact')}</span>;
+    return <span className="font-medium as-text-success">{t('motion.exact')}</span>;
   }
   if (hit.motion === 'applying') {
     return (
-      <span className="text-sky-700" title={t('motion.applying.hint')}>
+      <span className="as-text-accent" title={t('motion.applying.hint')}>
         {t('motion.applying')} →
       </span>
     );
   }
   if (hit.motion === 'separating') {
     return (
-      <span className="text-slate-500" title={t('motion.separating.hint')}>
+      <span className="as-text-muted" title={t('motion.separating.hint')}>
         ← {t('motion.separating')}
       </span>
     );
   }
   return (
-    <span className="text-amber-700" title={t('motion.stationary.hint')}>
+    <span className="as-text-warning" title={t('motion.stationary.hint')}>
       {t('motion.stationary')}
     </span>
   );
@@ -55,7 +55,7 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
 
   if (hits.length === 0) {
     return (
-      <p className={`px-3 py-6 text-sm text-slate-500 ${className ?? ''}`}>
+      <p className={`px-3 py-6 text-sm as-text-muted ${className ?? ''}`}>
         {t('table.aspects.empty')}
       </p>
     );
@@ -66,7 +66,7 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
       <table className="w-full border-collapse text-sm">
         <caption className="sr-only">{t('table.caption.aspects')}</caption>
         <thead>
-          <tr className="border-b border-slate-300">
+          <tr className="border-b as-border-strong">
             <th scope="col" className={TH}>{t('table.column.aspect')}</th>
             <th scope="col" className={TH}>{t('table.column.orb')}</th>
             <th scope="col" className={TH}>{t('table.column.motion')}</th>
@@ -87,7 +87,7 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
             return (
               <tr
                 key={`${hit.bodyA}-${hit.aspect}-${hit.bodyB}`}
-                className="border-b border-slate-100 last:border-0"
+                className="border-b as-border-hair last:border-0"
               >
                 <th scope="row" className={`${TD} text-left font-normal`}>
                   <span className="inline-flex items-center gap-1.5">
@@ -104,7 +104,7 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
                     <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
                       {b.symbol}
                     </span>
-                    <span className="ml-2 text-slate-500">
+                    <span className="ml-2 as-text-muted">
                       {nameA} {aspectName} {nameB}
                     </span>
                   </span>
@@ -121,7 +121,7 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
                         backgroundColor: colour,
                       }}
                     />
-                    <span className="text-xs text-slate-500">
+                    <span className="text-xs as-text-muted">
                       {n(hit.strength, { style: 'percent', maximumFractionDigits: 0 })}
                     </span>
                   </span>

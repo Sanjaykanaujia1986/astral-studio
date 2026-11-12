@@ -33,7 +33,7 @@ const ORIENTATIONS: readonly Orientation[] = ['portrait', 'landscape'];
 const SECTION_KEYS = ['wheel', 'positions', 'houses', 'aspects', 'interpretation'] as const;
 
 const FIELD =
-  'rounded-md border border-slate-300 px-3 py-1.5 text-sm focus:border-slate-500 focus:outline-none focus:ring-1 focus:ring-slate-500';
+  'rounded-md border as-border-strong px-3 py-1.5 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
 
 export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
   const { t, locale } = useTranslator();
@@ -75,11 +75,11 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
   return (
     <div className="space-y-4">
       <div className="no-print space-y-3 px-3 pt-2">
-        <p className="text-xs text-slate-500">{t('report.intro')}</p>
+        <p className="text-xs as-text-muted">{t('report.intro')}</p>
 
         <div className="flex flex-wrap items-end gap-3">
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">{t('report.paper')}</span>
+            <span className="block font-medium as-text">{t('report.paper')}</span>
             <select
               value={size}
               onChange={(e) => setSize(e.target.value as PaperSize)}
@@ -94,7 +94,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
           </label>
 
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">{t('report.orientation')}</span>
+            <span className="block font-medium as-text">{t('report.orientation')}</span>
             <select
               value={orientation}
               onChange={(e) => setOrientation(e.target.value as Orientation)}
@@ -109,7 +109,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
           </label>
 
           <label className="text-sm">
-            <span className="block font-medium text-slate-700">{t('report.margin')}</span>
+            <span className="block font-medium as-text">{t('report.margin')}</span>
             <input
               type="number"
               min={5}
@@ -130,14 +130,14 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
         </div>
 
         <fieldset className="flex flex-wrap items-center gap-4">
-          <legend className="text-sm font-medium text-slate-700">{t('report.include')}</legend>
+          <legend className="text-sm font-medium as-text">{t('report.include')}</legend>
           {SECTION_KEYS.map((key) => (
             <label key={key} className="flex items-center gap-2 text-sm">
               <input
                 type="checkbox"
                 checked={sections[key]}
                 onChange={() => toggle(key)}
-                className="h-4 w-4 rounded border-slate-300"
+                className="h-4 w-4 rounded as-border-strong"
               />
               {t(`report.include.${key}` as 'report.include.wheel')}
             </label>
@@ -145,7 +145,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
         </fieldset>
 
         {settings.glyphStyle === 'symbol' ? (
-          <p className="text-xs text-slate-500">{t('report.glyphHint')}</p>
+          <p className="text-xs as-text-muted">{t('report.glyphHint')}</p>
         ) : null}
       </div>
 
@@ -154,7 +154,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
         legible on a phone. `transform` scales the box visually without
         changing the millimetre dimensions the print stylesheet depends on.
       */}
-      <div className="report-preview overflow-x-auto bg-slate-100 py-6">
+      <div className="report-preview overflow-x-auto as-surface-inset py-6">
         <ReportDocument
           chart={chart}
           {...(chart.input.name ? { subjectName: chart.input.name } : {})}

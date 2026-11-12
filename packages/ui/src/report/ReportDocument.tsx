@@ -92,7 +92,7 @@ function Footer({ attribution, generatedIso }: {
 }): JSX.Element {
   const { t, d } = useTranslator();
   return (
-    <footer className="report-footer mt-6 border-t border-slate-300 pt-2 text-[9px] leading-snug text-slate-500">
+    <footer className="report-footer mt-6 border-t as-border-strong pt-2 text-[9px] leading-snug as-text-muted">
       <p>{attribution}</p>
       <p>
         {t('report.generated')}:{' '}
@@ -105,8 +105,8 @@ function Footer({ attribution, generatedIso }: {
 function DelineationBlock({ item }: { item: Delineation }): JSX.Element {
   return (
     <div className="report-block mb-3">
-      <h3 className="report-heading text-[11px] font-semibold text-slate-900">{item.title}</h3>
-      <p className="text-[11px] leading-relaxed text-slate-700">{item.body}</p>
+      <h3 className="report-heading text-[11px] font-semibold as-text">{item.title}</h3>
+      <p className="text-[11px] leading-relaxed as-text">{item.body}</p>
     </div>
   );
 }
@@ -139,19 +139,19 @@ export function ReportDocument({
   const summary = (
     <dl className="report-block grid grid-cols-2 gap-x-6 gap-y-2 text-[11px] sm:grid-cols-4">
       <div>
-        <dt className="text-[9px] uppercase tracking-wide text-slate-500">
+        <dt className="text-[9px] uppercase tracking-wide as-text-muted">
           {t('summary.birthplace')}
         </dt>
         <dd>{chart.place.label ?? `${n(chart.place.latitude, { maximumFractionDigits: 4 })}°, ${n(chart.place.longitude, { maximumFractionDigits: 4 })}°`}</dd>
       </div>
       <div>
-        <dt className="text-[9px] uppercase tracking-wide text-slate-500">
+        <dt className="text-[9px] uppercase tracking-wide as-text-muted">
           {t('summary.utcInstant')}
         </dt>
         <dd className="tabular-nums">{chart.utcIso.replace('.000', '')}</dd>
       </div>
       <div>
-        <dt className="text-[9px] uppercase tracking-wide text-slate-500">
+        <dt className="text-[9px] uppercase tracking-wide as-text-muted">
           {t('report.houseSystem')}
         </dt>
         <dd>
@@ -161,19 +161,19 @@ export function ReportDocument({
         </dd>
       </div>
       <div>
-        <dt className="text-[9px] uppercase tracking-wide text-slate-500">
+        <dt className="text-[9px] uppercase tracking-wide as-text-muted">
           {t('summary.offsetUsed')}
         </dt>
         <dd className="tabular-nums">{formatOffset(offsetMinutes)}</dd>
       </div>
       <div>
-        <dt className="text-[9px] uppercase tracking-wide text-slate-500">
+        <dt className="text-[9px] uppercase tracking-wide as-text-muted">
           {t('summary.nodeType')}
         </dt>
         <dd>{t(`nodeType.${chart.settings.nodeType}` as 'nodeType.true')}</dd>
       </div>
       <div>
-        <dt className="text-[9px] uppercase tracking-wide text-slate-500">
+        <dt className="text-[9px] uppercase tracking-wide as-text-muted">
           {t('summary.ephemeris')}
         </dt>
         <dd>
@@ -185,8 +185,14 @@ export function ReportDocument({
     </dl>
   );
 
+  /*
+   * `as-paper` redeclares the LIGHT tokens on this subtree. The document is
+   * printed on white whatever the screen is doing, and these tables are the
+   * same components the themed app renders — without it the dark theme's
+   * near-white ink would land on paper.
+   */
   return (
-    <div className="report-root text-slate-900">
+    <div className="report-root as-paper as-text">
       {/*
         Emitted into the document rather than shipped in a stylesheet, because
         the @page rule depends on the paper the reader chose at run time.
@@ -194,9 +200,9 @@ export function ReportDocument({
       <style>{pageCss(paper)}</style>
 
       <article className="report-page">
-        <header className="report-block mb-4 border-b border-slate-300 pb-3">
+        <header className="report-block mb-4 border-b as-border-strong pb-3">
           <h1 className="text-lg font-semibold">{heading}</h1>
-          <p className="text-[11px] text-slate-600">
+          <p className="text-[11px] as-text-muted">
             {d(chart.utcIso, { dateStyle: 'long', timeZone: 'UTC' })}
             {' · '}
             {chart.place.label ?? ''}
@@ -253,7 +259,7 @@ export function ReportDocument({
             ) : (
               // Stated, not skipped. A missing section that says nothing looks
               // like an oversight; this says why it is absent.
-              <p className="text-[11px] text-slate-600">{t('report.noHouses.explain')}</p>
+              <p className="text-[11px] as-text-muted">{t('report.noHouses.explain')}</p>
             )
           ) : null}
 
@@ -279,7 +285,7 @@ export function ReportDocument({
 
           {interpretation ? (
             <>
-              <p className="report-block mb-4 border-l-2 border-slate-300 pl-2 text-[9px] leading-snug text-slate-500">
+              <p className="report-block mb-4 border-l-2 as-border-strong pl-2 text-[9px] leading-snug as-text-muted">
                 {interpretation.provenance} ({interpretation.revision})
                 {!interpretation.reviewed ? ` — ${t('report.interpretation.unreviewed')}` : ''}
               </p>
@@ -291,7 +297,7 @@ export function ReportDocument({
                 if (items.length === 0) return null;
                 return (
                   <section key={section} className="mb-5">
-                    <h3 className="report-heading mb-2 border-b border-slate-200 pb-1 text-[12px] font-semibold uppercase tracking-wide text-slate-600">
+                    <h3 className="report-heading mb-2 border-b as-border-hair pb-1 text-[12px] font-semibold uppercase tracking-wide as-text-muted">
                       {t(`report.section.${section}` as 'report.section.overview')}
                     </h3>
                     {items.map((item) => (
