@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 0.18.0 — 2026-11-12
+- **The Vedic chart names its grahas instead of drawing symbols**, in bold: Su, Mo, Ma, Me, Ju, Ve, Sa, Ra, Ke — the form printed in Indian ephemerides.
+- Not a preference. **☊ and ☋ are the same horseshoe, one turned over**, and at the size a chart cell affords they are not reliably distinguishable. They are also the one pair that must never be confused, since they are always opposite — reading one for the other reflects half the chart. The outer planets had the same problem for a different reason: ♅ ♆ ♇ are not symbols most readers of an Indian chart have memorised.
+- The figure therefore ignores the Glyph style setting, which still governs the Western wheel. The prop is still accepted so a caller setting it everywhere need not special-case this one, and it says in the code that it is ignored and why.
+- Labels are `font-weight: 600` and drawn in the body font rather than the glyph stack — these are letters now, and that stack picks fonts for symbol coverage, not for reading two letters at 12px.
+- Two-letter names with a retrograde mark are roughly **twice the width** of a single symbol, which is exactly the change that silently pushes a label over a slanted edge. A test now walks all twelve cells at one to nine bodies in both styles and checks the four corners of every label box by point-in-polygon, measured at 1.9 glyph widths. Zero escape. Confirmed by mutation: widening the box to 6 glyph widths fails it.
+
 ## 0.17.1 — 2026-11-12
 - FIX: **the Vedic chart was a white box on the night sky, with grey labels on it.** Three separate faults, all in the figure, and all invisible to yesterday's audit because that sweep skips `<svg>` — which is exactly where a chart lives.
 - The panel never passed the page's palette to `VedicChartFigure`, so it resolved to the light chart theme and painted `#ffffff` whatever the page was doing. The same defect the Western wheel had in 0.13.0, in the one component that did not get the fix. It now follows the page, and the figure draws on `#140c2b` with its grid at 15.96:1.

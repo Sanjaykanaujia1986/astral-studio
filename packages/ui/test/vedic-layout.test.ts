@@ -9,7 +9,8 @@
 import { describe, it, expect } from 'vitest';
 import {
   northIndianCells, southIndianCells, polygonArea, polygonCentroid,
-  signForCell, houseForCell, bodySlots,
+  signForCell, houseForCell, bodySlots, GLYPH_SIZE,
+  type VedicLayoutStyle,
 } from '../src/vedic/layout.js';
 
 /** Even-odd point-in-polygon, for the containment check. */
@@ -259,4 +260,51 @@ describe('graha slots', () => {
   it('returns nothing for an empty cell', () => {
     expect(bodySlots(northIndianCells()[0]!, 0, 'north')).toEqual([]);
   });
+});
+
+describe('every label stays inside its cell', () => {
+  /*
+   * The assertion a picture cannot give you.
+   *
+   * The cells of a North Indian chart are triangles and rhombi, and
+   * `bodySlots` lays out a rectangular block of slots around an anchor — so
+   * nothing in that arithmetic knows about the slanted edges. This walks all
+   * twelve cells at one to nine bodies in both styles and checks the four
+   * corners of each label's box by point-in-polygon.
+   *
+   * The box is measured at 1.9 glyph widths because the bodies are now drawn
+   * as two-letter names with a retrograde mark ("Ra℞"), not as single
+   * symbols. That change roughly doubled the width of every label, which is
+   * exactly the kind of thing that silently pushes a glyph over an edge.
+   */
+  type Pt = readonly [number, number];
+
+  function corners(x: number, y: number, scale: number, style: VedicLayoutStyle): Pt[] {
+    const w = GLYPH_SIZE * scale * 1.9;
+    const h = GLYPH_SIZE * scale;
+    const left = style === 'south' ? x : x - w / 2;
+    return [
+      [left, y - h * 0.75], [left + w, y - h * 0.75],
+      [left + w, y + h * 0.25], [left, y + h * 0.25],
+    ];
+  }
+
+  for (const style of ['north', 'south'] as const) {
+    it(`holds for every ${style} cell at one to nine bodies`, () => {
+      const cells = style === 'north' ? northIndianCells() : southIndianCells();
+      const escaped: string[] = [];
+
+      cells.forEach((cell, index) => {
+        for (let count = 1; count <= 9; count += 1) {
+          for (const slot of bodySlots(cell, count, style)) {
+            const out = corners(slot.x, slot.y, slot.scale, style)
+              .filter(([cx, cy]) => !contains(cell.points, cx, cy));
+            if (out.length > 0) escaped.push(`cell ${index}, ${count} bodies`);
+          }
+        }
+      });
+
+      expect(escaped).toEqual([]);
+    });
+  }
 });

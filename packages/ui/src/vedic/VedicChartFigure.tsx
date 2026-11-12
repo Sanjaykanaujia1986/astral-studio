@@ -27,15 +27,61 @@ export interface VedicChartFigureProps {
   readonly varga?: Varga;
   readonly size?: number;
   readonly theme?: Partial<ChartTheme>;
+  /**
+   * Accepted and ignored.
+   *
+   * Kept so a caller that sets it for every figure does not have to special
+   * case this one, but a rāśi chart is always drawn with the two-letter
+   * graha names — see `GRAHA_NAMES` for why the symbols are not an option
+   * here.
+   */
   readonly glyphStyle?: 'symbol' | 'abbreviation';
   readonly className?: string;
 }
 
+/**
+ * The two-letter names a rāśi chart is read by.
+ *
+ * ## Why this figure does not use the astronomical symbols
+ *
+ * ☊ and ☋ — Rāhu and Ketu — are the same horseshoe, one of them turned
+ * over. At the size a chart cell affords they are not reliably
+ * distinguishable, and they are the one pair in a Jyotiṣa chart that must
+ * never be confused: they are always opposite, so reading one for the other
+ * reflects half the chart. The outer planets have the same problem for a
+ * different reason — ♅ ♆ ♇ are not symbols most readers of an Indian chart
+ * have memorised.
+ *
+ * Su/Mo/Ma/Me/Ju/Ve/Sa/Ra/Ke is the convention printed in Indian ephemerides
+ * and software, so this is the familiar form rather than a substitute for one.
+ * The Western wheel still honours the reader's Glyph style setting; this
+ * figure does not, deliberately.
+ */
+const GRAHA_NAMES: Readonly<Record<string, string>> = {
+  sun: 'Su',
+  moon: 'Mo',
+  mars: 'Ma',
+  mercury: 'Me',
+  jupiter: 'Ju',
+  venus: 'Ve',
+  saturn: 'Sa',
+  trueNode: 'Ra',
+  meanNode: 'Ra',
+  southNode: 'Ke',
+  meanSouthNode: 'Ke',
+  uranus: 'Ur',
+  neptune: 'Ne',
+  pluto: 'Pl',
+  chiron: 'Ch',
+  lilith: 'Li',
+};
+
 /** Short body label. Vedic charts are crowded; full names do not fit. */
-function bodyLabel(body: string, glyphStyle: 'symbol' | 'abbreviation'): string {
+function bodyLabel(body: string): string {
+  const name = GRAHA_NAMES[body];
+  if (name) return name;
   const glyph = BODY_GLYPHS[body as keyof typeof BODY_GLYPHS];
-  if (!glyph) return body.slice(0, 2);
-  return glyphStyle === 'symbol' ? glyph.symbol : glyph.abbreviation;
+  return glyph ? glyph.abbreviation : body.slice(0, 2);
 }
 
 export function VedicChartFigure({
@@ -44,7 +90,6 @@ export function VedicChartFigure({
   varga = 'D1',
   size = 420,
   theme,
-  glyphStyle = 'symbol',
   className,
 }: VedicChartFigureProps): JSX.Element {
   const { t } = useTranslator();
@@ -63,13 +108,13 @@ export function VedicChartFigure({
   if (varga === 'D1' || !vargaChart) {
     for (const placement of chart.placements) {
       const list = bodiesBySign.get(placement.signIndex) ?? [];
-      list.push(bodyLabel(placement.body, glyphStyle) + (placement.retrograde ? '℞' : ''));
+      list.push(bodyLabel(placement.body) + (placement.retrograde ? '℞' : ''));
       bodiesBySign.set(placement.signIndex, list);
     }
   } else {
     for (const placement of vargaChart.placements) {
       const list = bodiesBySign.get(placement.signIndex) ?? [];
-      list.push(bodyLabel(placement.body, glyphStyle));
+      list.push(bodyLabel(placement.body));
       bodiesBySign.set(placement.signIndex, list);
     }
   }
@@ -120,6 +165,7 @@ export function VedicChartFigure({
               y={f(cell.label[1])}
               fill={colours.muted}
               fontSize={size * 0.032}
+              fontWeight={600}
               textAnchor={style === 'north' ? 'middle' : 'start'}
             >
               {sign + 1}
@@ -135,7 +181,14 @@ export function VedicChartFigure({
                 y={f(slot.y)}
                 fill={colours.ink}
                 fontSize={size * GLYPH_SIZE * slot.scale}
-                fontFamily={GLYPH_FONT_STACK}
+                /*
+                 * Bold, and in the body font rather than the glyph stack:
+                 * these are letters now, and the glyph stack picks fonts for
+                 * symbol coverage rather than for reading two letters at
+                 * 12px. The retrograde mark is still a glyph, so it keeps
+                 * the stack on its own tspan.
+                 */
+                fontWeight={600}
                 textAnchor={style === 'north' ? 'middle' : 'start'}
                 dominantBaseline="middle"
               >
