@@ -15,6 +15,7 @@ import { VedicChartFigure, formatLongitude, type VedicLayoutStyle } from '@astro
 import { vedicChart, VARGAS, YEAR_LENGTHS, type Varga, type YearLengthName } from '@astro/vedic';
 import { getProvider } from '../lib/engine.js';
 import { useSettings } from '../lib/settings.js';
+import { useChartTheme } from '../lib/chart-theme.js';
 
 export interface VedicPanelProps {
   readonly chart: NatalChart;
@@ -27,6 +28,7 @@ const FIELD = 'w-full max-w-full rounded-md border px-3 py-1.5 text-sm';
 export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
   const { t, n, d } = useTranslator();
   const settings = useSettings();
+  const chartTheme = useChartTheme();
   const [style, setStyle] = useState<VedicLayoutStyle>('north');
   const [varga, setVarga] = useState<Varga>('D1');
   const [yearLength, setYearLength] = useState<YearLengthName>('gregorian');
@@ -111,7 +113,13 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
           </p>
         </div>
 
+        {/*
+          The figure follows the page, like the wheel does. Without this it
+          drew a white square on the night sky and took its labels from the
+          light palette — grey on white at 3.65:1.
+        */}
         <VedicChartFigure
+          theme={chartTheme}
           chart={result}
           style={style}
           varga={varga}

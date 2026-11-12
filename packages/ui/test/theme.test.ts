@@ -12,6 +12,11 @@
  */
 import { describe, it, expect } from 'vitest';
 import {
+  LIGHT_THEME as LIGHT_CHART,
+  DARK_THEME as DARK_CHART,
+  PRINT_THEME as PRINT_CHART,
+} from '../src/chart-wheel/theme.js';
+import {
   LIGHT_TOKENS,
   DARK_TOKENS,
   TOKENS,
@@ -184,6 +189,30 @@ describe('cssVariableName', () => {
   it('gives every token a distinct variable', () => {
     const names = (Object.keys(LIGHT_TOKENS) as (keyof ColorTokens)[]).map(cssVariableName);
     expect(new Set(names).size).toBe(names.length);
+  });
+});
+
+/*
+ * The CHART themes, which are a separate palette from the page tokens and
+ * were not measured here at all.
+ *
+ * The Vedic figure draws its sign labels in `muted` on `surface`, and inside
+ * the lagna cell on `faint`. In the light theme those were 3.65:1 and 2.61:1
+ * — the least readable thing on the figure, and invisible to the page-level
+ * audit because that one skips SVG.
+ */
+describe.each([
+  ['light', LIGHT_CHART],
+  ['dark', DARK_CHART],
+  ['print', PRINT_CHART],
+] as const)('%s chart theme', (_name, t) => {
+  it.each([
+    ['ink on surface', 'ink', 'surface'],
+    ['muted on surface', 'muted', 'surface'],
+    ['ink on the lagna wash', 'ink', 'faint'],
+    ['muted on the lagna wash', 'muted', 'faint'],
+  ] as const)('%s clears 4.5:1', (_label, fg, bg) => {
+    expect(contrastRatio(t[fg], t[bg])).toBeGreaterThanOrEqual(BODY);
   });
 });
 

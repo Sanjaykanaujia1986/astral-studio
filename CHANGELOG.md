@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.17.1 — 2026-11-12
+- FIX: **the Vedic chart was a white box on the night sky, with grey labels on it.** Three separate faults, all in the figure, and all invisible to yesterday's audit because that sweep skips `<svg>` — which is exactly where a chart lives.
+- The panel never passed the page's palette to `VedicChartFigure`, so it resolved to the light chart theme and painted `#ffffff` whatever the page was doing. The same defect the Western wheel had in 0.13.0, in the one component that did not get the fix. It now follows the page, and the figure draws on `#140c2b` with its grid at 15.96:1.
+- FOUND BY MEASURING: the light chart theme's `muted` — the colour a Vedic chart draws its **sign labels** in — was **3.65:1** on its own white surface and **2.61:1** inside the lagna wash. The least readable thing on the figure was the thing that tells you which sign you are looking at. Darkened to `#635c6d`: 6.40 and 4.56. Chosen by searching for the first value clearing both, not by eye.
+- The print theme had the same shape of problem in the lagna cell, at 3.88:1. Fixed by lightening the wash rather than darkening the ink, so the lagna mark stays a mark.
+- The chart themes now have contrast tests of their own — ink and muted, on the surface and on the lagna wash, for light, dark and print. They had none, which is why a palette shipped at 2.61:1. Confirmed by mutation: putting the old value back fails two of them.
+- Checked and NOT changed: the North Indian layout is correct (house 1 at the top centre, signs ascending anticlockwise), and no glyph overflows its cell — measured by point-in-polygon for all twelve cells at one to nine bodies, in both styles. The first two things I suspected were both fine.
+
 ## 0.17.0 — 2026-11-12
 - **The contrast audit is cleared.** Re-measured in a browser across all eleven pages in both themes: **0 failures on dark, 0 on light.** Before: 14 distinct failing colour pairs on dark, worst at 1.84:1.
 - The cause was one thing throughout: ~250 hardcoded Tailwind palette classes (`text-slate-700`, `text-rose-700`, `bg-sky-50`, `border-slate-300`, ...) chosen against the original ivory theme and never re-measured after the redesign. They are replaced by utilities named after a **role** — `as-text`, `as-text-muted`, `as-text-danger`, `as-surface-inset` — which read the tokens, so their contrast is whatever the theme test measures and cannot drift from it.

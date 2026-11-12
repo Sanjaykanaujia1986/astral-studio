@@ -31,7 +31,11 @@ export interface ChartTheme {
 export const LIGHT_THEME: ChartTheme = {
   surface: '#ffffff',
   ink: '#1f2937',
-  muted: '#8b8299',
+  // Darkened from #8b8299, which measured 3.65:1 on this theme's white
+  // surface and 2.61:1 on `faint`, the lagna wash — the sign labels of a
+  // Vedic chart are drawn in it, so they were the least readable thing on
+  // the figure. Chosen by search for the first value clearing 4.5:1 on both.
+  muted: '#635c6d',
   faint: '#ded6f0',
   elements: {
     fire: '#d1442f',
@@ -82,7 +86,10 @@ export const PRINT_THEME: ChartTheme = {
   surface: '#ffffff',
   ink: '#000000',
   muted: '#555555',
-  faint: '#bbbbbb',
+  // Lightened from #bbbbbb, where `muted` came out at 3.88:1. Raising the
+  // wash rather than darkening the ink keeps the lagna mark a mark and not
+  // a block of grey.
+  faint: '#d0d0d0',
   elements: { fire: '#000000', earth: '#000000', air: '#000000', water: '#000000' },
   aspects: { hard: '#000000', soft: '#666666', neutral: '#333333', minor: '#999999' },
   signTintOpacity: 0.06,
