@@ -20,12 +20,33 @@ export type GlyphStyle = 'symbol' | 'abbreviation';
  */
 export type ChartThemeName = 'auto' | 'light' | 'dark' | 'print';
 export type OrbProfileId = 'standard' | 'tight' | 'wide';
+/**
+ * How large the wheel is drawn. Named rather than a pixel count, because the
+ * figure is an SVG that scales freely — the number only decides how much room
+ * the glyphs get before they start crowding.
+ */
+export type WheelSize = 'compact' | 'standard' | 'large';
+
+/** Rendered edge length for each named size, in px. */
+export const WHEEL_SIZES: Readonly<Record<WheelSize, number>> = {
+  compact: 520,
+  standard: 680,
+  large: 900,
+};
 
 export interface DisplaySettings {
   readonly precision: DegreePrecision;
   readonly glyphStyle: GlyphStyle;
   readonly theme: ChartThemeName;
   readonly orbProfile: OrbProfileId;
+  /*
+   * How the wheel is DRAWN. None of these change a number: the aspects are
+   * computed either way and the orb profile above is what decides which ones
+   * exist. Hiding the lines hides lines.
+   */
+  readonly wheelAspects: boolean;
+  readonly wheelTicks: boolean;
+  readonly wheelSize: WheelSize;
 }
 
 export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
@@ -33,6 +54,11 @@ export const DEFAULT_DISPLAY_SETTINGS: DisplaySettings = {
   glyphStyle: 'symbol',
   theme: 'auto',
   orbProfile: 'standard',
+  // Aspects on by default: a wheel without them is a position diagram, and
+  // the relationships are most of what the figure is read for.
+  wheelAspects: true,
+  wheelTicks: true,
+  wheelSize: 'standard',
 };
 
 const STORAGE_KEY = 'astro.display';

@@ -180,6 +180,14 @@ export const gu: Catalog = {
 
   'settings.title': 'સેટિંગ્સ',
   'settings.language': 'ભાષા',
+  'chart.view': 'ચાર્ટ દૃશ્ય',
+  'chart.view.aspects': 'દૃષ્ટિ રેખાઓ',
+  'chart.view.ticks': 'અંશ ચિહ્નો',
+  'chart.view.size': 'આકૃતિનું કદ',
+  'chart.view.size.compact': 'કોમ્પેક્ટ',
+  'chart.view.size.standard': 'પ્રમાણભૂત',
+  'chart.view.size.large': 'મોટું',
+  'chart.view.note': 'આ ચિત્ર બદલે છે, કુંડળી નહિં। દરેક દૃષ્ટિ બંને સ્થિતિમાં ગણાય છે — કઈ હશે તે સેટિંગ્સમાંની ઓર્બ પ્રોફાઇલ નક્કી કરે છે — અેટલે રેખાઓ છુપાવવાથી ફક્ત રેખાઓ છુપાય છે।',
   'settings.language.draftSuffix': 'મુસદ્દો',
   'settings.language.draftNotice':
     'જ્યોતિષીય શબ્દાવલિ પ્રમાણભૂત છે; ઇન્ટરફેસનું લખાણ મુસદ્દો છે અને પ્રવીણ વક્તા દ્વારા સમીક્ષાની રાહ જુએ છે.',

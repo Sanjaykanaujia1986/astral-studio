@@ -2,6 +2,22 @@
 
 Newest first.
 
+## 0.16.0 — 2026-11-12
+- **Chart view controls in Chart Studio**: aspect lines on or off, degree ticks on or off, and the figure at Compact / Standard / Large. The choices persist like the glyph style and the precision.
+- They change the **drawing and nothing else**, and the panel says so where the controls are: every aspect is computed whatever the checkbox says, and which ones exist is the orb profile's decision in Settings. The test that matters asserts exactly that — hiding the lines removes lines from the figure and **not one row** from the aspect table. A reader who unticks a box and watches a table shrink has been told by the product that an aspect stopped existing.
+- The house system is deliberately NOT a view option. Houses are snapshotted with the chart, so changing them is a recalculation, not a way of looking at the same figure.
+- The size cap lives on a wrapper and follows the chosen size. The wheel is `width: 100%; max-width: 100%`, so a fixed cap would have rendered "Large" at exactly the same pixels as "Standard" while the control claimed otherwise — the inline-max-width trap from the report figures, caught this time by measuring the rendered width in a browser (520 / 680 / 870 px) rather than trusting the markup.
+- Tests confirmed by mutation: hardcoding `showAspects` to true fails two of them.
+
+## Contrast audit — 2026-11-12
+Not a release. A sweep of all eleven pages in both themes, recorded here because the result is a work list.
+
+- My first harness was wrong: Tailwind v4 emits `oklch()` and it read those three numbers as RGB. Rebuilt to resolve every colour through a canvas pixel, which also fixed the earlier claim that Settings was clean — it is not.
+- **Dark theme**, hardcoded Tailwind palette classes left from the ivory theme, on 8 of 11 pages: `text-slate-700` form labels at **1.84:1**, `text-slate-600` at **2.51**, `text-sky-700` at **3.25**, `text-rose-700` at **3.16**, `text-slate-500` at **4.00**.
+- **Light theme**: the nav rail is 72% opaque, so the brand wordmark renders at **3.61:1** over the composited rail rather than the 10.44:1 the token test asserts — the test measures the token, and the rail that ships is translucent. The "Planned" badge in the rail is at **1.04:1**.
+- **Both themes**: the Calendar grid carries a hardcoded `bg-white`, and its muted day numbers are **1.49:1** against it.
+- Clean everywhere: **Vedic, Gann Lab, Clients** — the panels written after the redesign, entirely on tokens. The defect is "styled before the theme existed", not anything systemic.
+
 ## 0.15.1 — 2026-11-12
 - FIX: **the Language menu was unreadable.** On the dark theme the dropdown opened as a white list with the page's light ink on it, so "English" was legible on the selection highlight and the two draft locales were invisible beside it.
 - The dropdown a `<select>` opens is painted by the browser and does not inherit the card it sits on. Its options inherited `color` from the page but had no background of their own, and Chrome treats an author-coloured option as author-styled — so it paints the list on white and puts the ink on the one background it was never measured against. `color-scheme: dark` on the root does not rescue it: naming a colour is what opts the list out of the system rendering in the first place.

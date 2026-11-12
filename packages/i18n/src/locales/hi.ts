@@ -180,6 +180,14 @@ export const hi: Catalog = {
 
   'settings.title': 'सेटिंग्स',
   'settings.language': 'भाषा',
+  'chart.view': 'चार्ट दृश्य',
+  'chart.view.aspects': 'दृष्टि रेखाएँ',
+  'chart.view.ticks': 'अंश चिह्न',
+  'chart.view.size': 'आकृति का आकार',
+  'chart.view.size.compact': 'संकुचित',
+  'chart.view.size.standard': 'मानक',
+  'chart.view.size.large': 'बड़ा',
+  'chart.view.note': 'ये आकृति बदलते हैं, कुंडली नहीं। हर दृष्टि दोनों स्थितियों में गणित होती है — कौन सी बनेगी यह सेटिंग्स का ऑर्ब प्रोफ़ाइल तय करता है — इसलिए रेखाएँ छिपाने से केवल रेखाएँ छिपती हैं।',
   'settings.language.draftSuffix': 'प्रारूप',
   'settings.language.draftNotice':
     'ज्योतिषीय शब्दावली प्रामाणिक है; इंटरफ़ेस का पाठ प्रारूप है और किसी प्रवीण वक्ता द्वारा समीक्षा की प्रतीक्षा में है।',

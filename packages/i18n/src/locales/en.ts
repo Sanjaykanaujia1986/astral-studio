@@ -199,6 +199,14 @@ export const en = {
   // --- settings ---
   'settings.title': 'Settings',
   'settings.language': 'Language',
+  'chart.view': 'Chart view',
+  'chart.view.aspects': 'Aspect lines',
+  'chart.view.ticks': 'Degree ticks',
+  'chart.view.size': 'Figure size',
+  'chart.view.size.compact': 'Compact',
+  'chart.view.size.standard': 'Standard',
+  'chart.view.size.large': 'Large',
+  'chart.view.note': 'These change the drawing, not the chart. Every aspect is computed either way — which ones exist is decided by the orb profile in Settings — so hiding the lines hides lines.',
   'settings.language.draftSuffix': 'draft',
   'settings.language.draftNotice':
     'Astrological terms are established vocabulary; the interface text is a draft awaiting review by a fluent speaker.',

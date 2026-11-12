@@ -45,7 +45,7 @@ const ReportPanel = lazy(() =>
   import('../components/ReportPanel.js').then((m) => ({ default: m.ReportPanel })));
 
 import { useChartStore } from '../state/chart.js';
-import { useSettings } from '../lib/settings.js';
+import { useSettings, WHEEL_SIZES, type WheelSize } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
 import { WORKSPACES } from './workspaces.js';
 import { PlannedWorkspace } from './PlannedWorkspace.js';
@@ -114,6 +114,69 @@ function RequireChart({ children }: { children: (chart: NonNullable<ReturnType<t
     );
   }
   return <>{children(chart)}</>;
+}
+
+/**
+ * How the wheel is drawn.
+ *
+ * Only the drawing. The aspects are computed whatever this says, and which
+ * ones exist is the orb profile's decision in Settings — so the note under
+ * the control says that in as many words. A reader who thinks unticking a box
+ * removed an aspect has been misled by the product about its own numbers.
+ *
+ * The choices live in the display settings, so they persist like the glyph
+ * style and the precision rather than resetting on every visit.
+ */
+function WheelView(): JSX.Element {
+  const { t } = useTranslator();
+  const settings = useSettings();
+  const field = {
+    borderColor: 'var(--as-border-strong)',
+    background: 'var(--as-surface)',
+    color: 'var(--as-ink)',
+  } as const;
+
+  return (
+    <div className="mb-3 flex flex-wrap items-end gap-4">
+      <span className="as-fineprint" style={{ color: 'var(--as-ink-muted)' }}>
+        {t('chart.view')}
+      </span>
+
+      <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--as-ink)' }}>
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={settings.wheelAspects}
+          onChange={() => settings.set('wheelAspects', !settings.wheelAspects)}
+        />
+        {t('chart.view.aspects')}
+      </label>
+
+      <label className="flex items-center gap-2 text-sm" style={{ color: 'var(--as-ink)' }}>
+        <input
+          type="checkbox"
+          className="h-4 w-4"
+          checked={settings.wheelTicks}
+          onChange={() => settings.set('wheelTicks', !settings.wheelTicks)}
+        />
+        {t('chart.view.ticks')}
+      </label>
+
+      <label className="text-sm" style={{ color: 'var(--as-ink)' }}>
+        <span className="mr-2">{t('chart.view.size')}</span>
+        <select
+          value={settings.wheelSize}
+          onChange={(e) => settings.set('wheelSize', e.target.value as WheelSize)}
+          className="rounded-md border px-2 py-1 text-sm"
+          style={field}
+        >
+          <option value="compact">{t('chart.view.size.compact')}</option>
+          <option value="standard">{t('chart.view.size.standard')}</option>
+          <option value="large">{t('chart.view.size.large')}</option>
+        </select>
+      </label>
+    </div>
+  );
 }
 
 /** Warnings and the precision summary — shown wherever a chart is displayed. */
@@ -212,14 +275,27 @@ export function ChartStudioRoute(): JSX.Element {
             <>
               <ChartSummary />
               <section className="as-card">
-                <ChartWheel
-                  chart={chart}
-                  {...(chart.input.name ? { subjectName: chart.input.name } : {})}
-                  size={900}
-                  theme={chartTheme}
-                  glyphStyle={settings.glyphStyle}
-                  className="mx-auto max-w-[680px]"
-                />
+                <WheelView />
+                {/*
+                  The cap lives on the wrapper and follows the chosen size.
+                  The wheel itself is `width: 100%; max-width: 100%`, so a
+                  fixed cap here would render "Large" at exactly the same
+                  pixels as "Standard" while the control claimed otherwise.
+                */}
+                <div className="mx-auto" style={{ maxWidth: WHEEL_SIZES[settings.wheelSize] }}>
+                  <ChartWheel
+                    chart={chart}
+                    {...(chart.input.name ? { subjectName: chart.input.name } : {})}
+                    size={WHEEL_SIZES[settings.wheelSize]}
+                    showAspects={settings.wheelAspects}
+                    showMinorTicks={settings.wheelTicks}
+                    theme={chartTheme}
+                    glyphStyle={settings.glyphStyle}
+                  />
+                </div>
+                <p className="as-fineprint mt-2" style={{ color: 'var(--as-ink-muted)' }}>
+                  {t('chart.view.note')}
+                </p>
               </section>
               <section className="as-card">
                 <h2 className="as-h2">{t('table.caption.planets')}</h2>
