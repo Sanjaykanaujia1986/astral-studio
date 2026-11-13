@@ -3,7 +3,7 @@
  *
  * Exists so a reading is produced by CALCULATION rather than from memory.
  * Every degree, cusp, aspect orb and transit date below comes out of the same
- * verified engine the app uses (fingerprint 855fec9b); nothing here is
+ * verified engine the app uses (fingerprint 0123070b); nothing here is
  * recalled or estimated.
  *
  * Usage:
@@ -189,7 +189,7 @@ async function main(): Promise<void> {
       nodeType,
       orbProfile: 'standard',
       ephemeris: 'Swiss Ephemeris via swisseph-wasm',
-      engineFingerprint: '855fec9b',
+      engineFingerprint: '0123070b',
     },
     birth: {
       input: `${birthDate}${birthTime ? ` ${birthTime}` : ' (time unknown)'} ${zone}`,

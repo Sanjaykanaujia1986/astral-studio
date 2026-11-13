@@ -3,7 +3,7 @@
  *   GET /api/ephemeris?from=2024-01-01&to=2024-01-31
  *
  * Daily positions at 00:00 UT, 1900-01-01 to 2100-12-31, computed by the same
- * engine the app runs (fingerprint 855fec9b). Tropical, geocentric; longitude,
+ * engine the app runs (fingerprint 0123070b). Tropical, geocentric; longitude,
  * latitude, speed and declination in degrees, rounded to 1e-7.
  *
  * A range is capped at 366 days so one request cannot pull the whole table.

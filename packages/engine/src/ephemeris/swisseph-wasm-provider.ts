@@ -84,6 +84,15 @@ interface WasmModule {
     cusps: ArrayLike<number>;
     ascmc: ArrayLike<number>;
   };
+  /**
+   * swe_houses_ex. Same as `houses` but takes flags — which is the only way
+   * to get SIDEREAL cusps, because `swe_houses` has nowhere to put them and
+   * always answers tropical however the sidereal mode is set.
+   */
+  houses_ex(jd: number, iflag: number, lat: number, lon: number, hsys: string): {
+    cusps: ArrayLike<number>;
+    ascmc: ArrayLike<number>;
+  };
   get_ayanamsa_ex_ut(jd: number, flags: number): number;
   /** swe_set_topo. Observer position for topocentric calculations. */
   set_topo(longitude: number, latitude: number, altitude: number): void;
@@ -303,8 +312,25 @@ export class SwissEphWasmProvider implements EphemerisProvider {
       return { ...substituted, fallbackFrom: system };
     }
 
-    this.#applyZodiac(options.zodiac);
-    const result = this.#module().houses(jdUT, latitude, longitude, code);
+    /*
+     * The flag matters here, and it was being thrown away.
+     *
+     * `#applyZodiac` sets the sidereal mode and returns SEFLG_SIDEREAL, but
+     * this used to call `swe_houses`, which takes no flags and therefore
+     * always returns TROPICAL cusps. Setting the sidereal mode does nothing
+     * for it. The bodies were converted and the houses were not, so a
+     * sidereal chart carried an ascendant about 24° too high — most of a
+     * sign, and in the wrong one roughly four times out of five.
+     *
+     * Found by checking a printed Gujarati jātaka against this engine: every
+     * planet agreed to within 13 arcseconds and the lagna was out by exactly
+     * one ayanāṁśa. `swe_houses_ex` is the same call with somewhere to put
+     * the flag.
+     */
+    const siderealFlag = this.#applyZodiac(options.zodiac);
+    const result = this.#module().houses_ex(
+      jdUT, SEFLG_SWIEPH | siderealFlag, latitude, longitude, code,
+    );
 
     // The wrapper returns cusps 1-based, with index 0 unused. Reading it as a
     // 0-based array silently shifts every house by one.
@@ -327,6 +353,13 @@ export class SwissEphWasmProvider implements EphemerisProvider {
       midheaven,
       descendant: norm360(ascendant + 180),
       imumCoeli: norm360(midheaven + 180),
+      /*
+       * Right ascension of the MC, measured along the EQUATOR. It is not an
+       * ecliptic longitude, so the ayanamsha does not apply to it and Swiss
+       * Ephemeris leaves it alone under SEFLG_SIDEREAL. A test asserts it is
+       * identical in both zodiacs, because "subtract the ayanamsha from
+       * everything in ascmc" is the obvious wrong fix.
+       */
       armc: norm360(ascmc[ASCMC_ARMC]!),
       vertex: norm360(ascmc[ASCMC_VERTEX]!),
       system,

@@ -12,7 +12,7 @@
  *   cities           GeoNames cities5000 (CC BY 4.0), the same file the app
  *                    bundles — packages/locations/data/cities.json
  *   ephemeris_daily  computed here by @astro/engine, the engine whose output
- *                    is fingerprinted `855fec9b` by the test suite
+ *                    is fingerprinted `0123070b` by the test suite
  *
  * Idempotent: rows are upserted, so a re-run corrects rather than duplicates.
  */
@@ -126,8 +126,8 @@ async function seedEphemeris(): Promise<void> {
   // Refuse to publish reference data from an engine that does not reproduce
   // the certified fingerprint.
   const fingerprint = runSelfTest(provider).fingerprint;
-  if (fingerprint !== '855fec9b') {
-    throw new Error(`engine fingerprint ${fingerprint} does not match 855fec9b; refusing to seed`);
+  if (fingerprint !== '0123070b') {
+    throw new Error(`engine fingerprint ${fingerprint} does not match 0123070b; refusing to seed`);
   }
 
   const start = Date.UTC(1900, 0, 1);

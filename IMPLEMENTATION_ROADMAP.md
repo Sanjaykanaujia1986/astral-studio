@@ -251,7 +251,7 @@ second loader that could drift.
 casts eight reference charts chosen for where environments diverge (both ends
 of the Swiss range, 64°N Placidus, southern hemisphere, equator, sidereal) and
 hashes every position, cusp, aspect, speed and declination to a milliarcsecond.
-**Fingerprint `855fec9b`, identical in Node and in the production browser
+**Fingerprint `0123070b`, identical in Node and in the production browser
 build**, asserted against a committed constant so engine output cannot change
 silently. `?selftest` ships in production so the same check runs on a device in
 thirty seconds — the only way to reach a phone's WebView, where no test runner

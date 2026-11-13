@@ -111,7 +111,14 @@ describe('placements', () => {
      */
     const sun = rows.find((r) => within(r).queryByText(/^Sun$/));
     expect(sun).toBeDefined();
-    expect(sun!.textContent).toBe("Sun01°13' Capricorn8Uttarāṣāḍhā2");
+    /*
+     * Bhāva 9, not 8. These expectations were written against a lagna that
+     * was the TROPICAL ascendant — the provider called `swe_houses`, which
+     * has no flags and always answers tropical, so a sidereal chart got
+     * sidereal bodies and tropical houses. The lagna moved a whole sign when
+     * that was fixed, and every whole-sign house count moved with it.
+     */
+    expect(sun!.textContent).toBe("Sun01°13' Capricorn9Uttarāṣāḍhā2");
   });
 
   it('counts houses from the lagna, whole-sign', () => {
@@ -120,7 +127,13 @@ describe('placements', () => {
     const lagna = within(table).getByRole('row', { name: /Lagna/ });
     // The lagna's own house is 1 by definition, and its degree is shown: in
     // Jyotiṣa the exact lagna decides the nakṣatra and pāda of the chart.
-    expect(lagna.textContent).toBe("Lagna01°53' Gemini1Mṛgaśira3");
+    /*
+     * Taurus 8°09', not Gemini 1°53'. The old value was the tropical
+     * ascendant: 61.8875° minus the 1990 ayanaṁśa of 23.7215° is 38.1660°,
+     * which is Taurus 8.166°. Verified against an independently printed
+     * jātaka, and held by the invariant in packages/engine/test/reference.
+     */
+    expect(lagna.textContent).toBe("Lagna08°09' Taurus1Kṛttikā4");
   });
 });
 
@@ -185,7 +198,8 @@ describe('translation', () => {
       .find((r) => within(r).queryByText(/^सूर्य$/));
     // The same line as the English assertion above: same numbers, same
     // nakṣatra, in Devanāgarī.
-    expect(sun?.textContent).toBe("सूर्य01°13' मकर8उत्तराषाढा2");
+    // Bhāva 9 here too — the same tropical-lagna correction.
+    expect(sun?.textContent).toBe("सूर्य01°13' मकर9उत्तराषाढा2");
   });
 
   it('leaves no English chrome in the Gujarati panel', () => {

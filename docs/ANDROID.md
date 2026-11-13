@@ -78,7 +78,7 @@ typical:
 | `quito-1850-equator` | equator, Campanus |
 | `mumbai-1990-lahiri` | sidereal — a different path through the ayanamsha call |
 
-**Current fingerprint: `855fec9b`**
+**Current fingerprint: `0123070b`**
 
 Verified identical in:
 
@@ -101,7 +101,7 @@ the numbers CI certified, and no test runner can reach there.
 **Verified here:**
 
 - APK builds and contains every asset
-- The exact production bundle the WebView loads produces fingerprint `855fec9b`
+- The exact production bundle the WebView loads produces fingerprint `0123070b`
 - Zero external network requests from a cold start
 - Only one WASM copy ships (see below)
 

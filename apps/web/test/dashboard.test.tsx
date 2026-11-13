@@ -184,7 +184,7 @@ describe('saved charts', () => {
       {
         id: 'abc', name: 'Ada', birth: MUMBAI,
         summary: { sun: '01°13\' Capricorn', moon: '22°12\' Leo' },
-        engine_fingerprint: '855fec9b', created_at: '2026-10-01T00:00:00Z',
+        engine_fingerprint: '0123070b', created_at: '2026-10-01T00:00:00Z',
       },
     ]);
     renderPanel();

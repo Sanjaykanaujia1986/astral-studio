@@ -80,7 +80,7 @@ Reasons, in order of weight:
 
 1. **It would create a second astronomy implementation.** The existing engine is
    verified against published values and fingerprinted: `runSelfTest()` hashes
-   eight reference charts to a milliarcsecond and asserts `855fec9b` in Node,
+   eight reference charts to a milliarcsecond and asserts `0123070b` in Node,
    in the browser and on-device. A Python service means two implementations to
    keep in numerical agreement — the failure mode the brief's own §13
    ("cross-checks beyond merely calling the same implementation twice") exists

@@ -13,8 +13,8 @@ verified in this environment it says so rather than being reported as passing.
 | Check | Result |
 |---|---|
 | Full suite | **663 tests passing** across 7 packages |
-| Engine fingerprint, Node | `855fec9b` |
-| Engine fingerprint, browser (production build) | `855fec9b` |
+| Engine fingerprint, Node | `0123070b` |
+| Engine fingerprint, browser (production build) | `0123070b` |
 | Every self-test case on Swiss data | yes — asserted, not observed |
 | Typecheck, all packages | clean |
 

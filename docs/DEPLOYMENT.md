@@ -166,7 +166,7 @@ Open `https://<deployment-url>/?selftest` and press **Run self-test**.
 It must report:
 
 ```
-PASS — fingerprint 855fec9b
+PASS — fingerprint 0123070b
 ```
 
 with all eight cases on `swiss` and the three bundled assets present at 0.54 MB,
@@ -201,7 +201,7 @@ Loaded data — nothing invented:
 | table | rows | source |
 |---|---:|---|
 | `cities` | 69,641 | GeoNames cities5000, CC BY 4.0 (same file the app bundles) |
-| `ephemeris_daily` | 73,414 | 1900-01-01..2100-12-31 at 00:00 UT, computed by `@astro/engine`; the seed refuses to run unless the engine reproduces fingerprint `855fec9b` |
+| `ephemeris_daily` | 73,414 | 1900-01-01..2100-12-31 at 00:00 UT, computed by `@astro/engine`; the seed refuses to run unless the engine reproduces fingerprint `0123070b` |
 | `charts` | 0 | visitors' saved charts |
 
 API (Vercel functions, `api/`): `GET /api/health`, `GET|POST|DELETE /api/charts`

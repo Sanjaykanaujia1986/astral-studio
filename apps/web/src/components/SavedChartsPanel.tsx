@@ -17,7 +17,7 @@ export interface SavedChartsPanelProps {
   readonly onOpen: (birth: BirthData, settings: Partial<ChartSettings>) => void;
 }
 
-const ENGINE_FINGERPRINT = '855fec9b';
+const ENGINE_FINGERPRINT = '0123070b';
 
 const KNOWN_ERRORS = new Set([
   'OFFLINE', 'INTERNAL', 'OWNER_KEY_REQUIRED', 'DATABASE_NOT_CONFIGURED', 'INVALID_CHART',

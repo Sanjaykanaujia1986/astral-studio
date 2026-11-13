@@ -2,6 +2,18 @@
 
 Newest first.
 
+## 0.19.0 — 2026-11-13
+- FIX, and the most serious one this product has had: **a sidereal chart had tropical houses.** The lagna was out by a whole ayanāṁśa — about 24°, most of a rāśi — so it named the wrong sign roughly four times in five, and every whole-sign bhāva and every varga built on it was wrong with it. The Western tropical chart was never affected.
+- Cause: `swe_houses` takes no flags and always answers tropical. `#applyZodiac` set the sidereal mode and returned `SEFLG_SIDEREAL`, and the houses call **threw that return value away**. Setting the mode does nothing for a function with nowhere to put it. Now `swe_houses_ex`, which has somewhere to put it.
+- `vedic/src/chart.ts` reads `chart.houses?.ascendant` under a comment reading "Lagna (ascendant) in sidereal longitude". It had been receiving a tropical one since the module was written.
+- **Found by a scanned Gujarati jātaka**, not by a test: a reader sent a printed chart, every planet agreed with this engine to within 13 arcseconds, and the lagna was out by exactly 23°40'. One number disagreeing in a way that equals a constant is not a rounding difference.
+- Why no test caught it: every existing test either used the tropical zodiac, where the bug is invisible, or asserted the Vedic figures against numbers this engine had produced. A test that records what the code does cannot tell you the code is wrong. Three Vedic expectations had the bug baked into them and are corrected here — the fixture's lagna moves Gemini 1°53' → Taurus 8°09', and the Sun's bhāva 8 → 9.
+- New `reference/sidereal-houses.test.ts` with two kinds of assertion. An **invariant**: sidereal equals tropical minus the ayanāṁśa for every cusp, at three births including a polar one — true whatever the right answer is. And an **external fixture**: the printed jātaka itself, both editions, to 30 arcseconds. Only the second would catch the engine and the invariant being wrong together. Confirmed by mutation: restoring `swe_houses` fails five of the seven.
+- The fixture pins Saturn on the Makara/Kumbha boundary on purpose. The two ayanāṁśas differ by about 6′ and Saturn sat across the line — Kumbha under Krishnamurti, Makara under Chitra Pakṣa. Same point in the sky, different rāśi, different bhāva, different dignity.
+- Also asserts the **ARMC is left alone**, because it is right ascension along the equator rather than an ecliptic longitude. Subtracting the ayanāṁśa from everything in `ascmc` is the obvious wrong fix.
+- **Engine fingerprint changes `855fec9b` → `0123070b`**, which is what a fingerprint is for. Re-recorded in the self-test, the API, the seed, the panels and the docs. Older CHANGELOG entries keep the old value: they record what was true when they were written.
+- Verified end to end: the app loaded with that birth data now prints the same lagna as the printed sheet, to the minute.
+
 ## 0.18.0 — 2026-11-12
 - **The Vedic chart names its grahas instead of drawing symbols**, in bold: Su, Mo, Ma, Me, Ju, Ve, Sa, Ra, Ke — the form printed in Indian ephemerides.
 - Not a preference. **☊ and ☋ are the same horseshoe, one turned over**, and at the size a chart cell affords they are not reliably distinguishable. They are also the one pair that must never be confused, since they are always opposite — reading one for the other reflects half the chart. The outer planets had the same problem for a different reason: ♅ ♆ ♇ are not symbols most readers of an Indian chart have memorised.

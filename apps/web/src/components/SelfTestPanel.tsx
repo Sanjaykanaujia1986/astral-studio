@@ -16,7 +16,7 @@ import { runSelfTest, type SelfTestResult } from '@astro/engine';
 import { getProvider, getLocations } from '../lib/engine.js';
 
 /** Recorded by `packages/engine/test/integration/selftest.test.ts`. */
-const EXPECTED_FINGERPRINT = '855fec9b';
+const EXPECTED_FINGERPRINT = '0123070b';
 
 interface Environment {
   readonly userAgent: string;
