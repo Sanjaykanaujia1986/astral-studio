@@ -9,7 +9,7 @@
 import type { JSX } from 'react';
 import type { AspectHit, InstantChart } from '@astro/engine';
 import { useTranslator, type Translator } from '@astro/i18n';
-import { ASPECT_GLYPHS, BODY_GLYPHS, GLYPH_FONT_STACK } from '../chart-wheel/glyphs.js';
+import { AspectGlyph, BodyGlyph } from '../glyphs/Glyph.js';
 import { ASPECT_CLASSES, LIGHT_THEME } from '../chart-wheel/theme.js';
 import { formatAngle } from '../format.js';
 
@@ -75,9 +75,6 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
         </thead>
         <tbody>
           {hits.map((hit) => {
-            const a = BODY_GLYPHS[hit.bodyA];
-            const b = BODY_GLYPHS[hit.bodyB];
-            const aspect = ASPECT_GLYPHS[hit.aspect];
             const colour = LIGHT_THEME.aspects[ASPECT_CLASSES[hit.aspect]];
 
             const nameA = t(`body.${hit.bodyA}`);
@@ -91,19 +88,9 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
               >
                 <th scope="row" className={`${TD} text-left font-normal`}>
                   <span className="inline-flex items-center gap-1.5">
-                    <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-                      {a.symbol}
-                    </span>
-                    <span
-                      aria-hidden="true"
-                      style={{ fontFamily: GLYPH_FONT_STACK, color: colour }}
-                      className="px-1 text-base"
-                    >
-                      {aspect.symbol}
-                    </span>
-                    <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-                      {b.symbol}
-                    </span>
+                    <BodyGlyph body={hit.bodyA} />
+                    <AspectGlyph aspect={hit.aspect} className="mx-1" style={{ color: colour }} />
+                    <BodyGlyph body={hit.bodyB} />
                     <span className="ml-2 as-text-muted">
                       {nameA} {aspectName} {nameB}
                     </span>

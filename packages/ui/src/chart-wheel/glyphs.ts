@@ -1,18 +1,12 @@
 /**
- * Glyphs for bodies, signs and aspects.
+ * Text forms of the body, sign and aspect glyphs.
  *
- * Unicode astrological symbols are used rather than hand-authored SVG paths.
- * They are still vector — SVG `<text>` scales and prints sharply — and they
- * come correctly proportioned from a designed typeface, which hand-drawn paths
- * would struggle to match across 26 symbols.
- *
- * The trade-off is font coverage: Chiron (U+26B7) and Lilith (U+26B8) are
- * missing from some families. `abbreviation` is provided for every entry so a
- * caller can render guaranteed-legible text instead, and the font stack below
- * lists faces that do carry the full range.
- *
- * A future refinement is an embedded subset font, which would also remove the
- * platform dependency for PDF output.
+ * The product DRAWS its glyphs (see `../glyphs/paths.ts`): the Unicode
+ * symbols render differently on every platform, some as colour emoji, and a
+ * machine without a symbol font prints empty boxes. What stays here is the
+ * text side: `abbreviation` for the reader's "abbreviation" glyph setting and
+ * for points with no drawing, `label` for names, and `symbol` as a last
+ * resort for anything not yet drawn (the quintile family's Q and bQ).
  */
 import type { AspectName, Body, SignName } from '@astro/engine';
 

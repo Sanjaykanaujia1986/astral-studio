@@ -9,7 +9,7 @@
 import type { JSX } from 'react';
 import type { Body, TransitHit, TransitTarget } from '@astro/engine';
 import { useTranslator, type Translator } from '@astro/i18n';
-import { ASPECT_GLYPHS, BODY_GLYPHS, GLYPH_FONT_STACK } from '../chart-wheel/glyphs.js';
+import { AspectGlyph, BodyGlyph } from '../glyphs/Glyph.js';
 import { ASPECT_CLASSES, LIGHT_THEME } from '../chart-wheel/theme.js';
 
 export interface TransitTableProps {
@@ -31,8 +31,8 @@ function targetLabel(target: TransitTarget, t: Translator['t']): string {
   return target.id;
 }
 
-function targetGlyph(target: TransitTarget): string | null {
-  return target.kind === 'natalBody' ? (BODY_GLYPHS[target.id as Body]?.symbol ?? null) : null;
+function targetGlyph(target: TransitTarget): JSX.Element | null {
+  return target.kind === 'natalBody' ? <BodyGlyph body={target.id as Body} /> : null;
 }
 
 export function TransitTable({ hits, className }: TransitTableProps): JSX.Element {
@@ -67,8 +67,6 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
           </thead>
           <tbody>
             {hits.map((hit) => {
-              const transiting = BODY_GLYPHS[hit.transitBody];
-              const aspect = ASPECT_GLYPHS[hit.aspect];
               const colour = LIGHT_THEME.aspects[ASPECT_CLASSES[hit.aspect]];
               const glyph = targetGlyph(hit.target);
 
@@ -86,30 +84,19 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
                   </td>
                   <td className={TD}>
                     <span className="inline-flex items-center gap-1.5">
-                      <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-                        {transiting.symbol}
-                      </span>
+                      <BodyGlyph body={hit.transitBody} />
                       {t(`body.${hit.transitBody}`)}
                     </span>
                   </td>
                   <td className={TD}>
                     <span className="inline-flex items-center gap-1.5">
-                      <span
-                        aria-hidden="true"
-                        style={{ fontFamily: GLYPH_FONT_STACK, color: colour }}
-                      >
-                        {aspect.symbol}
-                      </span>
+                      <AspectGlyph aspect={hit.aspect} style={{ color: colour }} />
                       {t(`aspect.${hit.aspect}`)}
                     </span>
                   </td>
                   <td className={TD}>
                     <span className="inline-flex items-center gap-1.5">
-                      {glyph ? (
-                        <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-                          {glyph}
-                        </span>
-                      ) : null}
+                      {glyph}
                       {targetLabel(hit.target, t)}
                     </span>
                   </td>

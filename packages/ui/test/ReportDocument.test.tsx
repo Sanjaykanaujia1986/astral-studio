@@ -85,6 +85,7 @@ describe('the printable report', () => {
   it('embeds the wheel as vector SVG, not an image', () => {
     const html = report();
     expect(html).toContain('<svg');
+    expect(html).toContain('aria-label="Natal chart');
     expect(html).not.toContain('<img');
     expect(html).toContain('viewBox');
   });
@@ -150,7 +151,8 @@ describe('the printable report', () => {
   it('drops the wheel but keeps the cover when the wheel is excluded', () => {
     const html = report({ sections: { wheel: false } });
     expect(html).toContain('Test Subject');
-    expect(html).not.toContain('<svg');
+    // The tables still carry small glyph icons; what must be gone is the wheel.
+    expect(html).not.toContain('aria-label="Natal chart');
   });
 });
 

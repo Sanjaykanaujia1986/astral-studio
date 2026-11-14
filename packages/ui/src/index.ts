@@ -1,5 +1,10 @@
 export { ChartWheel, type ChartWheelProps } from './chart-wheel/ChartWheel.js';
 export {
+  SignGlyph, BodyGlyph, AspectGlyph, svgGlyph, elementOfSign, SIGN_PATHS, BODY_PATHS, ASPECT_PATHS,
+  type GlyphProps,
+} from './glyphs/Glyph.js';
+export type { GlyphPath } from './glyphs/paths.js';
+export {
   createLayout, radiusOf, longitudeToAngle, angleToLongitude,
   pointAt, pointForLongitude, resolveCollisions, generateTicks, textAnchorFor,
   DEFAULT_RINGS, BIWHEEL_RINGS,
@@ -14,6 +19,7 @@ export {
   type AspectClass, type ChartTheme,
 } from './chart-wheel/theme.js';
 export { PlanetTable, type PlanetTableProps } from './tables/PlanetTable.js';
+export { SignPosition, type SignPositionProps } from './tables/SignPosition.js';
 export { HouseTable, type HouseTableProps } from './tables/HouseTable.js';
 export { AspectTable, type AspectTableProps } from './tables/AspectTable.js';
 export { TransitTable, type TransitTableProps } from './tables/TransitTable.js';

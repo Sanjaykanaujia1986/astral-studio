@@ -22,7 +22,7 @@ import {
   type SolarArcChart,
 } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
-import { ChartWheel, PlanetTable, formatLongitude, formatAngle } from '@astro/ui';
+import { ChartWheel, PlanetTable, formatAngle, SignPosition, BodyGlyph } from '@astro/ui';
 import { getProvider } from '../lib/engine.js';
 import { useSettings } from '../lib/settings.js';
 
@@ -249,13 +249,13 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
                   {outcome.directed.positions.map((position) => (
                     <tr key={position.body} className="border-b as-border-hair last:border-0">
                       <th scope="row" className="px-3 py-2 text-left font-normal">
-                        {t(`body.${position.body}`)}
+                        <span className="inline-flex items-center gap-1.5"><BodyGlyph body={position.body} className="as-text-accent" />{t(`body.${position.body}`)}</span>
                       </th>
                       <td className="px-3 py-2 tabular-nums">
-                        {formatLongitude(position.longitude, { precision: settings.precision })}
+                        <SignPosition longitude={position.longitude} precision={settings.precision} />
                       </td>
                       <td className="px-3 py-2 tabular-nums as-text-muted">
-                        {formatLongitude(position.natalLongitude, { precision: 'degree' })} →
+                        <SignPosition longitude={position.natalLongitude} precision="degree" /> →
                       </td>
                     </tr>
                   ))}

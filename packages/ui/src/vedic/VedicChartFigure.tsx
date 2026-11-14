@@ -11,8 +11,10 @@
 import type { JSX } from 'react';
 import { SIGNS } from '@astro/engine';
 import { useTranslator, type MessageKey } from '@astro/i18n';
+import { SIGN_PATHS } from '../glyphs/paths.js';
+import { elementOfSign, svgGlyph } from '../glyphs/Glyph.js';
 import type { VedicChart, Varga } from '@astro/vedic';
-import { SIGN_GLYPHS, BODY_GLYPHS, GLYPH_FONT_STACK } from '../chart-wheel/glyphs.js';
+import { BODY_GLYPHS } from '../chart-wheel/glyphs.js';
 import { resolveTheme, type ChartTheme } from '../chart-wheel/theme.js';
 import {
   northIndianCells, southIndianCells, signForCell, houseForCell, bodySlots,
@@ -154,19 +156,31 @@ export function VedicChartFigure({
               identifies Aries as "1", not by a glyph. The glyph is added
               beside it for people who read the chart the Western way.
             */}
-            <text
-              x={f(cell.label[0])}
-              y={f(cell.label[1])}
-              fill={colours.muted}
-              fontSize={size * 0.032}
-              fontWeight={600}
-              textAnchor={style === 'north' ? 'middle' : 'start'}
-            >
-              {sign + 1}
-              <tspan fontFamily={GLYPH_FONT_STACK} dx={size * 0.012}>
-                {SIGN_GLYPHS[SIGNS[sign]!].symbol}
-              </tspan>
-            </text>
+            {(() => {
+              // Number then glyph, as one centred group in the North style
+              // and left-aligned in the South. The glyph is drawn (not a font
+              // character), in its element colour, centred on the digits.
+              const fs = size * 0.032;
+              const digits = String(sign + 1).length * fs * 0.58;
+              const g = fs * 1.15;
+              const gap = fs * 0.3;
+              const total = digits + gap + g;
+              // Cell geometry is in unit coordinates (f scales to pixels); the
+              // offsets above are already pixels, so work in pixels from here.
+              const lx = cell.label[0] * size;
+              const ly = cell.label[1] * size;
+              const x0 = style === 'north' ? lx - total / 2 : lx;
+              const name = SIGNS[sign]!;
+              return (
+                <>
+                  <text x={x0.toFixed(2)} y={ly.toFixed(2)} fill={colours.muted} fontSize={fs} fontWeight={600} textAnchor="start">
+                    {sign + 1}
+                  </text>
+                  {svgGlyph(SIGN_PATHS[name], x0 + digits + gap + g / 2, ly - fs * 0.36, g,
+                    colours.elements[elementOfSign(name)], 2, name)}
+                </>
+              );
+            })()}
 
             {bodySlots(cell, bodies.length, style).map((slot, row) => (
               <text
@@ -186,7 +200,15 @@ export function VedicChartFigure({
                 textAnchor={style === 'north' ? 'middle' : 'start'}
                 dominantBaseline="middle"
               >
-                {bodies[row]}
+                {/* The retrograde mark as a small raised suffix: at full size, set
+                    right after a Devanagari or Gujarati syllable, the fallback
+                    font's ℞ collides with the vowel sign before it. */}
+                {bodies[row]!.endsWith('℞') ? (
+                  <>
+                    {bodies[row]!.slice(0, -1)}
+                    <tspan fontSize="0.62em" dx="0.12em" dy="-0.45em" fontWeight={700}>℞</tspan>
+                  </>
+                ) : bodies[row]}
               </text>
             ))}
           </g>

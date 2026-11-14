@@ -17,7 +17,7 @@ import {
   type CurrentPhase,
 } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
-import { BODY_GLYPHS, GLYPH_FONT_STACK } from '@astro/ui';
+import { BodyGlyph } from '@astro/ui';
 import { getProvider } from '../lib/engine.js';
 import { searchCycle } from '../lib/search.js';
 
@@ -88,8 +88,6 @@ export function CyclesPanel(): JSX.Element {
     }
   }, [fast, slow, divisions, years, samePair, t]);
 
-  const glyph = (body: Body) => BODY_GLYPHS[body].symbol;
-
   return (
     <div className="space-y-4">
       <p className="px-3 pt-2 text-xs as-text-muted">{t('cycles.note')}</p>
@@ -152,9 +150,9 @@ export function CyclesPanel(): JSX.Element {
 
       {estimate !== null ? (
         <p className="px-3 text-xs as-text-muted">
-          <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-            {glyph(fast)} {glyph(slow)}
-          </span>{' '}
+          <span className="me-1 inline-flex items-center gap-1 as-text">
+            <BodyGlyph body={fast} /><BodyGlyph body={slow} />
+          </span>
           {t('cycles.period.expected')}: {t('unit.days', { n: n(estimate, { maximumFractionDigits: 1 }) })}
           {' · '}
           {t('unit.years', { n: n(estimate / 365.2422, { maximumFractionDigits: 2 }) })}

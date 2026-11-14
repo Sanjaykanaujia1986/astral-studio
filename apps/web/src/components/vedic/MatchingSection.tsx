@@ -7,7 +7,7 @@ import { useCallback, useMemo, useState, type JSX } from 'react';
 import { calculateNatalChart, type BirthData, type ChartSettings, type NatalChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import {
-  ashtakoota, compatibilityTable, mangalaDosha, grahaLongitudes, vedicChart, NAKSHATRAS,
+  ashtakoota, compatibilityTable, mangalaDosha, grahaLongitudes, vedicChart,
   type AshtakootaResult, type MangalaDosha, type VedicChart,
 } from '@astro/vedic';
 import { BirthForm } from '../BirthForm.js';

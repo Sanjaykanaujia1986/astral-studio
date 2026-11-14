@@ -21,6 +21,7 @@ import {
   julianDay,
   julianDayToIsoUtc,
   targetsFromChart,
+  SIGNS as SIGN_ORDER,
   type Body,
   type CurrentPhase,
   type InstantChart,
@@ -28,7 +29,7 @@ import {
   type TransitHit,
 } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
-import { PlanetTable, TransitTable, formatLongitude } from '@astro/ui';
+import { PlanetTable, TransitTable, SignGlyph } from '@astro/ui';
 import { getProvider } from '../lib/engine.js';
 import { CloudError, getChartSettings, listCharts, type SavedChartSummary } from '../lib/cloud.js';
 import { KNOWN_ERRORS } from '../lib/cloudErrors.js';
@@ -239,10 +240,18 @@ export function DashboardPanel(): JSX.Element {
                 <dt className="text-xs uppercase tracking-wide" style={mutedStyle}>
                   {t('dashboard.today.moonSign')}
                 </dt>
-                <dd>
-                  {signLabel(Math.floor(
-                    (sky.chart.bodies.find((b) => b.position.body === 'moon')?.position.longitude ?? 0) / 30,
-                  ))}
+                <dd className="inline-flex items-center gap-1.5">
+                  {(() => {
+                    const index = Math.floor(
+                      (sky.chart.bodies.find((b) => b.position.body === 'moon')?.position.longitude ?? 0) / 30,
+                    ) % 12;
+                    return (
+                      <>
+                        <SignGlyph sign={SIGN_ORDER[index]!} tinted size="1.25em" />
+                        {signLabel(index)}
+                      </>
+                    );
+                  })()}
                 </dd>
               </div>
               <div>

@@ -9,7 +9,8 @@ import type { JSX } from 'react';
 import { norm360, type InstantChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import { signPosition } from '@astro/engine';
-import { formatAngle, formatLongitude, type DegreePrecision } from '../format.js';
+import { formatAngle, type DegreePrecision } from '../format.js';
+import { SignPosition } from './SignPosition.js';
 
 export interface HouseTableProps {
   readonly chart: InstantChart;
@@ -73,10 +74,7 @@ export function HouseTable({
                   ) : null}
                 </th>
                 <td className={TD}>
-                  {formatLongitude(cusp, {
-                    precision,
-                    signLabel: t(`sign.${signPosition(cusp).sign}`),
-                  })}
+                  <SignPosition longitude={cusp} precision={precision} label={t(`sign.${signPosition(cusp).sign}`)} />
                 </td>
                 {showSpan ? (
                   <td className={`${TD} as-text-muted`}>{formatAngle(span, 'minute')}</td>

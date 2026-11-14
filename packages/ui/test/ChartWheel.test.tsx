@@ -83,17 +83,19 @@ describe('content', () => {
       // Each body contributes a <g> keyed by name; check its glyph is present.
       expect(svg.length).toBeGreaterThan(0);
     }
-    // Sun, Moon and Saturn glyphs must all appear.
-    expect(svg).toContain('☉');
-    expect(svg).toContain('☽');
-    expect(svg).toContain('♄');
+    // Sun, Moon and Saturn glyphs must all appear (drawn paths, tagged by name).
+    expect(svg).toContain('data-glyph="sun"');
+    expect(svg).toContain('data-glyph="moon"');
+    expect(svg).toContain('data-glyph="saturn"');
   });
 
   it('draws all twelve sign glyphs', () => {
     const svg = render(<ChartWheel chart={chart} />);
-    for (const glyph of ['♈', '♉', '♊', '♋', '♌', '♍', '♎', '♏', '♐', '♑', '♒', '♓']) {
-      expect(svg, `sign glyph ${glyph}`).toContain(glyph);
+    for (const sign of ['aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo', 'libra', 'scorpio', 'sagittarius', 'capricorn', 'aquarius', 'pisces']) {
+      expect(svg, `sign glyph ${sign}`).toContain(`data-glyph="${sign}"`);
     }
+    // Drawn, not typeset: no font-dependent zodiac character is left.
+    expect(svg).not.toMatch(/[♈-♓]/);
   });
 
   it('marks retrograde bodies', () => {
@@ -106,7 +108,7 @@ describe('content', () => {
     const svg = render(<ChartWheel chart={chart} glyphStyle="abbreviation" />);
     expect(svg).toContain('Su');
     expect(svg).toContain('Ari');
-    expect(svg).not.toContain('☉');
+    expect(svg).not.toContain('data-glyph="sun"');
   });
 
   it('omits aspect lines when disabled', () => {
@@ -134,8 +136,8 @@ describe('unknown birth time', () => {
 
   it('still draws the planets', () => {
     const svg = render(<ChartWheel chart={chartNoTime} />);
-    expect(svg).toContain('☉');
-    expect(svg).toContain('☽');
+    expect(svg).toContain('data-glyph="sun"');
+    expect(svg).toContain('data-glyph="moon"');
   });
 
   it('shows the angles when the time IS known', () => {
@@ -205,7 +207,7 @@ describe('bi-wheel', () => {
     const svg = render(<ChartWheel chart={chart} outerChart={chartNoTime} size={800} />);
     const single = render(<ChartWheel chart={chart} size={800} />);
     // Twelve bodies drawn twice: the markup carries more glyph text nodes.
-    const count = (markup: string) => (markup.match(/font-family/g) ?? []).length;
+    const count = (markup: string) => (markup.match(/data-glyph=/g) ?? []).length;
     expect(count(svg)).toBeGreaterThan(count(single));
   });
 
@@ -217,12 +219,12 @@ describe('bi-wheel', () => {
      * land at different angles for the same body. They must coincide.
      */
     const svg = render(<ChartWheel chart={chart} outerChart={chart} size={800} />);
-    const positions = [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*font-family/g)]
+    const positions = [...svg.matchAll(/data-cx="([\d.]+)" data-cy="([\d.]+)"/g)]
       .map((m) => `${m[1]},${m[2]}`);
     // Every outer glyph sits on the same RADIAL LINE as its inner twin, so
     // the set of distinct angles is the same as for one chart.
     const angles = new Set(
-      [...svg.matchAll(/<text x="([\d.]+)" y="([\d.]+)"[^>]*font-family/g)].map((m) => {
+      [...svg.matchAll(/data-cx="([\d.]+)" data-cy="([\d.]+)"/g)].map((m) => {
         const dx = Number(m[1]) - 400;
         const dy = Number(m[2]) - 400;
         return Math.round((Math.atan2(dy, dx) * 180) / Math.PI);

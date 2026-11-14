@@ -94,6 +94,34 @@ describe('the sidereal requirement', () => {
   });
 });
 
+describe('the chart figure', () => {
+  it('draws every sign number and glyph inside the figure', () => {
+    /*
+     * The cell geometry is in unit coordinates and the label offsets are in
+     * pixels; mixing the two once put every sign number thousands of pixels
+     * off the left edge while the glyphs beside them still looked right.
+     */
+    renderPanel(sidereal);
+    const fig = screen.getByRole('img', { name: /North Indian/ });
+    const size = Number(fig.getAttribute('viewBox')!.split(' ')[2]);
+    const numbers = [...fig.querySelectorAll('text')].filter((t) => /^\d+$/.test(t.textContent ?? ''));
+    expect(numbers.map((t) => Number(t.textContent)).sort((a, b) => a - b)).toEqual([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12]);
+    for (const t of numbers) {
+      const x = Number(t.getAttribute('x')); const y = Number(t.getAttribute('y'));
+      expect(x, `sign ${t.textContent}`).toBeGreaterThanOrEqual(0);
+      expect(x).toBeLessThanOrEqual(size);
+      expect(y).toBeGreaterThanOrEqual(0);
+      expect(y).toBeLessThanOrEqual(size);
+    }
+    const glyphs = [...fig.querySelectorAll('[data-glyph]')];
+    expect(glyphs.length).toBe(12);
+    for (const g of glyphs) {
+      expect(Number(g.getAttribute('data-cx'))).toBeGreaterThan(0);
+      expect(Number(g.getAttribute('data-cx'))).toBeLessThan(size);
+    }
+  });
+});
+
 describe('placements', () => {
   it('gives every graha a rāśi, a nakṣatra and a pāda', () => {
     renderPanel(sidereal);

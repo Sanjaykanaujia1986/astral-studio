@@ -107,6 +107,14 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (mode: ThemeMode)
     expect(contrastRatio(tokens.canvas, tokens.surface)).toBeGreaterThan(1.02);
   });
 
+  it('keeps every element glyph colour at 3:1 on every ground', () => {
+    for (const el of ['elFire', 'elEarth', 'elAir', 'elWater'] as const) {
+      for (const ground of ['canvas', 'surface', 'raised'] as const) {
+        expect(contrastRatio(tokens[el], tokens[ground]), `${el} on ${ground}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
   it('does not use gold as body text', () => {
     /*
      * Muted gold at AA on an off-white ground is impossible without darkening

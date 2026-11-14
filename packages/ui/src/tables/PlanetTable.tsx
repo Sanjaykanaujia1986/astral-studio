@@ -10,9 +10,9 @@
 import type { JSX } from 'react';
 import type { InstantChart, PlacedBody } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
-import { BODY_GLYPHS, GLYPH_FONT_STACK } from '../chart-wheel/glyphs.js';
+import { BodyGlyph } from '../glyphs/Glyph.js';
+import { SignPosition } from './SignPosition.js';
 import {
-  formatLongitude,
   formatSignedDegrees,
   formatSpeed,
   type DegreePrecision,
@@ -29,13 +29,10 @@ const TH = 'px-3 py-2 text-left font-medium text-xs uppercase tracking-wide as-t
 const TD = 'px-3 py-2 whitespace-nowrap tabular-nums';
 
 function BodyCell({ placed, label }: { placed: PlacedBody; label: string }): JSX.Element {
-  const glyph = BODY_GLYPHS[placed.position.body];
   return (
     <th scope="row" className={`${TD} text-left font-medium`}>
       <span className="inline-flex items-center gap-2">
-        <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }} className="text-lg">
-          {glyph.symbol}
-        </span>
+        <BodyGlyph body={placed.position.body} size="1.3em" className="as-text-accent" />
         <span>{label}</span>
       </span>
     </th>
@@ -74,7 +71,7 @@ export function PlanetTable({
               <tr key={p.body} className="border-b as-border-hair last:border-0">
                 <BodyCell placed={placed} label={t(`body.${p.body}`)} />
                 <td className={TD}>
-                  {formatLongitude(p.longitude, { precision, signLabel: t(`sign.${placed.sign.sign}`) })}
+                  <SignPosition longitude={p.longitude} precision={precision} label={t(`sign.${placed.sign.sign}`)} />
                 </td>
                 {hasHouses ? (
                   <td className={`${TD} as-text-muted`}>

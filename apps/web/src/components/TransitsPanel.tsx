@@ -19,7 +19,7 @@ import {
   type TransitHit,
 } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
-import { TransitTable } from '@astro/ui';
+import { TransitTable, BodyGlyph } from '@astro/ui';
 import { searchTransits } from '../lib/search.js';
 
 export interface TransitsPanelProps {
@@ -110,7 +110,10 @@ export function TransitsPanel({ chart }: TransitsPanelProps): JSX.Element {
             checked={includeFast}
             onChange={(e) => setIncludeFast(e.target.checked)}
           />
-          {t('transit.bodies')}: ☉ ☿ ♀
+          {t('transit.bodies')}:
+          <span className="inline-flex items-center gap-1">
+            <BodyGlyph body="sun" /><BodyGlyph body="mercury" /><BodyGlyph body="venus" />
+          </span>
         </label>
 
         <button

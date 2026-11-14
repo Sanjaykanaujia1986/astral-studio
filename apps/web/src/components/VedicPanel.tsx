@@ -11,7 +11,7 @@ import { useEffect, useMemo, useState, type JSX } from 'react';
 import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { Link } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
-import { VedicChartFigure, formatLongitude, type VedicLayoutStyle } from '@astro/ui';
+import { VedicChartFigure, SignPosition, BodyGlyph, type VedicLayoutStyle } from '@astro/ui';
 import { vedicChart, VARGAS, type Varga } from '@astro/vedic';
 import { getProvider } from '../lib/engine.js';
 import { DashaSection } from './vedic/DashaSection.js';
@@ -157,10 +157,7 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
                 <tr style={{ borderBottom: '1px solid var(--as-border)' }}>
                   <th scope="row" className={`${TD} text-left font-medium`}>{t('vedic.lagna')}</th>
                   <td className={TD}>
-                    {formatLongitude(result.lagna.longitude, {
-                      precision: settings.precision,
-                      signLabel: sign(result.lagna.signIndex),
-                    })}
+                    <SignPosition longitude={result.lagna.longitude} precision={settings.precision} label={sign(result.lagna.signIndex)} />
                   </td>
                   <td className={TD}>1</td>
                   <td className={TD}>{t(`nakshatra.${result.lagna.nakshatra.nakshatra}` as 'nakshatra.ashwini')}</td>
@@ -170,7 +167,10 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
               {result.placements.map((p) => (
                 <tr key={p.body} style={{ borderBottom: '1px solid var(--as-border)' }}>
                   <th scope="row" className={`${TD} text-left font-normal`}>
-                    {t(`body.${p.body}` as 'body.sun')}{p.retrograde ? ' ℞' : ''}
+                    <span className="inline-flex items-center gap-2">
+                      <BodyGlyph body={p.body} className="as-text-accent" />
+                      {t(`body.${p.body}` as 'body.sun')}{p.retrograde ? ' ℞' : ''}
+                    </span>
                   </th>
                   {/*
                     The same formatter, precision and padding as the Western
@@ -179,10 +179,7 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
                     reads 01°13'.
                   */}
                   <td className={TD}>
-                    {formatLongitude(p.longitude, {
-                      precision: settings.precision,
-                      signLabel: sign(p.signIndex),
-                    })}
+                    <SignPosition longitude={p.longitude} precision={settings.precision} label={sign(p.signIndex)} />
                   </td>
                   <td className={TD}>{p.house === 0 ? '—' : n(p.house)}</td>
                   <td className={TD}>{t(`nakshatra.${p.nakshatra.nakshatra}` as 'nakshatra.ashwini')}</td>

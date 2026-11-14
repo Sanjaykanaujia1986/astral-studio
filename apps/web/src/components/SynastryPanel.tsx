@@ -26,7 +26,7 @@ import {
 } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import {
-  ChartWheel, PlanetTable, formatAngle, formatLongitude,
+  ChartWheel, PlanetTable, formatAngle, SignPosition, BodyGlyph,
 } from '@astro/ui';
 import { BirthForm } from './BirthForm.js';
 import { getProvider } from '../lib/engine.js';
@@ -193,9 +193,9 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                   <ul className="space-y-1 text-sm">
                     {entries.map((entry) => (
                       <li key={entry.body} className="flex justify-between gap-4">
-                        <span>{t(`body.${entry.body}`)}</span>
+                        <span className="inline-flex items-center gap-1.5"><BodyGlyph body={entry.body} className="as-text-accent" />{t(`body.${entry.body}`)}</span>
                         <span className="tabular-nums as-text-muted">
-                          {formatLongitude(entry.longitude, { precision: 'degree' })}
+                          <SignPosition longitude={entry.longitude} precision={'degree'} />
                         </span>
                         <span className="tabular-nums font-medium">{n(entry.house)}</span>
                       </li>
@@ -235,16 +235,16 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                     {comparison.composite.positions.map((position) => (
                       <tr key={position.body} className="border-b as-border-hair last:border-0">
                         <th scope="row" className={`${TD} text-left font-normal`}>
-                          {t(`body.${position.body}`)}
+                          <span className="inline-flex items-center gap-1.5"><BodyGlyph body={position.body} className="as-text-accent" />{t(`body.${position.body}`)}</span>
                         </th>
                         <td className={`${TD} tabular-nums as-text-muted`}>
-                          {formatLongitude(position.longitudeA, { precision: 'degree' })}
+                          <SignPosition longitude={position.longitudeA} precision={'degree'} />
                         </td>
                         <td className={`${TD} tabular-nums as-text-muted`}>
-                          {formatLongitude(position.longitudeB, { precision: 'degree' })}
+                          <SignPosition longitude={position.longitudeB} precision={'degree'} />
                         </td>
                         <td className={`${TD} tabular-nums font-medium`}>
-                          {formatLongitude(position.longitude, { precision: settings.precision })}
+                          <SignPosition longitude={position.longitude} precision={settings.precision} />
                         </td>
                         <td className={`${TD} tabular-nums`}>
                           {position.house === undefined ? '—' : n(position.house)}

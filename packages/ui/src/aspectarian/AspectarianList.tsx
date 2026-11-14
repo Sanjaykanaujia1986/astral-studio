@@ -7,7 +7,7 @@
 import type { JSX } from 'react';
 import type { AspectEvent } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
-import { ASPECT_GLYPHS, BODY_GLYPHS, GLYPH_FONT_STACK } from '../chart-wheel/glyphs.js';
+import { AspectGlyph, BodyGlyph } from '../glyphs/Glyph.js';
 import { ASPECT_CLASSES, LIGHT_THEME, type ChartTheme } from '../chart-wheel/theme.js';
 import { groupByUtcDay } from './grouping.js';
 
@@ -62,9 +62,6 @@ export function AspectarianList(
 
             <ul className="space-y-1">
               {dayEvents.map((event) => {
-                const a = BODY_GLYPHS[event.bodyA];
-                const b = BODY_GLYPHS[event.bodyB];
-                const aspect = ASPECT_GLYPHS[event.aspect];
                 const colour = theme.aspects[ASPECT_CLASSES[event.aspect]];
 
                 return (
@@ -81,25 +78,15 @@ export function AspectarianList(
                       })}
                     </span>
 
-                    <span className="inline-flex items-baseline gap-1.5">
-                      <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-                        {a.symbol}
-                      </span>
+                    <span className="inline-flex items-center gap-1.5">
+                      <BodyGlyph body={event.bodyA} />
                       <span>{t(`body.${event.bodyA}`)}</span>
                       {event.retrogradeA ? <span className="as-text-danger">℞</span> : null}
 
-                      <span
-                        aria-hidden="true"
-                        style={{ fontFamily: GLYPH_FONT_STACK, color: colour }}
-                        className="px-0.5"
-                      >
-                        {aspect.symbol}
-                      </span>
+                      <AspectGlyph aspect={event.aspect} className="mx-0.5" style={{ color: colour }} />
                       <span style={{ color: colour }}>{t(`aspect.${event.aspect}`)}</span>
 
-                      <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
-                        {b.symbol}
-                      </span>
+                      <BodyGlyph body={event.bodyB} />
                       <span>{t(`body.${event.bodyB}`)}</span>
                       {event.retrogradeB ? <span className="as-text-danger">℞</span> : null}
                     </span>

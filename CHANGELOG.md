@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 0.26.0 — 2026-11-14
+- NEW: **Drawn zodiac, planet and aspect glyphs.** All 12 signs, the planets, nodes, Chiron and Lilith, and the aspect symbols are now hand-drawn vector line art (`packages/ui/src/glyphs`), one consistent weight on a 24-unit grid. They replace the Unicode symbols, which looked different on every device: Windows drew some as colour emoji, and a machine without a symbol font printed empty boxes. They look the same on screen, in print and in exported SVG.
+  - The chart wheel's sign ring is larger and coloured by element (fire, earth, air, water); planets are crisp line glyphs.
+  - Positions in every table read `24°57′ ♑ Capricorn`, with the sign glyph in its element colour. The element colours are new design tokens, tested at 3:1 contrast on every background in both themes.
+  - North and South Indian charts show each sign's glyph beside its number. The retrograde mark is a small raised ℞, so it no longer collides with Devanagari and Gujarati letters.
+  - Glyphs were added to the planet column, the aspect and transit tables, the aspectarian, the dashboard's "Moon in" field, and the Event Explorer and cycle pickers.
+- FIX: the Synastry and Returns pages printed English sign abbreviations ("Cap") in every language; they now show the sign glyph, with the sign's name in the reader's language for screen readers.
+- The quintile and bi-quintile keep their text symbols (Q, bQ), because they have no settled glyph.
+
 ## 0.25.0 — 2026-11-14
 - NEW: **Hindi and Gujarati are complete.** Every page now reads in the chosen script, with no English or IAST left where a translation belongs:
   - Graha and rāśi names, short labels in the Vedic chart (सू चं मं… / સૂ ચં મં…), nakṣatras, yoga names, saham names and formulas, avakahaḍā and ghātaka values, tārā and bindu names, daśā systems and levels, sāḍe-sātī phases and pāyas, kūṭa names and the yoni animals are shown in Devanagari or Gujarati.

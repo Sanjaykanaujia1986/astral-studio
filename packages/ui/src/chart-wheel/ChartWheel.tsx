@@ -32,6 +32,8 @@ import {
   type WheelLayout,
 } from './geometry.js';
 import { BODY_GLYPHS, GLYPH_FONT_STACK, SIGN_GLYPHS } from './glyphs.js';
+import { BODY_PATHS, SIGN_PATHS } from '../glyphs/paths.js';
+import { svgGlyph } from '../glyphs/Glyph.js';
 import { ASPECT_CLASSES, resolveTheme, type ChartTheme } from './theme.js';
 
 export interface ChartWheelProps {
@@ -257,18 +259,21 @@ export function ChartWheel({
           const midpointAngle = longitudeToAngle(index * 30 + 15, ascendant);
           const p = pointAt(layout, (rZodiacOuter + rZodiacInner) / 2, midpointAngle);
           const element = signPosition(index * 30 + 15).element;
+          if (glyphStyle === 'symbol') {
+            return svgGlyph(SIGN_PATHS[sign], p.x, p.y, Math.min((rZodiacOuter - rZodiacInner) * 0.56, signGlyphSize * 1.5), t.elements[element], 2, sign);
+          }
           return (
             <text
               key={`sign-${sign}`}
               x={fmt(p.x)} y={fmt(p.y)}
               textAnchor="middle"
               dominantBaseline="central"
-              fontSize={glyphStyle === 'symbol' ? signGlyphSize : signGlyphSize * 0.62}
+              fontSize={signGlyphSize * 0.62}
               fontFamily={GLYPH_FONT_STACK}
               fill={t.elements[element]}
               fontWeight={600}
             >
-              {glyphStyle === 'symbol' ? SIGN_GLYPHS[sign].symbol : SIGN_GLYPHS[sign].abbreviation}
+              {SIGN_GLYPHS[sign].abbreviation}
             </text>
           );
         })}
@@ -398,15 +403,19 @@ export function ChartWheel({
                   0.7 * scale,
                 )}
 
-                <text
-                  x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}
-                  textAnchor="middle" dominantBaseline="central"
-                  fontSize={glyphStyle === 'symbol' ? 21 * scale : 21 * scale * 0.6}
-                  fontFamily={GLYPH_FONT_STACK}
-                  fill={t.aspects.hard}
-                >
-                  {glyphStyle === 'symbol' ? glyph.symbol : glyph.abbreviation}
-                </text>
+                {glyphStyle === 'symbol' && BODY_PATHS[body.position.body]
+                  ? svgGlyph(BODY_PATHS[body.position.body], glyphPoint.x, glyphPoint.y, 19 * scale, t.aspects.hard, 1.8, body.position.body)
+                  : (
+                    <text
+                      x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}
+                      textAnchor="middle" dominantBaseline="central"
+                      fontSize={glyphStyle === 'symbol' ? 21 * scale : 21 * scale * 0.6}
+                      fontFamily={GLYPH_FONT_STACK}
+                      fill={t.aspects.hard}
+                    >
+                      {glyphStyle === 'symbol' ? glyph.symbol : glyph.abbreviation}
+                    </text>
+                  )}
 
                 <text
                   x={fmt(degreePoint.x)} y={fmt(degreePoint.y)}
@@ -456,16 +465,20 @@ export function ChartWheel({
                     0.7 * scale,
                   )}
 
-              <text
-                x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}
-                textAnchor="middle"
-                dominantBaseline="central"
-                fontSize={glyphStyle === 'symbol' ? planetGlyphSize : planetGlyphSize * 0.6}
-                fontFamily={GLYPH_FONT_STACK}
-                fill={INK}
-              >
-                {glyphStyle === 'symbol' ? glyph.symbol : glyph.abbreviation}
-              </text>
+              {glyphStyle === 'symbol' && BODY_PATHS[body.position.body]
+                ? svgGlyph(BODY_PATHS[body.position.body], glyphPoint.x, glyphPoint.y, planetGlyphSize, INK, 1.75, body.position.body)
+                : (
+                  <text
+                    x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}
+                    textAnchor="middle"
+                    dominantBaseline="central"
+                    fontSize={glyphStyle === 'symbol' ? planetGlyphSize : planetGlyphSize * 0.6}
+                    fontFamily={GLYPH_FONT_STACK}
+                    fill={INK}
+                  >
+                    {glyphStyle === 'symbol' ? glyph.symbol : glyph.abbreviation}
+                  </text>
+                )}
 
               <text
                 x={fmt(degreePoint.x)} y={fmt(degreePoint.y)}

@@ -23,6 +23,7 @@ import {
   type SkyEvent,
   type StationEvent,
 } from '@astro/engine';
+import { BodyGlyph } from '@astro/ui';
 import { useTranslator } from '@astro/i18n';
 import { getProvider } from '../lib/engine.js';
 
@@ -223,6 +224,7 @@ export function SkyEventsPanel(): JSX.Element {
                 checked={chosen.includes(body)}
                 onChange={() => toggle(body)}
               />
+              <BodyGlyph body={body} className="as-text-accent" />
               {t(`body.${body}` as 'body.sun')}
             </label>
           ))}

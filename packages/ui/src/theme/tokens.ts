@@ -79,6 +79,16 @@ export interface ColorTokens {
   readonly successInk: string;
   /** Focus ring. Must clear 3:1 against both canvas and surface. */
   readonly focus: string;
+  /**
+   * Element colours for the zodiac glyphs: fire, earth, air, water. The same
+   * hues as the chart wheel's sign ring, so a sign reads the same colour in a
+   * table as on the wheel. Glyphs are graphics, held to 3:1 against every
+   * ground; the light values were darkened until they clear it.
+   */
+  readonly elFire: string;
+  readonly elEarth: string;
+  readonly elAir: string;
+  readonly elWater: string;
 }
 
 /**
@@ -110,6 +120,10 @@ export const LIGHT_TOKENS: ColorTokens = {
   success: '#1c6b45',
   successInk: '#145235',
   focus: '#5b2bc4',
+  elFire: '#c2381f',
+  elEarth: '#1f7a4d',
+  elAir: '#9a6a0e',
+  elWater: '#1d6fa5',
 };
 
 /**
@@ -142,6 +156,10 @@ export const DARK_TOKENS: ColorTokens = {
   success: '#6fe0a8',
   successInk: '#93ebc0',
   focus: '#b98cff',
+  elFire: '#f0785f',
+  elEarth: '#4cb583',
+  elAir: '#e0b44a',
+  elWater: '#5aa9dd',
 };
 
 /** Spacing scale, in rem. A 4px base at the default root size. */
@@ -282,6 +300,10 @@ export function themeCss(): string {
     '.as-text-warning { color: var(--as-warning-ink); }',
     '.as-text-success { color: var(--as-success-ink); }',
     '.as-text-accent { color: var(--as-accent-ink); }',
+    '.as-el-fire { color: var(--as-el-fire); }',
+    '.as-el-earth { color: var(--as-el-earth); }',
+    '.as-el-air { color: var(--as-el-air); }',
+    '.as-el-water { color: var(--as-el-water); }',
     '.as-border-strong { border-color: var(--as-border-strong); }',
     '.as-border-hair { border-color: var(--as-border); }',
     '.as-surface-solid { background-color: var(--as-raised); }',
