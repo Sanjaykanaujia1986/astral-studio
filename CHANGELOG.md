@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 0.20.0 — 2026-11-14
+- NEW: **Aṣṭottarī and Yoginī daśā**, alongside Viṁśottarī, on one engine — counted from the Moon or from the lagna or any graha, and drilled down five levels (mahā → antar → pratyantar → sūkṣma → prāṇa). The running period is highlighted at every level.
+- NEW: **Śani sāḍe-sātī and panautī** (ḍhaiyā) table with each phase, retrograde re-entries, the pāya of every entry, and the dates Saturn passes over the natal Moon; plus **Guru, Śani and Maṅgala ingress tables** with the house from the Moon and from the lagna, by decade.
+- CHANGE: daśā defaults now reproduce printed horoscopes — **365.25-day years** (was 365.2425) and the clock started at **00:00 local on the birth date**. Checked against two printed reports: 1,755 of 1,775 Viṁśottarī dates and 1,287 of 1,295 Aṣṭottarī dates agree to the day; the rest are period ends within minutes of midnight. Every one of 16 printed sāḍe-sātī spells agrees. Both conventions remain selectable.
+- CHANGE: daśā dates are shown in the birth time zone, as a horoscope prints them, not in UTC — a period ending at 00:00 IST no longer reads as the previous day.
+- FIX: `sidereal-houses.test.ts` used a time-zone kind (`fixed`) that does not exist, so the engine typecheck failed.
+
 ## 0.19.0 — 2026-11-13
 - FIX, and the most serious one this product has had: **a sidereal chart had tropical houses.** The lagna was out by a whole ayanāṁśa — about 24°, most of a rāśi — so it named the wrong sign roughly four times in five, and every whole-sign bhāva and every varga built on it was wrong with it. The Western tropical chart was never affected.
 - Cause: `swe_houses` takes no flags and always answers tropical. `#applyZodiac` set the sidereal mode and returned `SEFLG_SIDEREAL`, and the houses call **threw that return value away**. Setting the mode does nothing for a function with nowhere to put it. Now `swe_houses_ex`, which has somewhere to put it.

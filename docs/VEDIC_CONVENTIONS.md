@@ -101,10 +101,11 @@ full period, and one at the end gives almost none.
 
 ### The year length — the convention that matters most
 
-A "year" here is **365.2425 days** by default (the Gregorian mean year),
-configurable to:
+A "year" here is **365.25 days** by default (the Julian year) — the value the
+reference horoscope software prints with, confirmed against 1,700+ of its
+printed daśā dates. Also selectable:
 
-- **365.25** (Julian) — what several popular programs use
+- **365.2425** (Gregorian mean year)
 - **360** (sāvana) — the classical 360-day reckoning
 - **365.2422** (tropical)
 
@@ -113,13 +114,57 @@ diverges by about **a day**, and across a mahādaśā boundary two programs usin
 different year lengths will disagree about the date by days. The choice is
 recorded with the result, and the UI shows it.
 
-Antardaśās (bhuktis) are computed proportionally: an antardaśā of lord B inside
-a mahādaśā of lord A runs for `years(A) × years(B) / 120`.
+### Where the clock starts
 
-Implemented to **two levels** — mahādaśā and antardaśā. Pratyantar and below
-are not, because each further level multiplies the sensitivity to the year
-length and the birth time, and a 4-level table printed to the minute from an
-approximate birth time would be false precision.
+`anchor: 'civilDate'` (the UI default) starts the daśā clock at **00:00 local
+time on the birth date**, not at the birth moment. That is what the reference
+software does: with it, 99 % of its printed Viṁśottarī and Aṣṭottarī dates are
+reproduced to the day (the rest are period ends within minutes of midnight).
+`anchor: 'birthMoment'` is available for anyone who prefers the instant.
+
+Balances are written as years / months / days on the **360-day reckoning**
+(12 months of 30 days), as printed horoscopes give them.
+
+### Levels and systems
+
+Every level divides its parent in the system's proportions, starting from the
+parent's own lord, so one rule gives antar, pratyantar, sūkṣma and prāṇa
+daśās. Sub-periods are generated on demand.
+
+| System | Years | Start |
+|---|---:|---|
+| Viṁśottarī | 120 | lord of the nakṣatra, nine-fold from Aśvinī (Ketu) |
+| Aṣṭottarī | 108 | eight lords (no Ketu); nakṣatras from Ārdrā in groups of 4,3,4,3,3,3,4,3, elapsed part measured across the whole group (Abhijit not used) |
+| Yoginī | 36 | (nakṣatra number + 3) mod 8, counted from Maṅgalā |
+
+Any body (or the lagna) can stand in for the Moon — the "daśā from Lagna /
+Sun / …" pages of printed reports.
+
+**Known differences from the reference software.** Its Yoginī dates fall
+1–3 days from the standard computation, in a pattern no single year length or
+rounding rule reproduces, so the standard rule is kept. Its dates after
+28 February 2100 are one day early (it treats 2100 as a leap year). For a
+longitude in Śravaṇa its "Aṣṭottarī from Lagna / Sun / Mercury" pages use an
+Abhijit-dependent split that is not documented; the Moon-based Aṣṭottarī
+agrees.
+
+## 6a. Śani sāḍe-sātī and slow-planet transits
+
+Sign stays come from solved sidereal ingresses, retrograde re-entries kept.
+
+- **Sāḍe-sātī**: Saturn in the 12th, 1st or 2nd sign from the natal Moon.
+  **Panautī (ḍhaiyā)**: the 4th or 8th. A retrograde excursion out of the zone
+  and back joins the same spell. The spell running at birth is reported from
+  the start of the sign stay that contains the birth.
+- **Pāya**: the transiting Moon's house from the natal Moon at the moment
+  Saturn enters — 1/6/11 gold, 2/5/9 silver, 3/7/10 copper, 4/8/12 iron.
+- **Saturn over the Moon**: the dates Saturn reaches the Moon's whole degree − 1
+  and leaves its whole degree + 1.
+
+Checked against 16 printed spells in two reference reports: every one agrees,
+one end landing 14 minutes after midnight.
+
+---
 
 ## 7. Pañcāṅga
 

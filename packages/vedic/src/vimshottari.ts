@@ -60,7 +60,7 @@ export interface DashaPeriod {
 }
 
 export interface VimshottariOptions {
-  /** Defaults to `gregorian`. */
+  /** Defaults to `julian` (365.25 days) — the reference horoscope software's year. */
   readonly yearLength?: YearLengthName | number;
   /** How many mahādaśās to return. Defaults to 9 — one full cycle. */
   readonly count?: number;
@@ -83,7 +83,7 @@ export interface VimshottariResult {
 function resolveYearLength(
   option: VimshottariOptions['yearLength'],
 ): { days: number; name: YearLengthName | 'custom' } {
-  if (option === undefined) return { days: YEAR_LENGTHS.gregorian, name: 'gregorian' };
+  if (option === undefined) return { days: YEAR_LENGTHS.julian, name: 'julian' };
   if (typeof option === 'number') {
     if (!(option > 0)) throw new RangeError(`year length must be positive, received ${option}`);
     const named = (Object.keys(YEAR_LENGTHS) as YearLengthName[])

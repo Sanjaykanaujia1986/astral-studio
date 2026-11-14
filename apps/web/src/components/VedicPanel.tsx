@@ -12,8 +12,10 @@ import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { Link } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
 import { VedicChartFigure, formatLongitude, type VedicLayoutStyle } from '@astro/ui';
-import { vedicChart, VARGAS, YEAR_LENGTHS, type Varga, type YearLengthName } from '@astro/vedic';
+import { vedicChart, VARGAS, type Varga } from '@astro/vedic';
 import { getProvider } from '../lib/engine.js';
+import { DashaSection } from './vedic/DashaSection.js';
+import { SadeSatiSection } from './vedic/SadeSatiSection.js';
 import { useSettings } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
 
@@ -31,7 +33,6 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
   const chartTheme = useChartTheme();
   const [style, setStyle] = useState<VedicLayoutStyle>('north');
   const [varga, setVarga] = useState<Varga>('D1');
-  const [yearLength, setYearLength] = useState<YearLengthName>('gregorian');
 
   const isSidereal = chart.settings.zodiac.kind === 'sidereal';
 
@@ -53,10 +54,10 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
   const result = useMemo(() => {
     if (!isSidereal) return null;
     return vedicChart(chart, {
-      vimshottari: { yearLength },
+      vimshottari: { yearLength: 'julian' },
       ...(provider ? { provider, place: chart.place } : {}),
     });
-  }, [chart, isSidereal, yearLength, provider]);
+  }, [chart, isSidereal, provider]);
 
   if (!isSidereal || !result) {
     return (
@@ -219,66 +220,9 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
         </section>
       ) : null}
 
-      {result.dasha ? (
-        <section className="as-card">
-          <h2 className="as-h2">{t('vedic.section.dasha')}</h2>
-          <div className="mb-3 flex flex-wrap items-end gap-3">
-            <label className="min-w-0 max-w-full text-sm">
-              <span className="block font-medium">{t('vedic.dasha.yearLength')}</span>
-              <select
-                value={yearLength}
-                onChange={(e) => setYearLength(e.target.value as YearLengthName)}
-                className={`mt-1 ${FIELD}`}
-                style={{ borderColor: 'var(--as-border-strong)', background: 'var(--as-surface)', color: 'var(--as-ink)' }}
-              >
-                {(Object.keys(YEAR_LENGTHS) as YearLengthName[]).map((name) => (
-                  <option key={name} value={name}>{name} · {YEAR_LENGTHS[name]} d</option>
-                ))}
-              </select>
-            </label>
-            <p className="text-xs" style={{ color: 'var(--as-ink-muted)' }}>
-              {t('vedic.balance', {
-                years: n(result.dasha.balanceYears, { maximumFractionDigits: 2 }),
-                lord: t(`dashaLord.${result.dasha.periods[0]!.lord}` as 'dashaLord.ketu'),
-              })}
-            </p>
-          </div>
+      <DashaSection vchart={result} chart={chart} />
 
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--as-border)' }}>
-                  <th className={TH} style={{ color: 'var(--as-ink-muted)' }}>{t('vedic.column.lord')}</th>
-                  <th className={TH} style={{ color: 'var(--as-ink-muted)' }}>{t('vedic.column.dates')}</th>
-                  <th className={TH} style={{ color: 'var(--as-ink-muted)' }}>{t('vedic.column.period')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {result.dasha.periods.map((period) => (
-                  <tr key={period.lord + period.startJd} style={{ borderBottom: '1px solid var(--as-border)' }}>
-                    <th scope="row" className={`${TD} text-left font-medium`}>
-                      {t(`dashaLord.${period.lord}` as 'dashaLord.ketu')}
-                    </th>
-                    <td className={TD}>
-                      {d(period.startIso, { dateStyle: 'medium', timeZone: 'UTC' })}
-                      {' → '}
-                      {d(period.endIso, { dateStyle: 'medium', timeZone: 'UTC' })}
-                    </td>
-                    <td className={TD}>{n(period.years, { maximumFractionDigits: 2 })} y</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <p className="as-fineprint mt-3">
-            {t('vedic.yearLength', {
-              days: n(result.dasha.yearLengthDays, { maximumFractionDigits: 4 }),
-              name: result.dasha.yearLengthName,
-            })}
-          </p>
-        </section>
-      ) : null}
+      {provider ? <SadeSatiSection vchart={result} chart={chart} provider={provider} /> : null}
 
       <p className="as-fineprint">{t('vedic.conventions')}</p>
     </div>

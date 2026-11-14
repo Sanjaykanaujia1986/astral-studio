@@ -39,3 +39,20 @@ export {
   vedicChart, wholeSignHouse, NotSiderealError,
   type VedicChart, type VedicChartOptions, type VedicPlacement,
 } from './chart.js';
+
+export {
+  DASHA_SYSTEMS, VIMSHOTTARI_SYSTEM, ASHTOTTARI_SYSTEM, YOGINI_SYSTEM, DASHA_LEVEL_NAMES,
+  dashas, subPeriods, runningPath, yearsToYmd, localMidnightJd,
+  type DashaSystem, type DashaSystemId, type DashaNode, type DashaOptions, type DashaResult, type DashaPlanet,
+} from './dasha.js';
+
+export {
+  GRAHAS, SEVEN, SIGN_LORDS, EXALTATION, OWN_SIGNS, MOOLATRIKONA, NATURAL_RELATION,
+  signOf, houseFrom, grahaLongitudes,
+  type Graha, type Planet, type GrahaLongitudes,
+} from './grahas.js';
+
+export {
+  sadeSati, signStays, saturnOverMoon, payaOf,
+  type SaturnPhase, type Paya, type SignStay, type SaturnStay, type SadeSatiSpell,
+} from './transits.js';
