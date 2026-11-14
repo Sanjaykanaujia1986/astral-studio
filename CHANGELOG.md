@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 0.22.0 — 2026-11-14
+- NEW: **Krishnamurti Paddhati** — KP ayanāṁśa with Placidus cusps; sign, star, sub and sub-sub lords of every cusp and planet; houses occupied and owned; significators; ruling planets at birth; the four-step theory. All 22 lord rows agree with two printed reports.
+- NEW: **Aṣṭakavarga** — bindus of the seven planets and the lagna, the sarvāṣṭakavarga and rekhās, trikoṇa and ekādhipatya reductions, rāśi/graha/śodhya piṇḍas, and each planet's contributor table. The sarvāṣṭakavarga matches both reports sign for sign.
+- NEW: **Ṣaḍbala and bhāva bala** — every component in virūpas, rūpas against the required minimum, rank, iṣṭa/kaṣṭa phala, and bhāva bala on Śrīpati madhyas. Fourteen components agree with the reports to 0.01 virūpa; horā, māsa, nathonnata and ceṣṭā follow the classical rule where the reports' values cannot be reproduced (VEDIC_CONVENTIONS §10).
+
 ## 0.21.0 — 2026-11-14
 - NEW: **Aṣṭakūṭa matching** — the eight kūṭas and the 36-point total for a pair (the partner's birth details entered on the Vedic page, cast with this chart's own zodiac and nodes), and the printed horoscope's 36-row table of this Moon against every partner nakṣatra segment.
 - NEW: **Maṅgala doṣa** from the lagna, the Moon and Venus.

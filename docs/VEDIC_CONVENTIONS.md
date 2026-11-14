@@ -224,6 +224,53 @@ from the lagna, the Moon and Venus.
 yogas count the five tārāgrahas only (the Sun is excluded from the Moon's);
 when counting Rāhu/Ketu would change a result, it says so.
 
+## 10. KP, aṣṭakavarga and ṣaḍbala
+
+**KP.** Krishnamurti ayanāṁśa, Placidus cusps, mean nodes unless the chart uses
+true nodes. Each 13°20′ star is split into nine subs in Viṁśottarī proportion
+starting from the star's own lord, and each sub again for the sub-sub lord. A
+planet sits in the house whose cusp arc holds it, and is also counted in the
+next house when less than 1° before its cusp (the reference reports put the cut
+between 58.6′ and 81′). Rāhu and Ketu own their sign lord's houses. A planet
+signifies the houses that it and its star lord occupy and own. Ruling planets
+are taken at birth, in the order lagna sign lord, lagna star lord, Moon sign
+lord, day lord (civil date), Moon star lord.
+
+**Aṣṭakavarga.** Parāśara's bindu tables for the seven planets and the lagna.
+The sarvāṣṭakavarga adds only the seven planets (always 337). Trikoṇa śodhana
+subtracts the smallest of each triad (equal values all clear); ekādhipatya
+śodhana treats the five pairs of signs with one lord by occupation. Piṇḍas use
+the rāśi multipliers 7 10 8 4 10 5 7 8 9 5 11 12 and graha multipliers Sun 5,
+Moon 5, Mars 8, Mercury 5, Jupiter 10, Venus 7, Saturn 5.
+
+**Ṣaḍbala** follows Bṛhat Parāśara in virūpas:
+
+- Sthāna: uccha, saptavargaja (D1 D2 D3 D7 D9 D12 D30 with compound
+  friendship; mūlatrikoṇa only in D1), ojayugma, kendra, drekkāṇa.
+- Dig from the Śrīpati bhāva madhyas.
+- Kāla: nathonnata, pakṣa, tribhāga, abda, māsa, vāra, horā, ayana (BPHS krānti
+  table). Benefics are Jupiter, Venus, the Moon 72° or more from the Sun, and
+  Mercury unless it shares a sign with a malefic; the Moon's pakṣa is doubled.
+- Ceṣṭā from the mean and true longitudes; the Sun takes its ayana bala and
+  the Moon its pakṣa bala.
+- Naisargika, and dṛk from sphuṭa dṛṣṭi with the special aspects of Mars,
+  Jupiter and Saturn.
+
+Where the reference reports cannot be reproduced:
+
+- **Nathonnata**: computed from local mean time; the reports' divā value fits
+  none of their printed times (up to 0.3 virūpa apart).
+- **Horā**: one-hour horās from sunrise beginning with the day lord. The
+  reports print a lord four horās away in both charts, which no sunrise or
+  midnight convention produces.
+- **Abda/māsa**: Kali ahargaṇa with 360- and 30-day periods; abda matches both
+  reports, māsa one of the two.
+- **Ceṣṭā**: modern mean elements, where the reports use Sūrya-Siddhānta means;
+  Mars, Jupiter and Saturn agree within 0.7 virūpa, Venus within 0.9 and
+  Mercury within about 5.
+- **Yuddha bala** is not applied; a planetary war (Mars–Saturn within 1°) is
+  flagged instead.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:

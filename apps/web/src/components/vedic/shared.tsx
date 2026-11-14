@@ -81,3 +81,14 @@ export const GRAHA_NAME: Readonly<Record<string, string>> = {
 };
 
 export const RASHI_NAME = ['Meṣa', 'Vṛṣabha', 'Mithuna', 'Karka', 'Siṁha', 'Kanyā', 'Tulā', 'Vṛścika', 'Dhanu', 'Makara', 'Kumbha', 'Mīna'] as const;
+
+/** 12°34′56″ within the sign, with the sign's short name. */
+export function signDms(lon: number): string {
+  const l = ((lon % 360) + 360) % 360;
+  const s = Math.floor(l / 30); let sec = Math.round((l - s * 30) * 3600);
+  if (sec >= 30 * 3600) sec = 30 * 3600 - 1;
+  const d = Math.floor(sec / 3600); const m = Math.floor((sec % 3600) / 60);
+  return `${RASHI_NAME[s]} ${d}°${String(m).padStart(2, '0')}′${String(sec % 60).padStart(2, '0')}″`;
+}
+
+export const fix = (v: number, n = 2): string => v.toFixed(n);

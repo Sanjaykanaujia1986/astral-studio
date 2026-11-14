@@ -64,3 +64,18 @@ export {
 } from './matching.js';
 
 export { yogas, type YogaResult } from './yogas.js';
+
+export {
+  kpChart, kpLords, fourStep, cuspsSubbedBy, arcHouse, KP_LORDS,
+  type KpChart, type KpBody, type KpCusp, type KpLords, type KpOptions, type KpStep,
+} from './kp.js';
+
+export {
+  ashtakavarga, trikonaReduce, ekadhipatyaReduce, AV_OWNERS, AV_CONTRIBUTORS,
+  type Ashtakavarga, type Bhinna, type AvOwner,
+} from './ashtakavarga.js';
+
+export {
+  shadbala, sripati, vargaOf, sputaDrishti, compoundRelation, SHADBALA_ROWS, SHADBALA_MIN, NAISARGIKA,
+  type ShadbalaResult, type ShadbalaRow, type ShadbalaContext,
+} from './shadbala.js';

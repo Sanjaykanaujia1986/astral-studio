@@ -18,6 +18,9 @@ import { DashaSection } from './vedic/DashaSection.js';
 import { SadeSatiSection } from './vedic/SadeSatiSection.js';
 import { MatchingSection } from './vedic/MatchingSection.js';
 import { YogaSection } from './vedic/YogaSection.js';
+import { KpSection } from './vedic/KpSection.js';
+import { AshtakavargaSection } from './vedic/AshtakavargaSection.js';
+import { ShadbalaSection } from './vedic/ShadbalaSection.js';
 import { useSettings } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
 
@@ -227,6 +230,12 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
       {provider ? <SadeSatiSection vchart={result} chart={chart} provider={provider} /> : null}
 
       <YogaSection vchart={result} />
+
+      {result.lagna ? <AshtakavargaSection vchart={result} /> : null}
+
+      {provider && result.lagna ? <ShadbalaSection vchart={result} chart={chart} provider={provider} /> : null}
+
+      {provider && result.lagna ? <KpSection chart={chart} provider={provider} /> : null}
 
       <MatchingSection vchart={result} chart={chart} />
 
