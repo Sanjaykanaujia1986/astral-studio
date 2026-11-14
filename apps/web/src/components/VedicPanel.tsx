@@ -22,6 +22,9 @@ import { KpSection } from './vedic/KpSection.js';
 import { AshtakavargaSection } from './vedic/AshtakavargaSection.js';
 import { ShadbalaSection } from './vedic/ShadbalaSection.js';
 import { VarshaphalSection } from './vedic/VarshaphalSection.js';
+import { TablesSection } from './vedic/TablesSection.js';
+import { TransitSection } from './vedic/TransitSection.js';
+import { WesternSection } from './vedic/WesternSection.js';
 import { useSettings } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
 
@@ -232,6 +235,8 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
 
       <YogaSection vchart={result} />
 
+      {provider && result.lagna ? <TablesSection vchart={result} chart={chart} provider={provider} /> : null}
+
       {result.lagna ? <AshtakavargaSection vchart={result} /> : null}
 
       {provider && result.lagna ? <ShadbalaSection vchart={result} chart={chart} provider={provider} /> : null}
@@ -239,6 +244,10 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
       {provider && result.lagna ? <KpSection chart={chart} provider={provider} /> : null}
 
       {provider && result.lagna ? <VarshaphalSection chart={chart} provider={provider} /> : null}
+
+      {provider && result.lagna ? <TransitSection vchart={result} chart={chart} provider={provider} /> : null}
+
+      {provider ? <WesternSection chart={chart} provider={provider} /> : null}
 
       <MatchingSection vchart={result} chart={chart} />
 

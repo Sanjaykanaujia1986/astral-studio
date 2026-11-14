@@ -2,6 +2,33 @@
 
 Newest first.
 
+## 0.24.0 — 2026-11-14
+- NEW: **Horoscope tables**, one at a time from a picker:
+  - planetary friendship (permanent, temporary and five-fold)
+  - dignity and combustion
+  - ṣoḍaśavarga across all sixteen vargas
+  - viṁśopaka bala in four schemes, with Parāśara's or the printed saptavarga weights
+  - 41 Tājika sahams
+  - bhāva, horā and ghaṭī lagnas
+  - Jaimini rāśi dṛṣṭi and ārūḍha padas
+  - avakahaḍā and ghātaka
+  - favourable points with gems and other traditional correspondences, labelled as correspondences, not advice
+  - the Tārā and Sudarśana cakras
+  - the chalit (bhāva) chart on Śrīpati sandhis
+- NEW: **Sāyana pages** — tropical positions with motion, latitude and declination; Placidus cusps; aspect grids between planets and from planets to cusps, using the reports' whole-degree orbs.
+- NEW: **Daily transits**:
+  - the daily power chart for any month (natal bindus of each transiting planet, total, ±28, running daśā)
+  - the Moon's daily tārā between nakṣatra and sign changes
+  - the year's gochar with houses, bindus and daśā
+- NEW: **KP event analysis** for 17 matters (vehicle, travel, education, marriage, children, health, finance, property and more): each cusp's sub-lord → star-lord chain and its kārakas, against the matter's favourable and unfavourable houses.
+- Checked against two printed reports:
+  - Daily power chart: 1,439 of 1,440 numbers.
+  - Moon tārā: all 90 rows, to the minute.
+  - Sahams: 40 of 41 (the reports print Jalapatha as 0°).
+  - KP event chains: 69 of 74. The other five contradict that report's own KP table.
+  - Conventions are in VEDIC_CONVENTIONS §12.
+- FIX: the exported `sunrise()` helper called the ephemeris without naming the Sun and threw; it now asks for the Sun's rise.
+
 ## 0.23.1 — 2026-11-14
 - FIX: the smoke test searches every code-split chunk for its release markers, not only the entry chunk, so the Gann lab, dashboard and licence markers stop failing on a good deploy.
 - FIX: the Vedic panel tests describe the new daśā section (system picker, 365.25-day year, Y-M-D balance) and look for the pañcāṅga's yoga inside its own section.

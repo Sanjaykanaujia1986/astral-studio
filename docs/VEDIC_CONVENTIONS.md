@@ -298,6 +298,101 @@ days (64% of printed mudda dates are exact).
 **Progressions** are sāyana secondary progressions: tropical positions one day
 after birth for each year of life, the ascendant cast for the birth place.
 
+
+## 12. Report tables, sāyana pages, transits and KP events
+
+Each table is rebuilt from its rule and checked against two reference reports.
+Where a report is inconsistent with itself or cannot be reproduced, the
+classical rule is used and the difference is listed here.
+
+**Friendship.** The seven follow Parāśara's naisargika table. Tātkālika
+friends are in the 2nd, 3rd, 4th, 10th, 11th and 12th from a planet. Pañcadhā
+combines the two (friend + friend = adhimitra, and so on). Rāhu and Ketu have
+no classical rows; their rows and columns are as the reports print them (the
+same in both).
+
+**Dignity.** Exaltation and debilitation by sign. Mūlatrikoṇa as the reports
+flag it (the Moon 4–30° Vṛṣabha, Mercury 16–20° Kanyā, the rest Parāśara's
+ranges). Combustion orbs: Moon 12°, Mars 17°, Mercury 14° (12° retrograde),
+Jupiter 11°, Venus 10° (8° retrograde), Saturn 15°.
+
+**Ṣoḍaśavarga and viṁśopaka.** All sixteen vargas use the same mapping as the
+ṣaḍbala module and agree with both reports. Viṁśopaka points per varga: own
+sign 20, adhimitra 18, mitra 15, sama 10, śatru 7, adhiśatru 5 (pañcadhā). The
+default saptavarga weights are Parāśara's (D1 5, D2 2, D3 3, D7 2.5, D9 4.5,
+D12 2, D30 1). The reports use D7 1, D9 2.5, D12 4.5, D30 2; that set can be
+selected. The reports' viṁśopaka for Rāhu and Ketu cannot be reproduced and is
+not shown.
+
+**Sahams.** Forty-one Tājika sahams in the form A − B + C, where marked adding
+one sign when C does not fall between B and A. House cusps are Placidus in the
+chart's zodiac. Forty agree with both reports to 2′. The reports print
+Jalapatha as 0°; it is computed here from its formula (Karka 15° − Saturn +
+Lagna).
+
+**Special lagnas.** From the sidereal Sun at the last sunrise before birth
+(upper limb, with refraction): bhāva lagna +15° an hour, horā lagna +30° and
+ghaṭī lagna +75°.
+
+**Jaimini.** Rāśi dṛṣṭi: movable signs see the fixed signs except the next
+one; fixed signs see the movable signs except the previous one; dual signs see
+the other dual signs. Ārūḍha of a house: count from the house to its lord, then
+the same distance again. If that lands in the house itself or its 7th, take
+the 10th from it.
+
+**Avakahaḍā.** Varṇa and tattva follow the Moon sign by index mod 4. Vaśya is
+by whole sign, as the reports print it (matching still uses the classical
+halves of Dhanu and Makara). Yuñjā is counted from Revatī: six nakṣatras
+pūrva, twelve madhya and nine antya. **Ghātaka** is the classical table for
+the Moon sign; the two rows the reports print agree with it.
+
+**Favourable points.** Radical number = digit sum of the birth day; destiny
+number = digit sum of the whole date; years marked good = radical + 18 + 9k.
+Favourable lords are the lords of the 1st, 9th and 10th; the lords of the 6th,
+8th and 12th that are not also favourable are listed separately. The stones are
+the gems of the lagna lord and the 9th lord. These are traditional
+correspondences, shown as data, not advice.
+
+**Tārā cakra.** Twenty-seven nakṣatras from the janma nakṣatra in three
+cycles of nine tārās. Each covers years of life k, k + 27 and k + 54. The
+candra and sūrya bindu names are counted inclusively from the Moon's and the
+Sun's nakṣatra. They were fitted on one report and confirmed on the other.
+
+**Chalit.** Bhāvas by Śrīpati's sandhis (the same madhyas as bhāva bala).
+
+**Sāyana pages.** Tropical longitudes, motion, latitude and declination;
+Placidus cusps. The reports print 0 latitude and declination for the nodes.
+Nakṣatra lords on these pages are read on the sāyana longitude, as printed.
+Aspects use the whole-degree separation ⌊|a − b|⌋, or 360 − ⌊|a − b|⌋ above
+180°. Orbs: conjunction, sextile, square, trine and opposition 8°;
+semi-square 4°; sesquiquadrate and quincunx 3°; quintile 2°.
+
+**Daily power chart.** At 05:30 local time on each day: each planet's transit
+sign, its house from the natal lagna, and its own natal bhinnāṣṭakavarga
+bindus in that sign. The day's total is shown, and the total − 28. The
+running mahā/antar/pratyantar daśā is on the daśā module's printed clock.
+1,439 of 1,440 printed numbers agree; the other is a pratyantar boundary on
+the day it changes.
+
+**Moon's daily tārā.** Segments between the Moon's nakṣatra and sign changes,
+with the tārā from the janma nakṣatra, the padas covered, the house from the
+lagna and the sarvāṣṭakavarga of the sign. All 90 printed rows agree to the
+minute.
+
+**Gochar.** Every sign change of the Sun, Mars, Mercury, Jupiter, Venus,
+Saturn and the nodes in a calendar year (Ketu is Rāhu + 180°). Each row shows
+the house from the lagna and from the Moon, the planet's own bindus and the
+sarvāṣṭakavarga of the sign entered, and the running daśā. The Moon's changes
+are in the daily tārā table.
+
+**KP events.** Seventeen matters, as the reports define them (kārakas, cusps,
+favourable and unfavourable houses). Each cusp shows its sub lord and the sub
+lord's star lord, with the houses each occupies and owns, and the cusp's
+significators. Each kāraka shows the same chain. 69 of 74 printed chains agree.
+The other five are one report's cusps 3 and 9: they print Rāhu as the star
+lord of Mars, while the same report's KP table places Mars in Viśākhā, whose
+lord is Jupiter. The KP table, and so Jupiter, is used here.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:

@@ -178,11 +178,7 @@ export function sunrise(
   jdUT: number,
   place: PanchangPlace,
 ): number | undefined {
-  const rise = (provider as unknown as {
-    riseTransit?: (jd: number, place: PanchangPlace) => number | undefined;
-  }).riseTransit;
-  if (typeof rise !== 'function') return undefined;
-  return rise.call(provider, jdUT, place);
+  return provider.riseTransit(jdUT, 'sun', place, 'rise');
 }
 
 export interface PanchangOptions {

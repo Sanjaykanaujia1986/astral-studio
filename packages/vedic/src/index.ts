@@ -30,7 +30,7 @@ export {
 
 export {
   TITHI_NAMES, YOGA_NAMES, WEEKDAYS,
-  panchang, tithiFrom, yogaFrom, karanaFrom, weekdayFrom,
+  panchang, tithiFrom, yogaFrom, karanaFrom, weekdayFrom, sunrise,
   type Karana, type Panchang, type PanchangPlace, type Paksha,
   type Tithi, type Weekday, type Yoga,
 } from './panchang.js';
@@ -84,3 +84,27 @@ export {
   varshaphal, muddaDasha, solarReturn, positionsAt, progression, MUDDA_DAYS,
   type Varsha, type MuddaPeriod, type AnnualOptions, type Positions,
 } from './varshaphal.js';
+
+export {
+  permanentRelation, temporaryFriend, fiveFold, dignities, COMBUSTION,
+  shodashavarga, vimshopaka, SHODASHA, sahams, specialLagnas, rasiDrishti, arudhas,
+  avakahada, ghataka, GEM, WEEKDAY_OF, CORRESPONDENCE, favourablePoints,
+  taraChakra, sudarshana, chalit, TARA_NAMES,
+  type Relation, type FiveFold, type Dignity, type VimshopakaScheme, type Saham, type Avakahada,
+  type Ghataka, type FavourablePoints, type TaraRow,
+} from './tables.js';
+
+export {
+  western, aspectGrid, separationInt, aspectOf, WESTERN_BODIES, ASPECTS,
+  type Western, type WesternPosition, type WesternBody,
+} from './western.js';
+
+export {
+  dailyPower, moonTaraSchedule, gochar, vimshottariAt, localJd, TARA_CYCLE,
+  type PowerDay, type MoonSegment, type GocharEvent, type TransitContext, type Tara,
+} from './daily.js';
+
+export {
+  kpEvent, kpEvents, KP_EVENTS,
+  type KpEventDef, type KpEvent, type KpEventRow, type KpLink,
+} from './kpEvents.js';
