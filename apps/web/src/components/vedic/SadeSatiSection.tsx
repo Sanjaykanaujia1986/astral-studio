@@ -6,19 +6,14 @@ import { useMemo, useState, type JSX } from 'react';
 import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import { sadeSati, signStays, saturnOverMoon, grahaLongitudes, type VedicChart } from '@astro/vedic';
-import { RASHI_NAME, ROW, Select, Table, TD, localDate, MUTED } from './shared.js';
-
-const PHASE_LABEL: Record<string, string> = {
-  rising: 'Sāḍe-sātī · 12th (rising)', peak: 'Sāḍe-sātī · 1st (peak)', setting: 'Sāḍe-sātī · 2nd (setting)',
-  kantaka: 'Panautī · 4th (kaṇṭaka)', ashtama: 'Panautī · 8th (aṣṭama)',
-};
-const PAYA: Record<string, string> = { gold: 'Svarṇa (gold)', silver: 'Rajata (silver)', copper: 'Tāmra (copper)', iron: 'Loha (iron)' };
+import { ROW, Select, Table, TD, localDate, MUTED, useJy } from './shared.js';
 
 export function SadeSatiSection(props: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
 }): JSX.Element {
   const { vchart, chart, provider } = props;
   const { t } = useTranslator();
+  const { gn, rn } = useJy();
   const off = chart.offsetMinutes;
   const zodiac = chart.settings.zodiac;
   const g = useMemo(() => grahaLongitudes(vchart), [vchart]);
@@ -44,14 +39,14 @@ export function SadeSatiSection(props: {
     <section className="as-card">
       <h2 className="as-h2">{t('vedic.section.sadeSati')}</h2>
       <p className="mb-3 text-sm" style={MUTED}>
-        {t('vedic.sadeSati.lede', { moon: RASHI_NAME[Math.floor(g.lon.moon / 30)]! })}
+        {t('vedic.sadeSati.lede', { moon: rn(Math.floor(g.lon.moon / 30)) })}
       </p>
 
       <h3 className="as-h3 mb-2">{t('vedic.sadeSati.spells')}</h3>
       <Table head={[t('vedic.sadeSati.kind'), t('vedic.column.start'), t('vedic.column.end')]}>
         {ss.spells.map((s) => (
           <tr key={s.startJd} style={ROW}>
-            <th scope="row" className={`${TD} text-left font-medium`}>{s.kind === 'sadeSati' ? 'Sāḍe-sātī' : 'Panautī (ḍhaiyā)'}</th>
+            <th scope="row" className={`${TD} text-left font-medium`}>{t(s.kind === 'sadeSati' ? 'vedic.ss.kind.sadeSati' : 'vedic.ss.kind.panauti')}</th>
             <td className={TD}>{localDate(s.startJd, off)}</td>
             <td className={TD}>{localDate(s.endJd, off)}</td>
           </tr>
@@ -62,11 +57,11 @@ export function SadeSatiSection(props: {
       <Table head={[t('vedic.sadeSati.phase'), t('vedic.column.sign'), t('vedic.column.start'), t('vedic.column.end'), t('vedic.sadeSati.paya')]}>
         {ss.stays.filter((s) => s.phase).map((s) => (
           <tr key={s.startJd} style={ROW}>
-            <th scope="row" className={`${TD} text-left font-medium`}>{PHASE_LABEL[s.phase!]}{s.retrogradeEntry ? ' ℞' : ''}</th>
-            <td className={TD}>{RASHI_NAME[s.signIndex]}</td>
+            <th scope="row" className={`${TD} text-left font-medium`}>{t(`vedic.ss.phase.${s.phase!}` as 'vedic.ss.phase.peak')}{s.retrogradeEntry ? ' ℞' : ''}</th>
+            <td className={TD}>{rn(s.signIndex)}</td>
             <td className={TD}>{localDate(Math.max(s.startJd, chart.jdUT), off)}</td>
             <td className={TD}>{localDate(s.endJd, off)}</td>
-            <td className={TD}>{s.paya ? PAYA[s.paya] : '—'}</td>
+            <td className={TD}>{s.paya ? t(`vedic.ss.paya.${s.paya}` as 'vedic.ss.paya.gold') : '—'}</td>
           </tr>
         ))}
       </Table>
@@ -84,14 +79,14 @@ export function SadeSatiSection(props: {
       <h3 className="as-h3 mb-2 mt-5">{t('vedic.transit.ingresses')}</h3>
       <div className="mb-3 flex flex-wrap items-end gap-3">
         <Select label={t('vedic.column.body')} value={body} onChange={setBody}
-          options={[['jupiter', 'Guru'], ['saturn', 'Śani'], ['mars', 'Maṅgala']]} />
+          options={[['jupiter', gn('jupiter')], ['saturn', gn('saturn')], ['mars', gn('mars')]]} />
         <Select label={t('vedic.transit.decade')} value={String(decade)} onChange={(v) => setDecade(Number(v))}
           options={decades.map((d) => [String(d), `${d}–${d + 9}`] as const)} />
       </div>
       <Table head={[t('vedic.column.sign'), t('vedic.column.start'), t('vedic.column.end'), t('vedic.transit.fromMoon'), t('vedic.transit.fromLagna')]}>
         {ingress.map((s) => (
           <tr key={s.startJd} style={ROW}>
-            <th scope="row" className={`${TD} text-left font-medium`}>{RASHI_NAME[s.signIndex]}{s.retrogradeEntry ? ' ℞' : ''}</th>
+            <th scope="row" className={`${TD} text-left font-medium`}>{rn(s.signIndex)}{s.retrogradeEntry ? ' ℞' : ''}</th>
             <td className={TD}>{localDate(s.startJd, off)}</td>
             <td className={TD}>{localDate(s.endJd, off)}</td>
             <td className={TD}>{s.houseFromMoon}</td>

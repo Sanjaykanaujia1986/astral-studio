@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 0.25.0 — 2026-11-14
+- NEW: **Hindi and Gujarati are complete.** Every page now reads in the chosen script, with no English or IAST left where a translation belongs:
+  - Graha and rāśi names, short labels in the Vedic chart (सू चं मं… / સૂ ચં મં…), nakṣatras, yoga names, saham names and formulas, avakahaḍā and ghātaka values, tārā and bindu names, daśā systems and levels, sāḍe-sātī phases and pāyas, kūṭa names and the yoni animals are shown in Devanagari or Gujarati.
+  - Sanskrit terms are transliterated from IAST by a new `iastToScript` (modern spelling: मंगल, not मङ्गल).
+  - Yoga reasons are now data (`YogaResult.detail`) as well as text, so they read as full sentences in each language; the English text is unchanged and a test holds it to the engine's own sentence.
+  - The chart wheel's title and angle labels, the Square of Nine captions, motion per day, cycle units, research signal names, the provider name, the GeoNames credit, the tagline and the dashboard's saved-chart error are translated.
+  - Times in Hindi and Gujarati use the 24-hour clock, because the locale's am/pm markers are Latin.
+- Kept as written on purpose: D-numbers for vargas (D9), the A − B + C saham notation, place names, the exact UTC timestamp, and proper names such as the GNU AGPL and Swiss Ephemeris.
+
 ## 0.24.1 — 2026-11-14
 - CHANGE: tests use synthetic birth data only. The sidereal-houses test no longer carries a real person's chart; the rules that chart proved (sidereal cusps = tropical − ayanāṁśa, and Krishnamurti and Lahiri applied independently across a sign boundary) are tested on synthetic moments.
 

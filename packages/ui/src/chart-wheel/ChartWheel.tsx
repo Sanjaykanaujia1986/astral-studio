@@ -9,6 +9,7 @@
  * validated `NatalChart`; this file only maps longitudes onto the page.
  */
 import type { JSX } from 'react';
+import { useTranslator } from '@astro/i18n';
 import {
   norm360,
   signPosition,
@@ -126,6 +127,7 @@ export function ChartWheel({
   outerChart,
   outerLabel,
 }: ChartWheelProps): JSX.Element {
+  const { t: tr } = useTranslator();
   const t: ChartTheme = resolveTheme(theme);
   const INK = t.ink;
   const MUTED = t.muted;
@@ -183,8 +185,10 @@ export function ChartWheel({
   const accessibleTitle =
     title
     ?? (biwheel
-      ? `Bi-wheel: natal${subjectName ? ` for ${subjectName}` : ''} with ${outerLabel ?? 'an outer chart'}`
-      : `Natal chart${subjectName ? ` for ${subjectName}` : ''}`);
+      ? (subjectName
+        ? tr('wheel.biFor', { name: subjectName, outer: outerLabel ?? tr('wheel.outerDefault') })
+        : tr('wheel.bi', { outer: outerLabel ?? tr('wheel.outerDefault') }))
+      : (subjectName ? tr('wheel.natalFor', { name: subjectName }) : tr('wheel.natal')));
 
   return (
     <svg
@@ -312,10 +316,10 @@ export function ChartWheel({
 
           {/* angle labels */}
           {([
-            ['ASC', chart.houses.ascendant],
-            ['MC', chart.houses.midheaven],
-            ['DSC', chart.houses.descendant],
-            ['IC', chart.houses.imumCoeli],
+            [tr('angle.asc'), chart.houses.ascendant],
+            [tr('angle.mc'), chart.houses.midheaven],
+            [tr('angle.dsc'), chart.houses.descendant],
+            [tr('angle.ic'), chart.houses.imumCoeli],
           ] as const).map(([label, longitude]) => {
             const angle = longitudeToAngle(longitude, ascendant);
             const p = pointAt(layout, rZodiacOuter + 13 * scale, angle);

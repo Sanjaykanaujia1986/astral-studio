@@ -12,13 +12,14 @@ import {
   dashas, subPeriods, runningPath, yearsToYmd, localMidnightJd, grahaLongitudes, YEAR_LENGTHS,
   DASHA_SYSTEMS, type DashaNode, type DashaSystemId, type VedicChart, type YearLengthName, type Graha,
 } from '@astro/vedic';
-import { GRAHA_NAME, ROW, Select, Table, TD, localDate, utcOffsetLabel, MUTED } from './shared.js';
+import { ROW, Select, Table, TD, localDate, utcOffsetLabel, MUTED, useJy } from './shared.js';
 
 const LEVELS = ['Mahā', 'Antar', 'Pratyantar', 'Sūkṣma', 'Prāṇa'];
 type From = Graha | 'lagna';
 
 export function DashaSection({ vchart, chart }: { readonly vchart: VedicChart; readonly chart: NatalChart }): JSX.Element {
   const { t } = useTranslator();
+  const { gn, sc } = useJy();
   const [system, setSystem] = useState<DashaSystemId>('vimshottari');
   const [from, setFrom] = useState<From>('moon');
   const [anchor, setAnchor] = useState<'civilDate' | 'birthMoment'>('civilDate');
@@ -42,7 +43,8 @@ export function DashaSection({ vchart, chart }: { readonly vchart: VedicChart; r
   const runningIds = new Set(running.map((r) => r.path.join('/')));
   const rows = trail.length === 0 ? result.mahadashas : subPeriods(trail[trail.length - 1]!);
   const bal = yearsToYmd(result.balanceYears);
-  const name = (l: string) => GRAHA_NAME[l] ?? l;
+  const name = (l: string): string => gn(l);
+  const level = (i: number): string => sc(LEVELS[i]!);
   const reset = <T,>(set: (v: T) => void) => (v: T) => { set(v); setTrail([]); };
 
   return (
@@ -50,13 +52,13 @@ export function DashaSection({ vchart, chart }: { readonly vchart: VedicChart; r
       <h2 className="as-h2">{t('vedic.section.dasha')}</h2>
       <div className="mb-3 flex flex-wrap items-end gap-3">
         <Select label={t('vedic.dasha.system')} value={system} onChange={reset(setSystem)}
-          options={[['vimshottari', 'Viṁśottarī (120)'], ['ashtottari', 'Aṣṭottarī (108)'], ['yogini', 'Yoginī (36)']]} />
+          options={[['vimshottari', `${sc('Viṁśottarī')} (120)`], ['ashtottari', `${sc('Aṣṭottarī')} (108)`], ['yogini', `${sc('Yoginī')} (36)`]]} />
         <Select label={t('vedic.dasha.from')} value={from} onChange={reset(setFrom)}
           options={fromOptions.map((f) => [f, name(f)] as const)} />
         <Select label={t('vedic.dasha.anchor')} value={anchor} onChange={reset(setAnchor)}
           options={[['civilDate', t('vedic.dasha.anchor.civilDate')], ['birthMoment', t('vedic.dasha.anchor.birthMoment')]]} />
         <Select label={t('vedic.dasha.yearLength')} value={yearLength} onChange={reset(setYearLength)}
-          options={(Object.keys(YEAR_LENGTHS) as YearLengthName[]).map((k) => [k, `${k} · ${YEAR_LENGTHS[k]} d`] as const)} />
+          options={(Object.keys(YEAR_LENGTHS) as YearLengthName[]).map((k) => [k, t('vedic.dasha.yearOption', { name: t(`vedic.dasha.yl.${k}` as 'vedic.dasha.yl.julian'), days: YEAR_LENGTHS[k] })] as const)} />
       </div>
 
       <p className="mb-2 text-sm">
@@ -70,17 +72,17 @@ export function DashaSection({ vchart, chart }: { readonly vchart: VedicChart; r
 
       <nav className="mb-2 flex flex-wrap items-center gap-1 text-sm" aria-label={t('vedic.dasha.levels')}>
         <button type="button" className="as-button-secondary" onClick={() => setTrail([])} disabled={trail.length === 0}>
-          {LEVELS[0]} ({DASHA_SYSTEMS[system].lords.length})
+          {level(0)} ({DASHA_SYSTEMS[system].lords.length})
         </button>
         {trail.map((n, i) => (
           <button key={n.path.join('/')} type="button" className="as-button-secondary"
             onClick={() => setTrail(trail.slice(0, i + 1))} disabled={i === trail.length - 1}>
-            › {n.path.map(name).join(' / ')}
+            › {n.path.map((x) => name(x)).join(' / ')}
           </button>
         ))}
       </nav>
 
-      <Table head={[`${LEVELS[trail.length]} ${t('vedic.column.lord')}`, t('vedic.column.start'), t('vedic.column.end'), t('vedic.column.period')]}>
+      <Table head={[`${level(trail.length)} ${t('vedic.column.lord')}`, t('vedic.column.start'), t('vedic.column.end'), t('vedic.column.period')]}>
         {rows.map((r) => {
           const isRunning = runningIds.has(r.path.join('/'));
           const canOpen = r.level < 5;
@@ -96,7 +98,7 @@ export function DashaSection({ vchart, chart }: { readonly vchart: VedicChart; r
               </th>
               <td className={TD}>{localDate(Math.max(r.startJd, result.anchorJd), off)}</td>
               <td className={TD}>{localDate(r.endJd, off)}</td>
-              <td className={TD}>{(() => { const y = yearsToYmd(r.years); return `${y.years}y ${y.months}m ${y.days}d`; })()}</td>
+              <td className={TD}>{(() => { const y = yearsToYmd(r.years); return t('vedic.dasha.ymd', { y: y.years, m: y.months, d: y.days }); })()}</td>
             </tr>
           );
         })}

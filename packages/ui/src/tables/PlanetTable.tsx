@@ -92,7 +92,7 @@ export function PlanetTable({
                 </td>
                 {detailed ? (
                   <td className={`${TD} as-text-muted`}>
-                    {p.stationary ? t('motion.stationary') : formatSpeed(p.longitudeSpeed)}
+                    {p.stationary ? t('motion.stationary') : formatSpeed(p.longitudeSpeed, t('motion.perDay'))}
                   </td>
                 ) : null}
                 {detailed ? (

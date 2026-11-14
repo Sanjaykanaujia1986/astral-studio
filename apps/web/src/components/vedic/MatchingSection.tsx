@@ -12,26 +12,33 @@ import {
 } from '@astro/vedic';
 import { BirthForm } from '../BirthForm.js';
 import { getProvider } from '../../lib/engine.js';
-import { RASHI_NAME, ROW, Select, Table, TD, MUTED, GRAHA_NAME } from './shared.js';
+import { ROW, Select, Table, TD, MUTED, useJy } from './shared.js';
 
 const KOOTA_NAME: Record<string, string> = {
   varna: 'Varṇa', vashya: 'Vaśya', tara: 'Tārā', yoni: 'Yoni', maitri: 'Graha maitrī', gana: 'Gaṇa', bhakut: 'Bhakūṭa', nadi: 'Nāḍī',
 };
-const nakName = (i: number) => {
-  const n = NAKSHATRAS[i]!;
-  return n.charAt(0).toUpperCase() + n.slice(1);
+/** The yoni animals, which the engine names in English, by their Sanskrit names for the Indian scripts. */
+const YONI_IAST: Readonly<Record<string, string>> = {
+  Horse: 'Aśva', Elephant: 'Gaja', Sheep: 'Meṣa', Serpent: 'Sarpa', Dog: 'Śvāna', Cat: 'Mārjāra', Rat: 'Mūṣaka',
+  Cow: 'Gau', Buffalo: 'Mahiṣa', Tiger: 'Vyāghra', Deer: 'Mṛga', Monkey: 'Vānara', Mongoose: 'Nakula', Lion: 'Siṁha',
 };
 
 function ScoreTable({ r }: { readonly r: AshtakootaResult }): JSX.Element {
-  const { t } = useTranslator();
+  const { t, locale } = useTranslator();
+  const { gn, sc } = useJy();
+  const value = (id: string, v: string): string => {
+    if (id === 'maitri') return gn(v);
+    if (id === 'yoni') return locale.code === 'en' ? v : sc(YONI_IAST[v] ?? v);
+    return /^\d+$/.test(v) ? v : sc(v);
+  };
   return (
     <Table head={[t('vedic.match.koota'), t('vedic.match.boy'), t('vedic.match.girl'), t('vedic.match.score')]}>
       {r.kootas.map((k) => (
         <tr key={k.id} style={ROW}>
-          <th scope="row" className={`${TD} text-left font-medium`}>{KOOTA_NAME[k.id]}</th>
-          <td className={TD}>{GRAHA_NAME[k.boy] ?? k.boy}</td>
-          <td className={TD}>{GRAHA_NAME[k.girl] ?? k.girl}</td>
-          <td className={TD}>{k.score} / {k.max}{k.note ? <span className="ms-1 text-xs" style={MUTED}>({k.note})</span> : null}</td>
+          <th scope="row" className={`${TD} text-left font-medium`}>{sc(KOOTA_NAME[k.id]!)}</th>
+          <td className={TD}>{value(k.id, k.boy)}</td>
+          <td className={TD}>{value(k.id, k.girl)}</td>
+          <td className={TD}>{k.score} / {k.max}{k.note ? <span className="ms-1 text-xs" style={MUTED}>({k.id === 'bhakut' ? t('vedic.match.bhakutCancelled') : k.note})</span> : null}</td>
         </tr>
       ))}
       <tr style={ROW}>
@@ -58,6 +65,7 @@ function MangalaLine({ m, label }: { readonly m: MangalaDosha; readonly label: s
 
 export function MatchingSection({ vchart, chart }: { readonly vchart: VedicChart; readonly chart: NatalChart }): JSX.Element {
   const { t } = useTranslator();
+  const { rn, nak, sc } = useJy();
   const [sex, setSex] = useState<'male' | 'female'>('female');
   const [partner, setPartner] = useState<{ v: VedicChart } | null>(null);
   const [busy, setBusy] = useState(false);
@@ -107,11 +115,11 @@ export function MatchingSection({ vchart, chart }: { readonly vchart: VedicChart
       )}
 
       <h3 className="as-h3 mb-2 mt-5">{t('vedic.match.table')}</h3>
-      <Table head={[t('vedic.column.sign'), t('vedic.column.nakshatra'), t('vedic.column.pada'), ...['varna', 'vashya', 'tara', 'yoni', 'maitri', 'gana', 'bhakut', 'nadi'].map((k) => KOOTA_NAME[k]!), t('vedic.match.total')]}>
+      <Table head={[t('vedic.column.sign'), t('vedic.column.nakshatra'), t('vedic.column.pada'), ...['varna', 'vashya', 'tara', 'yoni', 'maitri', 'gana', 'bhakut', 'nadi'].map((k) => sc(KOOTA_NAME[k]!)), t('vedic.match.total')]}>
         {table.map((row) => (
           <tr key={`${row.signIndex}-${row.nakshatra}`} style={ROW}>
-            <th scope="row" className={`${TD} text-left font-medium`}>{RASHI_NAME[row.signIndex]}</th>
-            <td className={TD}>{nakName(row.nakshatra)}</td>
+            <th scope="row" className={`${TD} text-left font-medium`}>{rn(row.signIndex)}</th>
+            <td className={TD}>{nak(row.nakshatra)}</td>
             <td className={TD}>{row.padas.join(',')}</td>
             {row.result.kootas.map((k) => <td key={k.id} className={TD}>{k.score}</td>)}
             <td className={`${TD} font-semibold`}>{row.result.total}</td>

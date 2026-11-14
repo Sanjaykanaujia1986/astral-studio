@@ -8,7 +8,7 @@ import { useMemo, useState, type JSX } from 'react';
 import { SIGNS, type EphemerisProvider, type NatalChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import { western, separationInt, aspectOf, ASPECTS } from '@astro/vedic';
-import { GRAHA_NAME, ROW, Select, Table, TD, MUTED, fix } from './shared.js';
+import { ROW, Select, Table, TD, MUTED, fix, useJy } from './shared.js';
 
 const OUTER = ['uranus', 'neptune', 'pluto'];
 
@@ -16,7 +16,9 @@ type View = 'positions' | 'aspects' | 'cuspAspects';
 
 export function WesternSection({ chart, provider }: { readonly chart: NatalChart; readonly provider: EphemerisProvider }): JSX.Element {
   const { t } = useTranslator();
-  const gn = (g: string): string => (OUTER.includes(g) ? t(`body.${g}` as 'body.uranus') : GRAHA_NAME[g] ?? g);
+  const jy = useJy();
+  const gn = (g: string): string => (OUTER.includes(g) ? t(`body.${g}` as 'body.uranus') : jy.gn(g));
+  const ashort = (s: string): string => t(`vedic.west.short.${s}` as 'vedic.west.short.conj');
   const [view, setView] = useState<View>('positions');
   const w = useMemo(() => western(provider, chart.jdUT, chart.place, chart.settings.nodeType === 'true' ? 'trueNode' : 'meanNode'),
     [provider, chart]);
@@ -32,7 +34,7 @@ export function WesternSection({ chart, provider }: { readonly chart: NatalChart
   const bodies = w.positions.filter((p) => p.body !== 'lagna');
   const cell = (a: number, b: number): JSX.Element => {
     const sep = separationInt(a, b); const asp = aspectOf(sep);
-    return <>{asp ? <span className="font-semibold">{asp.short}</span> : <span style={MUTED}>{sep}°</span>}</>;
+    return <>{asp ? <span className="font-semibold">{ashort(asp.short)}</span> : <span style={MUTED}>{sep}°</span>}</>;
   };
 
   return (
@@ -47,7 +49,7 @@ export function WesternSection({ chart, provider }: { readonly chart: NatalChart
           <Table head={[t('vedic.kp.body'), t('vedic.kp.longitude'), t('vedic.west.speed'), t('vedic.west.latitude'), t('vedic.west.declination'), t('vedic.kp.starLord'), t('vedic.kp.subLord')]}>
             {w.positions.map((p) => (
               <tr key={p.body} style={ROW}>
-                <th scope="row" className={`${TD} text-left font-medium`}>{gn(p.body)}{p.speed < 0 && p.body !== 'rahu' && p.body !== 'ketu' ? ' (R)' : ''}</th>
+                <th scope="row" className={`${TD} text-left font-medium`}>{gn(p.body)}{p.speed < 0 && p.body !== 'rahu' && p.body !== 'ketu' ? ` ${t('vedic.retroMark')}` : ''}</th>
                 <td className={TD}>{tropical(p.longitude)}</td>
                 <td className={TD}>{p.body === 'lagna' ? '—' : fix(p.speed, 4)}</td>
                 <td className={TD}>{p.body === 'lagna' ? '—' : dms(p.latitude)}</td>
@@ -87,7 +89,7 @@ export function WesternSection({ chart, provider }: { readonly chart: NatalChart
       )}
       {view !== 'positions' ? (
         <p className="mt-3 text-sm">
-          {ASPECTS.map((a) => `${a.short} = ${t(`vedic.west.asp.${a.short}` as 'vedic.west.asp.conj')} ${a.angle}° (±${a.orb}°)`).join(' · ')}
+          {ASPECTS.map((a) => `${ashort(a.short)} = ${t(`vedic.west.asp.${a.short}` as 'vedic.west.asp.conj')} ${a.angle}° (±${a.orb}°)`).join(' · ')}
         </p>
       ) : null}
       <p className="as-fineprint mt-3">{t('vedic.west.note')}</p>

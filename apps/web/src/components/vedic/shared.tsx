@@ -3,7 +3,9 @@
  * and dates shown in the birth time zone (a horoscope prints local dates; a
  * daśā that ends at 00:00 IST would read as the previous day in UTC).
  */
-import type { JSX, ReactNode } from 'react';
+import { useMemo, type JSX, type ReactNode } from 'react';
+import { useTranslator, iastToScript, type MessageKey } from '@astro/i18n';
+import { NAKSHATRAS } from '@astro/vedic';
 
 export const TH = 'px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wide';
 export const TD = 'px-2 py-1.5 whitespace-nowrap tabular-nums';
@@ -92,3 +94,42 @@ export function signDms(lon: number): string {
 }
 
 export const fix = (v: number, n = 2): string => v.toFixed(n);
+
+const GRAHA_KEYS = new Set(['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu', 'lagna',
+  'mangala', 'pingala', 'dhanya', 'bhramari', 'bhadrika', 'ulka', 'siddha', 'sankata']);
+const SHORT_KEYS = new Set(['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu', 'uranus', 'neptune', 'pluto']);
+
+/**
+ * Names in the reader's language: IAST in English, the reader's own script in
+ * Hindi and Gujarati. Grahas and rāśis come from the catalogue; other Sanskrit
+ * terms shown as data are written in the script by rule (`sc`).
+ */
+export function useJy(): {
+  readonly gn: (id: string) => string;
+  readonly rn: (sign: number) => string;
+  readonly rshort: (sign: number) => string;
+  readonly gshort: (id: string) => string;
+  readonly signDms: (lon: number) => string;
+  readonly nak: (index: number) => string;
+  readonly sc: (iast: string) => string;
+} {
+  const { t, locale } = useTranslator();
+  return useMemo(() => {
+    const k = (key: string): string => t(key as MessageKey);
+    const sc = (iast: string): string => iastToScript(iast, locale.code);
+    const wrap = (s: number): number => ((s % 12) + 12) % 12;
+    const gn = (id: string): string => (GRAHA_KEYS.has(id) ? k(`jy.graha.${id}`) : sc(GRAHA_NAME[id] ?? id));
+    const rn = (s: number): string => k(`jy.rashi.${wrap(s)}`);
+    const rshort = (s: number): string => k(`jy.rashiShort.${wrap(s)}`);
+    const gshort = (id: string): string => (SHORT_KEYS.has(id) ? k(`jy.short.${id}`) : gn(id));
+    const signDmsL = (lon: number): string => {
+      const l = ((lon % 360) + 360) % 360;
+      const s = Math.floor(l / 30); let sec = Math.round((l - s * 30) * 3600);
+      if (sec >= 30 * 3600) sec = 30 * 3600 - 1;
+      const d = Math.floor(sec / 3600); const m = Math.floor((sec % 3600) / 60);
+      return `${rn(s)} ${d}°${String(m).padStart(2, '0')}′${String(sec % 60).padStart(2, '0')}″`;
+    };
+    const nak = (i: number): string => k(`nakshatra.${NAKSHATRAS[i]!}`);
+    return { gn, rn, rshort, gshort, signDms: signDmsL, nak, sc };
+  }, [t, locale]);
+}

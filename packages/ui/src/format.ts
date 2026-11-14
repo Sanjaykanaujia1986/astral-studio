@@ -159,8 +159,8 @@ export function formatSignedDegrees(value: number, decimals = 2): string {
  * catalogue; deciding whether a body counts as stationary is the caller's job,
  * and `BodyPosition.stationary` already carries that flag.
  */
-export function formatSpeed(speed: number): string {
-  return `${speed >= 0 ? '+' : '-'}${Math.abs(speed).toFixed(4)}°/day`;
+export function formatSpeed(speed: number, perDay = '/day'): string {
+  return `${speed >= 0 ? '+' : '-'}${Math.abs(speed).toFixed(4)}°${perDay}`;
 }
 
 /** UTC offset in minutes as `+05:30`. */

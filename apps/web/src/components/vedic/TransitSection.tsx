@@ -9,15 +9,14 @@ import { useTranslator } from '@astro/i18n';
 import {
   SEVEN, NAKSHATRAS, grahaLongitudes, dailyPower, moonTaraSchedule, gochar, localJd, type VedicChart,
 } from '@astro/vedic';
-import { GRAHA_NAME, RASHI_NAME, ROW, Select, Table, TD, MUTED, localDateTime } from './shared.js';
-
-const gn = (g: string): string => GRAHA_NAME[g] ?? g;
-const dashaText = (d: readonly string[]): string => d.map((x) => gn(x).slice(0, 2)).join('/');
+import { ROW, Select, Table, TD, MUTED, localDateTime, useJy } from './shared.js';
 
 export function TransitSection({ vchart, chart, provider }: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
 }): JSX.Element {
   const { t, locale } = useTranslator();
+  const { gn, gshort, rn } = useJy();
+  const dashaText = (d: readonly string[]): string => d.map((x) => gshort(x)).join('/');
   const now = new Date();
   const [year, setYear] = useState(String(now.getFullYear()));
   const [month, setMonth] = useState(String(now.getMonth() + 1));
@@ -56,12 +55,12 @@ export function TransitSection({ vchart, chart, provider }: {
 
       {data.power ? (
         <>
-          <Table head={[t('vedic.tr.day'), ...SEVEN.map(gn), t('vedic.sb.total'), '±28', t('vedic.tr.dasha')]}>
+          <Table head={[t('vedic.tr.day'), ...SEVEN.map((x) => gn(x)), t('vedic.sb.total'), '±28', t('vedic.tr.dasha')]}>
             {data.power.map((d) => (
               <tr key={d.day} style={ROW}>
                 <th scope="row" className={`${TD} text-left font-medium`}>{d.day}</th>
                 {SEVEN.map((p) => (
-                  <td key={p} className={TD} title={RASHI_NAME[d.planets[p].sign]}>
+                  <td key={p} className={TD} title={rn(d.planets[p].sign)}>
                     <span style={MUTED}>{d.planets[p].house}·</span>{d.planets[p].bindus}
                   </td>
                 ))}
@@ -85,7 +84,7 @@ export function TransitSection({ vchart, chart, provider }: {
                 <th scope="row" className={`${TD} text-left font-medium`}>{nak(s.nakshatra)}</th>
                 <td className={TD}>{s.padas.join(', ')}</td>
                 <td className={TD}>{t(`vedic.tr.tara.${s.tara}` as 'vedic.tr.tara.janma')}</td>
-                <td className={TD}>{RASHI_NAME[s.sign]}</td>
+                <td className={TD}>{rn(s.sign)}</td>
                 <td className={TD}>{s.houseFromLagna ?? '—'}</td>
                 <td className={TD}>{s.sarva ?? '—'}</td>
               </tr>
@@ -102,7 +101,7 @@ export function TransitSection({ vchart, chart, provider }: {
               <tr key={`${e.body}${e.jd}`} style={ROW}>
                 <td className={TD}>{localDateTime(e.jd, off)}</td>
                 <th scope="row" className={`${TD} text-left font-medium`}>{gn(e.body)}{e.retrograde ? ` (${t('vedic.tr.reentry')})` : ''}</th>
-                <td className={TD}>{RASHI_NAME[e.sign]}</td>
+                <td className={TD}>{rn(e.sign)}</td>
                 <td className={TD}>{e.houseFromLagna ?? '—'}</td>
                 <td className={TD}>{e.houseFromMoon}</td>
                 <td className={TD}>{e.bindus ?? '—'}</td>

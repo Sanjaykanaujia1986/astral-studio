@@ -6,22 +6,24 @@ import { useMemo, useState, type JSX } from 'react';
 import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import { kpChart, fourStep, cuspsSubbedBy, kpEvent, KP_EVENTS, type KpChart, type KpLink, type Graha } from '@astro/vedic';
-import { GRAHA_NAME, ROW, Select, Table, TD, MUTED, signDms } from './shared.js';
+import { ROW, Select, Table, TD, MUTED, useJy } from './shared.js';
 
 const NINE: readonly Graha[] = ['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu'];
-const gn = (g: string): string => GRAHA_NAME[g] ?? g;
 const list = (xs: readonly number[]): string => (xs.length ? xs.join(', ') : '—');
 
 function Lords({ l }: { readonly l: KpChart['cusps'][number]['lords'] }): JSX.Element {
+  const { gn } = useJy();
   return <>{[l.sign, l.star, l.sub, l.subSub].map((x, i) => <td key={i} className={TD}>{gn(x)}</td>)}</>;
 }
 
 function ChainLink({ l }: { readonly l: KpLink }): JSX.Element {
+  const { gn } = useJy();
   return <>{gn(l.planet)} <span style={MUTED}>{list(l.inHouses)} / {list(l.owns)}</span></>;
 }
 
 export function KpSection({ chart, provider }: { readonly chart: NatalChart; readonly provider: EphemerisProvider }): JSX.Element {
   const { t } = useTranslator();
+  const { gn, signDms } = useJy();
   const k = useMemo(() => kpChart(provider, chart.jdUT, {
     latitude: chart.place.latitude, longitude: chart.place.longitude, utcOffsetMinutes: chart.offsetMinutes,
     node: chart.settings.nodeType === 'true' ? 'trueNode' : 'meanNode',
@@ -35,7 +37,7 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
       <h2 className="as-h2">{t('vedic.section.kp')}</h2>
       <p className="mb-3 text-sm">
         {t('vedic.kp.ayanamsha')}: <span className="tabular-nums">{signDms(k.ayanamsha).replace(/^\S+ /, '')}</span>
-        {' · '}{t('vedic.kp.ruling')}: {k.ruling.map(gn).join(', ')}
+        {' · '}{t('vedic.kp.ruling')}: {k.ruling.map((x) => gn(x)).join(', ')}
       </p>
 
       <h3 className="as-h3 mb-2">{t('vedic.kp.cusps')}</h3>
@@ -53,7 +55,7 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
       <Table head={[t('vedic.kp.body'), t('vedic.kp.longitude'), ...lordHead, t('vedic.kp.inHouse'), t('vedic.kp.owns'), t('vedic.kp.subOfCusps')]}>
         {k.bodies.map((b) => (
           <tr key={b.body} style={ROW}>
-            <th scope="row" className={`${TD} text-left font-medium`}>{gn(b.body)}{b.retrograde && b.body !== 'rahu' && b.body !== 'ketu' ? ' (R)' : ''}</th>
+            <th scope="row" className={`${TD} text-left font-medium`}>{gn(b.body)}{b.retrograde && b.body !== 'rahu' && b.body !== 'ketu' ? ` ${t('vedic.retroMark')}` : ''}</th>
             <td className={TD}>{signDms(b.longitude)}</td>
             <Lords l={b.lords} />
             <td className={TD}>{b.body === 'lagna' ? '—' : list(b.inHouses)}</td>
@@ -108,7 +110,7 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
             </th>
             <td className={TD}><ChainLink l={r.lead} /></td>
             <td className={TD}><ChainLink l={r.star} /></td>
-            <td className={TD}>{r.significators ? r.significators.map(gn).join(', ') || '—' : '—'}</td>
+            <td className={TD}>{r.significators ? r.significators.map((x) => gn(x)).join(', ') || '—' : '—'}</td>
             <td className={TD}>{list(r.favourableHit)}</td>
             <td className={TD}>{list(r.unfavourableHit)}</td>
           </tr>

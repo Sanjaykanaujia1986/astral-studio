@@ -10,6 +10,7 @@
  * usual "highlight the perfect squares" shortcut quietly highlights nothing.
  */
 import type { JSX } from 'react';
+import { useTranslator } from '@astro/i18n';
 import type { SquareOfNine, SquareCell } from '@astro/gann';
 import { resolveTheme, type ChartTheme } from '../chart-wheel/theme.js';
 
@@ -63,6 +64,7 @@ export function SquareOfNineFigure({
   className,
   decimals = 0,
 }: SquareOfNineFigureProps): JSX.Element {
+  const { t: tr } = useTranslator();
   const colours = resolveTheme(theme);
   const { side } = square;
   const cellSize = size / side;
@@ -95,11 +97,11 @@ export function SquareOfNineFigure({
       width="100%"
       height="100%"
       role="img"
-      aria-label={`Square of Nine, ${side} by ${side}, origin ${square.settings.originValue}`}
+      aria-label={tr('gann.square.aria', { side, origin: square.settings.originValue })}
       style={{ maxWidth: `${size}px`, height: 'auto', display: 'block' }}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>{`Square of Nine · origin ${square.settings.originValue} · step ${square.settings.increment}`}</title>
+      <title>{tr('gann.square.title', { origin: square.settings.originValue, step: square.settings.increment })}</title>
       <rect x={0} y={0} width={size} height={size} fill={colours.surface} />
 
       {offSquare > 0 ? (
@@ -110,7 +112,7 @@ export function SquareOfNineFigure({
           fontSize={11}
           fill={colours.muted}
         >
-          {`${offSquare} value${offSquare === 1 ? '' : 's'} fall outside this square`}
+          {tr(offSquare === 1 ? 'gann.square.outsideOne' : 'gann.square.outsideMany', { n: offSquare })}
         </text>
       ) : null}
 

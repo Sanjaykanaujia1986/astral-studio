@@ -10,7 +10,7 @@
  */
 import type { JSX } from 'react';
 import { SIGNS } from '@astro/engine';
-import { useTranslator } from '@astro/i18n';
+import { useTranslator, type MessageKey } from '@astro/i18n';
 import type { VedicChart, Varga } from '@astro/vedic';
 import { SIGN_GLYPHS, BODY_GLYPHS, GLYPH_FONT_STACK } from '../chart-wheel/glyphs.js';
 import { resolveTheme, type ChartTheme } from '../chart-wheel/theme.js';
@@ -58,26 +58,20 @@ export interface VedicChartFigureProps {
  * figure does not, deliberately.
  */
 const GRAHA_NAMES: Readonly<Record<string, string>> = {
-  sun: 'Su',
-  moon: 'Mo',
-  mars: 'Ma',
-  mercury: 'Me',
-  jupiter: 'Ju',
-  venus: 'Ve',
-  saturn: 'Sa',
-  trueNode: 'Ra',
-  meanNode: 'Ra',
-  southNode: 'Ke',
-  meanSouthNode: 'Ke',
-  uranus: 'Ur',
-  neptune: 'Ne',
-  pluto: 'Pl',
   chiron: 'Ch',
   lilith: 'Li',
 };
+/** Bodies whose short label is in the catalogue (jy.short.*), so Hindi and Gujarati get सू / સૂ. */
+const SHORT_ID: Readonly<Record<string, string>> = {
+  sun: 'sun', moon: 'moon', mars: 'mars', mercury: 'mercury', jupiter: 'jupiter', venus: 'venus', saturn: 'saturn',
+  trueNode: 'rahu', meanNode: 'rahu', southNode: 'ketu', meanSouthNode: 'ketu',
+  uranus: 'uranus', neptune: 'neptune', pluto: 'pluto',
+};
 
 /** Short body label. Vedic charts are crowded; full names do not fit. */
-function bodyLabel(body: string): string {
+function bodyLabel(body: string, t: (key: MessageKey) => string): string {
+  const id = SHORT_ID[body];
+  if (id) return t(`jy.short.${id}` as MessageKey);
   const name = GRAHA_NAMES[body];
   if (name) return name;
   const glyph = BODY_GLYPHS[body as keyof typeof BODY_GLYPHS];
@@ -108,13 +102,13 @@ export function VedicChartFigure({
   if (varga === 'D1' || !vargaChart) {
     for (const placement of chart.placements) {
       const list = bodiesBySign.get(placement.signIndex) ?? [];
-      list.push(bodyLabel(placement.body) + (placement.retrograde ? '℞' : ''));
+      list.push(bodyLabel(placement.body, t) + (placement.retrograde ? '℞' : ''));
       bodiesBySign.set(placement.signIndex, list);
     }
   } else {
     for (const placement of vargaChart.placements) {
       const list = bodiesBySign.get(placement.signIndex) ?? [];
-      list.push(bodyLabel(placement.body));
+      list.push(bodyLabel(placement.body, t));
       bodiesBySign.set(placement.signIndex, list);
     }
   }

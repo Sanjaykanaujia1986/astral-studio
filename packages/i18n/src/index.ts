@@ -10,3 +10,4 @@ export {
   I18nProvider, useI18n, useTranslator, detectInitialLocale,
   type I18nProviderProps,
 } from './react.js';
+export { iastToScript } from './iast.js';

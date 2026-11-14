@@ -31,6 +31,7 @@ import { useTranslator } from '@astro/i18n';
 import { PlanetTable, TransitTable, formatLongitude } from '@astro/ui';
 import { getProvider } from '../lib/engine.js';
 import { CloudError, getChartSettings, listCharts, type SavedChartSummary } from '../lib/cloud.js';
+import { KNOWN_ERRORS } from '../lib/cloudErrors.js';
 import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
 import { AlertsPanel } from './AlertsPanel.js';
@@ -297,7 +298,7 @@ export function DashboardPanel(): JSX.Element {
           <p className="as-body" role="alert">
             {t('dashboard.saved.failed')}
             {' '}
-            <span style={mutedStyle}>{savedError}</span>
+            <span style={mutedStyle}>{t(`cloud.error.${KNOWN_ERRORS.has(savedError) ? savedError : 'INTERNAL'}` as 'cloud.error.INTERNAL')}</span>
           </p>
         ) : saved === null ? (
           <p className="as-body" style={mutedStyle}>{t('cloud.loading')}</p>

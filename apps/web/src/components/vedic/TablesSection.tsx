@@ -15,11 +15,15 @@ import {
   sudarshana, chalit, sripati, sunrise, SIGN_LORDS,
   type Graha, type VedicChart, type VimshopakaScheme,
 } from '@astro/vedic';
-import { GRAHA_NAME, RASHI_NAME, ROW, Select, Table, TD, MUTED, fix, signDms, localDate } from './shared.js';
+import { ROW, Select, Table, TD, MUTED, fix, localDate, useJy } from './shared.js';
 
-const gn = (g: string): string => GRAHA_NAME[g] ?? g;
-const rs = (s: number): string => RASHI_NAME[((s % 12) + 12) % 12]!;
-const short = (s: number): string => rs(s).slice(0, 3);
+/** The English terms of a saham formula, to their catalogue keys. */
+export const SAHAM_TERM: Readonly<Record<string, string>> = {
+  Sun: 'sun', Moon: 'moon', Mars: 'mars', Mercury: 'mercury', Jupiter: 'jupiter', Venus: 'venus', Saturn: 'saturn', Lagna: 'lagna',
+  'Puṇya': 'punya', 'Guru saham': 'gurusaham', 'Vidyā': 'vidya', 'lagna lord': 'lagnaLord', '2nd lord': 'lord2', '9th lord': 'lord9',
+  '11th lord': 'lord11', '2nd cusp': 'cusp2', '6th cusp': 'cusp6', '8th cusp': 'cusp8', '9th cusp': 'cusp9', '11th cusp': 'cusp11',
+  'lord of the Sun’s sign': 'sunSignLord', 'Karka 15°': 'karka15',
+};
 const WEEKDAY_KEYS = ['ravivara', 'somavara', 'mangalavara', 'budhavara', 'guruvara', 'shukravara', 'shanivara'] as const;
 
 type View = 'friendship' | 'dignity' | 'vargas' | 'vimshopaka' | 'sahams' | 'lagnas' | 'avakahada' | 'favourable' | 'tara' | 'sudarshana' | 'chalit';
@@ -41,7 +45,10 @@ function KeyValues({ rows }: { readonly rows: readonly (readonly [string, string
 export function TablesSection({ vchart, chart, provider }: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
 }): JSX.Element {
-  const { t } = useTranslator();
+  const { t, locale } = useTranslator();
+  const { gn, rn: rs, rshort: short, signDms, sc } = useJy();
+  const formula = (f: string): string => locale.code === 'en' ? f : f.replace(/^(.*?) − (.*?) \+ (.*?)( \(\+30\))?$/, (_m, a: string, b: string, c: string, p30?: string) =>
+    `${[a, b, c].map((x) => SAHAM_TERM[x] ? t(`vedic.tb.term.${SAHAM_TERM[x]}` as 'vedic.tb.term.sun') : x).join(' − ').replace(/ − (?=[^−]*$)/, ' + ')}${p30 ?? ''}`);
   const gem = (p: Graha): string => t(`vedic.tb.gemName.${p}` as 'vedic.tb.gemName.sun');
   const [view, setView] = useState<View>('friendship');
   const [rel, setRel] = useState<'permanent' | 'temporary' | 'five'>('five');
@@ -69,7 +76,7 @@ export function TablesSection({ vchart, chart, provider }: {
           <>
             <div className="mb-3"><Select label={t('vedic.tb.relation')} value={rel} onChange={setRel}
               options={[['permanent', t('vedic.tb.permanent')], ['temporary', t('vedic.tb.temporary')], ['five', t('vedic.tb.fiveFold')]]} /></div>
-            <Table head={['', ...GRAHAS.map(gn)]}>
+            <Table head={['', ...GRAHAS.map((x) => gn(x))]}>
               {GRAHAS.map((a) => (
                 <tr key={a} style={ROW}>
                   <th scope="row" className={`${TD} text-left font-medium`}>{gn(a)}</th>
@@ -97,7 +104,7 @@ export function TablesSection({ vchart, chart, provider }: {
         const v = shodashavarga(g);
         const cols: (Graha | 'lagna')[] = ['lagna', ...GRAHAS];
         return (
-          <Table head={[t('vedic.tb.varga'), ...cols.map(gn)]}>
+          <Table head={[t('vedic.tb.varga'), ...cols.map((x) => gn(x))]}>
             {SHODASHA.map((n) => (
               <tr key={n} style={ROW}>
                 <th scope="row" className={`${TD} text-left font-medium`}>D{n}</th>
@@ -113,7 +120,7 @@ export function TablesSection({ vchart, chart, provider }: {
           <>
             <div className="mb-3"><Select label={t('vedic.tb.saptaWeights')} value={weights} onChange={setWeights}
               options={[['parashara', t('vedic.tb.parashara')], ['printed', t('vedic.tb.asPrinted')]]} /></div>
-            <Table head={['', ...SEVEN.map(gn)]}>
+            <Table head={['', ...SEVEN.map((x) => gn(x))]}>
               {schemes.map((s) => {
                 const r = vimshopaka(g, s, weights);
                 return (
@@ -134,10 +141,10 @@ export function TablesSection({ vchart, chart, provider }: {
             <Table head={[t('vedic.tb.saham'), t('vedic.kp.longitude'), t('vedic.column.lord'), t('vedic.tb.formula')]}>
               {sahams(g, houses.cusps).map((s) => (
                 <tr key={s.name} style={ROW}>
-                  <th scope="row" className={`${TD} text-left font-medium`}>{s.name}</th>
+                  <th scope="row" className={`${TD} text-left font-medium`}>{sc(s.name)}</th>
                   <td className={TD}>{signDms(s.longitude)}</td>
                   <td className={TD}>{gn(SIGN_LORDS[Math.floor(s.longitude / 30)]!)}</td>
-                  <td className={TD} style={MUTED}>{s.formula}</td>
+                  <td className={TD} style={MUTED}>{formula(s.formula)}</td>
                 </tr>
               ))}
             </Table>
@@ -167,7 +174,7 @@ export function TablesSection({ vchart, chart, provider }: {
                 {ar.map((s, i) => (
                   <tr key={i} style={ROW}>
                     <th scope="row" className={`${TD} text-left font-medium`}>{i + 1}</th>
-                    <td className={TD}>{i === 0 ? 'AL' : `A${i + 1}`}{i === 11 ? ' (UL)' : ''}</td>
+                    <td className={TD}>{i === 0 ? t('vedic.tb.al') : t('vedic.tb.aN', { n: i + 1 })}{i === 11 ? ` (${t('vedic.tb.ul')})` : ''}</td>
                     <td className={TD}>{rs(s)}</td>
                   </tr>
                 ))}
@@ -182,8 +189,8 @@ export function TablesSection({ vchart, chart, provider }: {
                   return (
                     <tr key={s} style={ROW}>
                       <th scope="row" className={`${TD} text-left font-medium`}>{rs(s)}</th>
-                      <td className={TD}>{asp.map(short).join(', ')}</td>
-                      <td className={TD}>{hit.map(gn).join(', ') || '—'}</td>
+                      <td className={TD}>{asp.map((x) => short(x)).join(', ')}</td>
+                      <td className={TD}>{hit.map((x) => gn(x)).join(', ') || '—'}</td>
                     </tr>
                   );
                 })}
@@ -200,19 +207,19 @@ export function TablesSection({ vchart, chart, provider }: {
               <h3 className="as-h3 mb-2">{t('vedic.tb.avakahada')}</h3>
               <KeyValues rows={[
                 [t('vedic.tb.av.nakshatra'), `${t(`nakshatra.${NAKSHATRAS[a.nakshatra]!}` as 'nakshatra.ashwini')} ${a.pada}`],
-                [t('vedic.tb.av.syllable'), a.syllable],
-                [t('vedic.tb.av.varna'), a.varna], [t('vedic.tb.av.vashya'), a.vashya], [t('vedic.tb.av.yoni'), a.yoni],
-                [t('vedic.tb.av.gana'), a.gana], [t('vedic.tb.av.nadi'), a.nadi], [t('vedic.tb.av.tattva'), a.tattva],
-                [t('vedic.tb.av.yunja'), a.yunja], [t('vedic.tb.av.signLord'), gn(a.signLord)], [t('vedic.tb.av.starLord'), gn(a.nakshatraLord)],
+                [t('vedic.tb.av.syllable'), sc(a.syllable)],
+                [t('vedic.tb.av.varna'), sc(a.varna)], [t('vedic.tb.av.vashya'), sc(a.vashya)], [t('vedic.tb.av.yoni'), sc(a.yoni)],
+                [t('vedic.tb.av.gana'), sc(a.gana)], [t('vedic.tb.av.nadi'), sc(a.nadi)], [t('vedic.tb.av.tattva'), sc(a.tattva)],
+                [t('vedic.tb.av.yunja'), sc(a.yunja)], [t('vedic.tb.av.signLord'), gn(a.signLord)], [t('vedic.tb.av.starLord'), gn(a.nakshatraLord)],
               ]} />
             </div>
             <div>
               <h3 className="as-h3 mb-2">{t('vedic.tb.ghataka')}</h3>
               <KeyValues rows={[
-                [t('vedic.tb.gh.month'), k.month], [t('vedic.tb.gh.tithi'), k.tithis],
+                [t('vedic.tb.gh.month'), sc(k.month)], [t('vedic.tb.gh.tithi'), k.tithis],
                 [t('vedic.tb.gh.day'), t(`weekday.${WEEKDAY_KEYS[WEEKDAY_OF[k.day]]!}` as 'weekday.ravivara')],
                 [t('vedic.tb.av.nakshatra'), t(`nakshatra.${NAKSHATRAS[k.nakshatra]!}` as 'nakshatra.ashwini')],
-                [t('vedic.tb.gh.yoga'), k.yoga], [t('vedic.tb.gh.karana'), k.karana], [t('vedic.tb.gh.prahara'), String(k.prahara)],
+                [t('vedic.tb.gh.yoga'), sc(k.yoga)], [t('vedic.tb.gh.karana'), sc(k.karana)], [t('vedic.tb.gh.prahara'), String(k.prahara)],
                 [t('vedic.tb.gh.moonSign'), rs(k.chandraSign)],
               ]} />
               <p className="as-fineprint mt-2">{t('vedic.tb.ghatakaNote')}</p>
@@ -228,7 +235,7 @@ export function TablesSection({ vchart, chart, provider }: {
               <KeyValues rows={[
                 [t('vedic.tb.fp.radical'), String(f.radical)], [t('vedic.tb.fp.lucky'), String(f.lucky)],
                 [t('vedic.tb.fp.goodYears'), f.goodYears.join(', ')],
-                [t('vedic.tb.fp.favourable'), f.favourable.map(gn).join(', ')], [t('vedic.tb.fp.evil'), f.evil.map(gn).join(', ') || '—'],
+                [t('vedic.tb.fp.favourable'), f.favourable.map((x) => gn(x)).join(', ')], [t('vedic.tb.fp.evil'), f.evil.map((x) => gn(x)).join(', ') || '—'],
                 [t('vedic.tb.fp.days'), f.favourable.map((p) => t(`weekday.${WEEKDAY_KEYS[WEEKDAY_OF[p]]!}` as 'weekday.ravivara')).join(', ')],
                 [t('vedic.tb.fp.stone'), `${gem(f.lagnaLord)} (${gn(f.lagnaLord)})`], [t('vedic.tb.fp.luckyStone'), `${gem(f.ninthLord)} (${gn(f.ninthLord)})`],
               ]} />
@@ -260,13 +267,13 @@ export function TablesSection({ vchart, chart, provider }: {
               {taraChakra(g).map((r) => (
                 <tr key={r.nakshatra} style={ROW}>
                   <th scope="row" className={`${TD} text-left font-medium`}>{t(`nakshatra.${NAKSHATRAS[r.nakshatra]!}` as 'nakshatra.ashwini')}</th>
-                  <td className={TD}>{TARA_NAMES[r.tara]}</td>
+                  <td className={TD}>{sc(TARA_NAMES[r.tara]!)}</td>
                   <td className={TD}>{r.cycle}</td>
                   <td className={TD}>{gn(r.lord)}</td>
                   <td className={TD}>{r.ages.join(', ')}</td>
-                  <td className={TD}>{r.bodies.map(gn).join(', ') || '—'}</td>
-                  <td className={TD}>{r.chandraBindu ?? '—'}</td>
-                  <td className={TD}>{r.suryaBindu ?? '—'}</td>
+                  <td className={TD}>{r.bodies.map((x) => gn(x)).join(', ') || '—'}</td>
+                  <td className={TD}>{r.chandraBindu ? sc(r.chandraBindu) : '—'}</td>
+                  <td className={TD}>{r.suryaBindu ? sc(r.suryaBindu) : '—'}</td>
                 </tr>
               ))}
             </Table>
@@ -278,7 +285,7 @@ export function TablesSection({ vchart, chart, provider }: {
         const inSign = (s: number): string => [
           ...(g.lagna !== undefined && Math.floor(g.lagna / 30) === s ? ['lagna'] : []),
           ...GRAHAS.filter((b) => Math.floor(g.lon[b] / 30) === s),
-        ].map(gn).join(', ');
+        ].map((x) => gn(x)).join(', ');
         return (
           <Table head={[t('vedic.kp.house'), ...sd.map((r) => t(`vedic.tb.from.${r.from}` as 'vedic.tb.from.lagna'))]}>
             {Array.from({ length: 12 }, (_, h) => (

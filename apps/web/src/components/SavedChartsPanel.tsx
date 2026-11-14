@@ -11,6 +11,7 @@ import {
   CloudError, deleteChart, getChartSettings, getOwnerKey, listCharts, saveChart, setOwnerKey,
   type SavedChartSummary,
 } from '../lib/cloud.js';
+import { KNOWN_ERRORS } from '../lib/cloudErrors.js';
 
 export interface SavedChartsPanelProps {
   readonly chart: NatalChart | null;
@@ -19,10 +20,6 @@ export interface SavedChartsPanelProps {
 
 const ENGINE_FINGERPRINT = '0123070b';
 
-const KNOWN_ERRORS = new Set([
-  'OFFLINE', 'INTERNAL', 'OWNER_KEY_REQUIRED', 'DATABASE_NOT_CONFIGURED', 'INVALID_CHART',
-  'CHART_LIMIT_REACHED', 'NOT_FOUND', 'BODY_TOO_LARGE', 'INVALID_JSON', 'INVALID_ID',
-]);
 
 export function SavedChartsPanel({ chart, onOpen }: SavedChartsPanelProps): JSX.Element {
   const { t, d } = useTranslator();

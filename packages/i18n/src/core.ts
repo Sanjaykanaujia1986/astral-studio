@@ -134,7 +134,10 @@ export function createTranslator(locale: LocaleDefinition): Translator {
     d(iso, options) {
       const date = new Date(iso);
       if (Number.isNaN(date.getTime())) return iso;
-      return new Intl.DateTimeFormat(locale.intlTag, options).format(date);
+      // Hindi and Gujarati read the 24-hour clock: CLDR's day periods for them
+      // are the Latin "am"/"pm", which would put English back into the page.
+      const opts = locale.code === 'en' ? options : { hourCycle: 'h23' as const, ...options };
+      return new Intl.DateTimeFormat(locale.intlTag, opts).format(date);
     },
   };
 }

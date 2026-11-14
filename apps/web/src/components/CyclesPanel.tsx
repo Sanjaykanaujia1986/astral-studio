@@ -155,9 +155,9 @@ export function CyclesPanel(): JSX.Element {
           <span aria-hidden="true" style={{ fontFamily: GLYPH_FONT_STACK }}>
             {glyph(fast)} {glyph(slow)}
           </span>{' '}
-          {t('cycles.period.expected')}: {n(estimate, { maximumFractionDigits: 1 })} d
+          {t('cycles.period.expected')}: {t('unit.days', { n: n(estimate, { maximumFractionDigits: 1 }) })}
           {' · '}
-          {n(estimate / 365.2422, { maximumFractionDigits: 2 })} yr
+          {t('unit.years', { n: n(estimate / 365.2422, { maximumFractionDigits: 2 }) })}
         </p>
       ) : null}
 
@@ -173,9 +173,9 @@ export function CyclesPanel(): JSX.Element {
               <dd className="tabular-nums">
                 {result.observedPeriodDays === undefined
                   ? '—'
-                  : `${n(result.observedPeriodDays, { maximumFractionDigits: 1 })} d · ${n(
-                      result.observedPeriodDays / 365.2422, { maximumFractionDigits: 2 },
-                    )} yr`}
+                  : `${t('unit.days', { n: n(result.observedPeriodDays, { maximumFractionDigits: 1 }) })} · ${t('unit.years', {
+                      n: n(result.observedPeriodDays / 365.2422, { maximumFractionDigits: 2 }),
+                    })}`}
               </dd>
             </div>
             <div>

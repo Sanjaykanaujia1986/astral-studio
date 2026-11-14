@@ -24,10 +24,23 @@ import {
   type BacktestResult,
   type StudyWarning,
 } from '@astro/research';
-import { useTranslator, type Translator } from '@astro/i18n';
+import { useTranslator, type Translator, type MessageKey } from '@astro/i18n';
 import { getProvider } from '../lib/engine.js';
 import { useSeriesStore } from '../state/series.js';
 import { apiProvider } from '../lib/prices.js';
+
+/** A signal in the reader's language; English keeps the compact form the studies were written in. */
+function signalLabel(spec: SignalSpec, t: Translator['t'], code: string): string {
+  if (code === 'en') return describeSignal(spec);
+  const b = (x: string): string => t(`body.${x}` as MessageKey);
+  switch (spec.kind) {
+    case 'retrograde': return t('research.signal.retrograde', { body: b(spec.body) });
+    case 'sign-occupancy': return t('research.signal.sign', { body: b(spec.body), sign: t(`sign.${spec.sign}` as MessageKey) });
+    case 'aspect-window': return t('research.signal.aspect', { a: b(spec.bodyA), aspect: t(`aspect.${spec.aspect}` as MessageKey), b: b(spec.bodyB), days: spec.windowDays });
+    case 'phase-range': return t('research.signal.phase', { fast: b(spec.fast), slow: b(spec.slow), from: spec.fromDegrees, to: spec.toDegrees });
+    case 'declination': return t('research.signal.declination', { body: b(spec.body), min: spec.minimumAbsolute, hemisphere: t(`research.hemisphere.${spec.hemisphere}` as MessageKey) });
+  }
+}
 
 /**
  * The signals offered.
@@ -73,7 +86,7 @@ function warningText(warning: StudyWarning, t: Translator['t'], n: Translator['n
 }
 
 export function ResearchPanel(): JSX.Element {
-  const { t, n } = useTranslator();
+  const { t, n, locale } = useTranslator();
 
   /*
    * The series lives in a store rather than here: Gann Lab anchors its fans
@@ -305,7 +318,7 @@ export function ResearchPanel(): JSX.Element {
         </div>
 
         <p className="mt-2 text-xs as-text-muted">
-          {t('provider.sendsSymbol', { provider: apiProvider.describe.name })}
+          {t('provider.sendsSymbol', { provider: apiProvider.describe.name === 'the configured provider' ? t('provider.configured') : apiProvider.describe.name })}
           {' '}
           {t('provider.configuration')}
         </p>
@@ -354,7 +367,7 @@ export function ResearchPanel(): JSX.Element {
                 }
                 className="h-4 w-4 rounded as-border-strong"
               />
-              <span className="font-mono text-xs">{describeSignal(spec)}</span>
+              <span className="font-mono text-xs">{signalLabel(spec, t, locale.code)}</span>
             </label>
           ))}
         </div>
@@ -449,7 +462,7 @@ export function ResearchPanel(): JSX.Element {
                   return (
                     <tr key={study.signalId} className="border-b as-border-hair last:border-0">
                       <th scope="row" className={`${TD} text-left font-normal`}>
-                        <span className="font-mono text-xs">{describeSignal(study.spec)}</span>
+                        <span className="font-mono text-xs">{signalLabel(study.spec, t, locale.code)}</span>
                         {study.warnings.length > 0 ? (
                           <span
                             className="ml-1 cursor-help as-text-warning"

@@ -164,7 +164,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
       >
         <div className="as-rail-head">
           {!collapsed ? (
-            <span className="as-brand" title={BRAND.tagline}>
+            <span className="as-brand" title={BRAND.taglineFromEnv ? BRAND.tagline : t('brand.tagline')}>
               {BRAND.name}
             </span>
           ) : null}

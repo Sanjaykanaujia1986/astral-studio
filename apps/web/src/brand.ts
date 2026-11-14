@@ -12,6 +12,8 @@
 export interface Brand {
   readonly name: string;
   readonly tagline: string;
+  /** True when the deployment set its own tagline; otherwise the UI shows the catalogue's, in the reader's language. */
+  readonly taglineFromEnv: boolean;
   /** Shown in the footer beside the data attributions. */
   readonly legalName?: string;
   /** Short form for tight spaces — the mobile header, the nav rail collapsed. */
@@ -33,6 +35,7 @@ export const BRAND: Brand = {
   tagline:
     (import.meta.env.VITE_BRAND_TAGLINE as string | undefined)
     ?? 'Astrology calculation and research',
+  taglineFromEnv: Boolean(import.meta.env.VITE_BRAND_TAGLINE),
   ...(import.meta.env.VITE_SOURCE_URL
     ? { sourceUrl: import.meta.env.VITE_SOURCE_URL as string }
     : {}),

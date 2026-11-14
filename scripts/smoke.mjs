@@ -151,6 +151,7 @@ if (bundle) {
     ['KP, aṣṭakavarga and ṣaḍbala (0.22)', 'Krishnamurti Paddhati (KP)'],
     ['varṣaphal and progressions (0.23)', 'Varṣaphal and progressions'],
     ['tables, sāyana pages, transits and KP events (0.24)', 'Daily transits and gochar'],
+    ['Hindi and Gujarati Jyotiṣa terms (0.25)', 'vedic.yoga.why.'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

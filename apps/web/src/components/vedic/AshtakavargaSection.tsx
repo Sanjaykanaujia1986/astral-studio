@@ -6,16 +6,15 @@
 import { useMemo, useState, type JSX } from 'react';
 import { useTranslator } from '@astro/i18n';
 import { ashtakavarga, grahaLongitudes, AV_OWNERS, AV_CONTRIBUTORS, type AvOwner, type VedicChart } from '@astro/vedic';
-import { GRAHA_NAME, RASHI_NAME, ROW, Select, Table, TD } from './shared.js';
-
-const gn = (g: string): string => GRAHA_NAME[g] ?? g;
+import { ROW, Select, Table, TD, useJy } from './shared.js';
 
 export function AshtakavargaSection({ vchart }: { readonly vchart: VedicChart }): JSX.Element {
   const { t } = useTranslator();
+  const { gn, rshort } = useJy();
   const av = useMemo(() => ashtakavarga(grahaLongitudes(vchart)), [vchart]);
   const [stage, setStage] = useState<'totals' | 'trikona' | 'ekadhipatya'>('totals');
   const [owner, setOwner] = useState<AvOwner>('sun');
-  const signs = RASHI_NAME.map((s) => s.slice(0, 4));
+  const signs = Array.from({ length: 12 }, (_, s) => rshort(s));
   const b = av.bhinna[owner];
   return (
     <section className="as-card">

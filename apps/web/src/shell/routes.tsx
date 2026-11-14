@@ -8,7 +8,6 @@
  */
 import { Suspense, lazy, type JSX, type ReactNode } from 'react';
 import { Link } from 'react-router-dom';
-import { GEONAMES_ATTRIBUTION } from '@astro/locations';
 import { useTranslator } from '@astro/i18n';
 import {
   ChartWheel, PlanetTable, HouseTable, AspectTable, formatOffset,
@@ -426,9 +425,9 @@ export function SettingsRoute(): JSX.Element {
       </section>
       <section className="as-card">
         <h2 className="as-h2">{t('settings.about')}</h2>
-        <p className="as-body">{BRAND.name} · {BRAND.tagline}</p>
+        <p className="as-body">{BRAND.name} · {BRAND.taglineFromEnv ? BRAND.tagline : t('brand.tagline')}</p>
         <p className="as-fineprint mt-2">
-          {t('app.attribution', { geonames: GEONAMES_ATTRIBUTION })}
+          {t('app.attribution', { geonames: t('app.geonamesCredit') })}
         </p>
         <p className="as-fineprint mt-2">{t('settings.selfTestHint')}</p>
       </section>

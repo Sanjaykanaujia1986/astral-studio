@@ -6,13 +6,13 @@ import { useMemo, useState, type JSX } from 'react';
 import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import { varshaphal, progression, type Graha } from '@astro/vedic';
-import { GRAHA_NAME, RASHI_NAME, ROW, Select, Table, TD, MUTED, localDate, localDateTime, signDms, utcOffsetLabel } from './shared.js';
+import { ROW, Select, Table, TD, MUTED, localDate, localDateTime, utcOffsetLabel, useJy } from './shared.js';
 
 const BODIES: readonly (Graha | 'lagna')[] = ['lagna', 'sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu'];
-const gn = (g: string): string => GRAHA_NAME[g] ?? g;
 
 export function VarshaphalSection({ chart, provider }: { readonly chart: NatalChart; readonly provider: EphemerisProvider }): JSX.Element {
   const { t } = useTranslator();
+  const { gn, rn, signDms } = useJy();
   const off = chart.offsetMinutes;
   const birthYear = Number(localDate(chart.jdUT, off).slice(6));
   const nowAge = Math.max(0, Math.min(100, Math.floor((Date.now() / 86_400_000 + 2440587.5 - chart.jdUT) / 365.2564)));
@@ -41,8 +41,8 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
       </div>
       <p className="mb-3 text-sm">
         {t('vedic.varsha.begins', { at: localDateTime(v.startJd, off), zone: utcOffsetLabel(off) })}
-        {' · '}{t('vedic.varsha.lagna')}: {RASHI_NAME[Math.floor(v.positions.lagna / 30)]}
-        {' · '}{t('vedic.varsha.muntha', { sign: RASHI_NAME[v.muntha]!, house: v.munthaHouse })}
+        {' · '}{t('vedic.varsha.lagna')}: {rn(Math.floor(v.positions.lagna / 30))}
+        {' · '}{t('vedic.varsha.muntha', { sign: rn(v.muntha), house: v.munthaHouse })}
       </p>
 
       <div className="grid gap-5 lg:grid-cols-2">
@@ -51,7 +51,7 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
           <Table head={[t('vedic.kp.body'), t('vedic.kp.longitude')]}>
             {BODIES.map((b) => (
               <tr key={b} style={ROW}>
-                <th scope="row" className={`${TD} text-left font-medium`}>{gn(b)}{b !== 'lagna' && b !== 'rahu' && b !== 'ketu' && v.positions.retrograde[b] ? ' (R)' : ''}</th>
+                <th scope="row" className={`${TD} text-left font-medium`}>{gn(b)}{b !== 'lagna' && b !== 'rahu' && b !== 'ketu' && v.positions.retrograde[b] ? ` ${t('vedic.retroMark')}` : ''}</th>
                 <td className={TD}>{signDms(pos(b, v.positions))}</td>
               </tr>
             ))}
@@ -72,7 +72,7 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
       </div>
 
       <h3 className="as-h3 mb-2 mt-5">{t('vedic.varsha.run')}</h3>
-      <Table head={[t('vedic.varsha.age'), t('vedic.varsha.date'), ...BODIES.map(gn), t('vedic.varsha.munthaHouse')]}>
+      <Table head={[t('vedic.varsha.age'), t('vedic.varsha.date'), ...BODIES.map((b) => gn(b)), t('vedic.varsha.munthaHouse')]}>
         {run.map((r) => (
           <tr key={r.age} style={ROW}>
             <th scope="row" className={`${TD} text-left font-medium`}>{r.age}</th>
@@ -84,7 +84,7 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
       </Table>
 
       <h3 className="as-h3 mb-2 mt-5">{t('vedic.varsha.progressions')}</h3>
-      <Table head={[t('vedic.varsha.age'), ...BODIES.map(gn)]}>
+      <Table head={[t('vedic.varsha.age'), ...BODIES.map((b) => gn(b))]}>
         {prog.map(({ age: x, p }) => (
           <tr key={x} style={ROW}>
             <th scope="row" className={`${TD} text-left font-medium`}>{x} <span style={MUTED}>({birthYear + x})</span></th>

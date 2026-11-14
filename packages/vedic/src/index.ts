@@ -63,7 +63,7 @@ export {
   type Koota, type AshtakootaResult, type MangalaDosha,
 } from './matching.js';
 
-export { yogas, type YogaResult } from './yogas.js';
+export { yogas, type YogaResult, type YogaDetail } from './yogas.js';
 
 export {
   kpChart, kpLords, fourStep, cuspsSubbedBy, arcHouse, KP_LORDS,

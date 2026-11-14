@@ -16,7 +16,6 @@
 import { useCallback, useMemo, useState, type JSX } from 'react';
 import type { NatalChart } from '@astro/engine';
 import { interpretChart, catalogueFor } from '@astro/interpretation';
-import { GEONAMES_ATTRIBUTION } from '@astro/locations';
 import { useTranslator } from '@astro/i18n';
 import {
   ReportDocument, ALL_REPORT_SECTIONS, paperSpec, PRINT_THEME,
@@ -70,7 +69,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
     setSections((current) => ({ ...current, [key]: !current[key] }));
   }, []);
 
-  const attribution = t('app.attribution', { geonames: GEONAMES_ATTRIBUTION });
+  const attribution = t('app.attribution', { geonames: t('app.geonamesCredit') });
 
   return (
     <div className="space-y-4">

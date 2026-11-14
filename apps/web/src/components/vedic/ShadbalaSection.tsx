@@ -5,7 +5,7 @@ import { useMemo, type JSX } from 'react';
 import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { useTranslator } from '@astro/i18n';
 import { shadbala, grahaLongitudes, SEVEN, type ShadbalaRow, type VedicChart } from '@astro/vedic';
-import { GRAHA_NAME, ROW, Table, TD, fix, signDms, MUTED } from './shared.js';
+import { ROW, Table, TD, fix, MUTED, useJy } from './shared.js';
 
 /** Row id → [label key, bold]. Groups: sthāna, dig, kāla, ceṣṭā, naisargika, dṛk, totals. */
 const ROWS: readonly (readonly [ShadbalaRow, boolean])[] = [
@@ -20,6 +20,7 @@ export function ShadbalaSection({ vchart, chart, provider }: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
 }): JSX.Element {
   const { t } = useTranslator();
+  const { gn, signDms } = useJy();
   const r = useMemo(() => shadbala(provider, grahaLongitudes(vchart), {
     jdUT: chart.jdUT, latitude: chart.place.latitude, longitude: chart.place.longitude,
     zodiac: chart.settings.zodiac, utcOffsetMinutes: chart.offsetMinutes,
@@ -28,7 +29,7 @@ export function ShadbalaSection({ vchart, chart, provider }: {
   return (
     <section className="as-card">
       <h2 className="as-h2">{t('vedic.section.shadbala')}</h2>
-      <Table head={['', ...SEVEN.map((g) => GRAHA_NAME[g]!)]}>
+      <Table head={['', ...SEVEN.map((g) => gn(g))]}>
         {ROWS.map(([id, bold]) => (
           <tr key={id} style={ROW}>
             <th scope="row" className={`${TD} text-left ${bold ? 'font-semibold' : 'font-normal'}`}>{t(`vedic.sb.${id}` as 'vedic.sb.total')}</th>
@@ -40,7 +41,7 @@ export function ShadbalaSection({ vchart, chart, provider }: {
           </tr>
         ))}
       </Table>
-      {r.wars.length ? <p className="mt-2 text-sm">{t('vedic.sb.war', { pairs: r.wars.map(([a, c]) => `${GRAHA_NAME[a]}–${GRAHA_NAME[c]}`).join(', ') })}</p> : null}
+      {r.wars.length ? <p className="mt-2 text-sm">{t('vedic.sb.war', { pairs: r.wars.map(([a, c]) => `${gn(a)}–${gn(c)}`).join(', ') })}</p> : null}
 
       <h3 className="as-h3 mb-2 mt-5">{t('vedic.sb.bhava')}</h3>
       <Table head={[t('vedic.kp.house'), t('vedic.sb.madhya'), t('vedic.sb.adhipati'), t('vedic.sb.bhavaDig'), t('vedic.sb.bhavaDrishti'), t('vedic.sb.total'), t('vedic.sb.rupas'), t('vedic.sb.rank')]}>
