@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 0.23.0 — 2026-11-14
+- NEW: **Varṣaphal** — the annual chart for any year of life (the moment the sidereal Sun returns to its natal longitude), its lagna, Muntha sign and house, the mudda daśā, and the decade of returns around it. Return dates agree with two printed reports for 199 of 200 years.
+- NEW: **Mudda daśā** in the printed horoscopes' whole-day convention (64% of 1,920 printed dates exact, the rest within two days because the reports place the return up to half an hour early) or proportional to the solar year.
+- NEW: **Sāyana progressions** — one day per year of life; all 2,000 printed positions agree.
+
 ## 0.22.0 — 2026-11-14
 - NEW: **Krishnamurti Paddhati** — KP ayanāṁśa with Placidus cusps; sign, star, sub and sub-sub lords of every cusp and planet; houses occupied and owned; significators; ruling planets at birth; the four-step theory. All 22 lord rows agree with two printed reports.
 - NEW: **Aṣṭakavarga** — bindus of the seven planets and the lagna, the sarvāṣṭakavarga and rekhās, trikoṇa and ekādhipatya reductions, rāśi/graha/śodhya piṇḍas, and each planet's contributor table. The sarvāṣṭakavarga matches both reports sign for sign.

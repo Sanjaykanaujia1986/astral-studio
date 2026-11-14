@@ -133,6 +133,7 @@ if (bundle) {
     ['daśā systems and sāḍe-sātī (0.20)', 'Śani sāḍe-sātī and transits'],
     ['matching and yogas (0.21)', 'Matching (aṣṭakūṭa)'],
     ['KP, aṣṭakavarga and ṣaḍbala (0.22)', 'Krishnamurti Paddhati (KP)'],
+    ['varṣaphal and progressions (0.23)', 'Varṣaphal and progressions'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

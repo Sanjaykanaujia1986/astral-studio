@@ -79,3 +79,8 @@ export {
   shadbala, sripati, vargaOf, sputaDrishti, compoundRelation, SHADBALA_ROWS, SHADBALA_MIN, NAISARGIKA,
   type ShadbalaResult, type ShadbalaRow, type ShadbalaContext,
 } from './shadbala.js';
+
+export {
+  varshaphal, muddaDasha, solarReturn, positionsAt, progression, MUDDA_DAYS,
+  type Varsha, type MuddaPeriod, type AnnualOptions, type Positions,
+} from './varshaphal.js';

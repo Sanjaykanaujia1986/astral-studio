@@ -271,6 +271,33 @@ Where the reference reports cannot be reproduced:
 - **Yuddha bala** is not applied; a planetary war (Mars–Saturn within 1°) is
   flagged instead.
 
+## 11. Varṣaphal and progressions
+
+The varṣa begins when the sidereal Sun returns to its natal longitude (solved
+to 1e-9°). The varṣa lagna is cast for the birth place. Muntha starts in the
+natal lagna sign and moves one sign per completed year.
+
+Mudda daśā is Viṁśottarī from the varṣa Moon. Two conventions:
+
+- **Printed** (default): counted from local midnight of the return date. The
+  first lord receives the Moon's balance of a 365.25-day share, rounded to
+  whole days. The next eight lords receive fixed whole-day periods: Ketu 22,
+  Venus 61, Sun 18, Moon 30, Mars 21, Rāhu 55, Jupiter 49, Saturn 58,
+  Mercury 52. The first lord then returns for the rest of its period. This
+  makes a 366-day cycle. Every middle period in the reference reports has
+  exactly these lengths.
+- **Proportional**: every lord receives years/120 of the actual solar year,
+  ending at the next return.
+
+The reference reports print return moments 0–28 minutes earlier than the true
+return. The error varies from year to year, which points to a low-precision
+solar theory. Their return dates still agree for 199 of 200 years. The early
+moment can shift the varṣa lagna by a few degrees and a mudda date by one or two
+days (64% of printed mudda dates are exact).
+
+**Progressions** are sāyana secondary progressions: tropical positions one day
+after birth for each year of life, the ascendant cast for the birth place.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:
