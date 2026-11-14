@@ -138,24 +138,27 @@ describe('placements', () => {
 });
 
 describe('the daśā', () => {
-  it('lists the Viṁśottarī periods with their lords', () => {
+  it('offers the three daśā systems, Viṁśottarī first, with their lords', () => {
     renderPanel(sidereal);
-    expect(screen.getByRole('heading', { name: /Viṁśottarī/ })).toBeInTheDocument();
-    // Nine lords, and the sequence continues past the first cycle.
+    expect(screen.getByRole('heading', { name: 'Daśā' })).toBeInTheDocument();
+    const system = screen.getByLabelText('Daśā system') as HTMLSelectElement;
+    expect(system.value).toBe('vimshottari');
+    expect(within(system).getAllByRole('option').map((o) => o.textContent)).toEqual(['Viṁśottarī (120)', 'Aṣṭottarī (108)', 'Yoginī (36)']);
     expect(screen.getAllByText('Śukra').length).toBeGreaterThan(0);
   });
 
   it('states the year length, because programs differ on it', () => {
     renderPanel(sidereal);
-    expect(screen.getByText(/Daśā year = 365.2425 days \(gregorian\)/)).toBeInTheDocument();
+    // Printed horoscopes count a daśā year as 365.25 days.
+    expect((screen.getByLabelText('Daśā year length') as HTMLSelectElement).value).toBe('julian');
   });
 
   it('shows the balance at birth, not the elapsed part', () => {
     renderPanel(sidereal);
     const balance = screen.getByText(/Balance at birth/);
     // Whatever the figure, it cannot exceed the first lord's full term.
-    const years = Number(/([\d.]+) years/.exec(balance.textContent ?? '')?.[1]);
-    expect(years).toBeGreaterThan(0);
+    const years = Number(/(\d+) y \d+ m \d+ d/.exec(balance.textContent ?? '')?.[1]);
+    expect(years).toBeGreaterThanOrEqual(0);
     expect(years).toBeLessThanOrEqual(20);
   });
 });
@@ -164,9 +167,10 @@ describe('the pañcāṅga', () => {
   it('shows all five limbs once sunrise has been resolved', async () => {
     renderPanel(sidereal);
     // The vāra waits for the provider; the other four do not.
-    expect(screen.getByText('Tithi')).toBeInTheDocument();
-    expect(screen.getByText('Yoga')).toBeInTheDocument();
-    expect(screen.getByText('Karaṇa')).toBeInTheDocument();
+    const panchang = within(screen.getByRole('heading', { name: 'Pañcāṅga' }).closest('section')!);
+    expect(panchang.getByText('Tithi')).toBeInTheDocument();
+    expect(panchang.getByText('Yoga')).toBeInTheDocument();
+    expect(panchang.getByText('Karaṇa')).toBeInTheDocument();
 
     await waitFor(() => {
       expect(screen.getByText(/Somavāra|Ravivāra|Maṅgalavāra|Budhavāra|Guruvāra|Śukravāra|Śanivāra/))

@@ -2,6 +2,10 @@
 
 Newest first.
 
+## 0.23.1 — 2026-11-14
+- FIX: the smoke test searches every code-split chunk for its release markers, not only the entry chunk, so the Gann lab, dashboard and licence markers stop failing on a good deploy.
+- FIX: the Vedic panel tests describe the new daśā section (system picker, 365.25-day year, Y-M-D balance) and look for the pañcāṅga's yoga inside its own section.
+
 ## 0.23.0 — 2026-11-14
 - NEW: **Varṣaphal** — the annual chart for any year of life (the moment the sidereal Sun returns to its natal longitude), its lagna, Muntha sign and house, the mudda daśā, and the decade of returns around it. Return dates agree with two printed reports for 199 of 200 years.
 - NEW: **Mudda daśā** in the printed horoscopes' whole-day convention (64% of 1,920 printed dates exact, the rest within two days because the reports place the return up to half an hour early) or proportional to the solar year.

@@ -119,7 +119,23 @@ const bundle = /assets\/(index-[A-Za-z0-9_-]+\.js)/.exec(index)?.[1];
 check('index.html references a hashed bundle', Boolean(bundle), bundle ?? 'none');
 
 if (bundle) {
-  const js = await fetchOnce(`/assets/${bundle}`).then((r) => r.text());
+  /*
+   * Code-split: the entry chunk names the lazy route chunks, and translations
+   * and page text live there (src-*.js, VedicPanel-*.js), not in index-*.js.
+   * Crawl every chunk reachable from the entry and search them together.
+   */
+  const seen = new Set();
+  const queue = [bundle];
+  let js = '';
+  while (queue.length > 0 && seen.size < 60) {
+    const name = queue.shift();
+    if (seen.has(name)) continue;
+    seen.add(name);
+    const text = await fetchOnce(`/assets/${name}`).then((r) => (r.ok ? r.text() : ''));
+    js += text;
+    for (const m of text.matchAll(/([A-Za-z0-9_.-]+-[A-Za-z0-9_-]{8}\.js)/g)) if (!seen.has(m[1])) queue.push(m[1]);
+  }
+  check('bundle chunks crawled', seen.size > 1, `${seen.size} chunks`);
   // Markers for the features this release is supposed to contain. A deploy
   // that silently did not happen shows up here, not in a green test run.
   for (const [label, marker] of [
