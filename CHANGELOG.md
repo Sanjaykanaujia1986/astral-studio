@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.24.1 — 2026-11-14
+- CHANGE: tests use synthetic birth data only. The sidereal-houses test no longer carries a real person's chart; the rules that chart proved (sidereal cusps = tropical − ayanāṁśa, and Krishnamurti and Lahiri applied independently across a sign boundary) are tested on synthetic moments.
+
 ## 0.24.0 — 2026-11-14
 - NEW: **Horoscope tables**, one at a time from a picker:
   - planetary friendship (permanent, temporary and five-fold)
