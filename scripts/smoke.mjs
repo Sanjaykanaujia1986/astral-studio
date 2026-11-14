@@ -131,6 +131,7 @@ if (bundle) {
     ['gann lab', 'Square of Nine'],
     ['dashboard', 'Today’s sky'],
     ['daśā systems and sāḍe-sātī (0.20)', 'Śani sāḍe-sātī and transits'],
+    ['matching and yogas (0.21)', 'Matching (aṣṭakūṭa)'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

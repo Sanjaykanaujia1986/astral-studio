@@ -16,6 +16,8 @@ import { vedicChart, VARGAS, type Varga } from '@astro/vedic';
 import { getProvider } from '../lib/engine.js';
 import { DashaSection } from './vedic/DashaSection.js';
 import { SadeSatiSection } from './vedic/SadeSatiSection.js';
+import { MatchingSection } from './vedic/MatchingSection.js';
+import { YogaSection } from './vedic/YogaSection.js';
 import { useSettings } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
 
@@ -223,6 +225,10 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
       <DashaSection vchart={result} chart={chart} />
 
       {provider ? <SadeSatiSection vchart={result} chart={chart} provider={provider} /> : null}
+
+      <YogaSection vchart={result} />
+
+      <MatchingSection vchart={result} chart={chart} />
 
       <p className="as-fineprint">{t('vedic.conventions')}</p>
     </div>

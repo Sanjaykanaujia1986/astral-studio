@@ -56,3 +56,11 @@ export {
   sadeSati, signStays, saturnOverMoon, payaOf,
   type SaturnPhase, type Paya, type SignStay, type SaturnStay, type SadeSatiSpell,
 } from './transits.js';
+
+export {
+  ashtakoota, compatibilityTable, mangalaDosha, vashyaGroup,
+  YONI_OF, VARNA_NAME, VASHYA_NAME, GANA_NAME, NADI_NAME,
+  type Koota, type AshtakootaResult, type MangalaDosha,
+} from './matching.js';
+
+export { yogas, type YogaResult } from './yogas.js';

@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 0.21.0 — 2026-11-14
+- NEW: **Aṣṭakūṭa matching** — the eight kūṭas and the 36-point total for a pair (the partner's birth details entered on the Vedic page, cast with this chart's own zodiac and nodes), and the printed horoscope's 36-row table of this Moon against every partner nakṣatra segment.
+- NEW: **Maṅgala doṣa** from the lagna, the Moon and Venus.
+- NEW: **Yogas** — Gajakesarī, Sunaphā, Anaphā, Durudharā, Kemadruma, Candra-Maṅgala, Vasumatī, Amala, Veśi, Vāsi, Ubhayacarī, Budha-Āditya, the five Mahāpuruṣa yogas, Cāpa, Duryoga, Dehakaṣṭa, Mātṛmūladhana and Kāla-sarpa — each with the placement that makes it hold or fail, and a note when it would hold only by counting Rāhu/Ketu.
+- Checked against two printed reports: Varṇa, Tārā, Graha maitrī, Gaṇa and Nāḍī agree on all 72 rows, Yoni on 70. Bhakūṭa follows the classical rule with the lord-friendship cancellation, and Vaśya the classical halves of Dhanu and Makara; the reports differ there (documented in VEDIC_CONVENTIONS §9).
+
 ## 0.20.0 — 2026-11-14
 - NEW: **Aṣṭottarī and Yoginī daśā**, alongside Viṁśottarī, on one engine — counted from the Moon or from the lagna or any graha, and drilled down five levels (mahā → antar → pratyantar → sūkṣma → prāṇa). The running period is highlighted at every level.
 - NEW: **Śani sāḍe-sātī and panautī** (ḍhaiyā) table with each phase, retrograde re-entries, the pāya of every entry, and the dates Saturn passes over the natal Moon; plus **Guru, Śani and Maṅgala ingress tables** with the house from the Moon and from the lagna, by decade.

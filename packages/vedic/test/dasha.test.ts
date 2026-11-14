@@ -113,3 +113,53 @@ describe('Saturn transits', () => {
     for (const s of stays.filter((x) => x.paya)) expect(['gold', 'silver', 'copper', 'iron']).toContain(s.paya);
   });
 });
+
+describe('aṣṭakūṭa and yogas', async () => {
+  const { ashtakoota, compatibilityTable, mangalaDosha } = await import('../src/matching.js');
+  const { yogas } = await import('../src/yogas.js');
+  const SPAN = 360 / 27;
+
+  it('scores the same Moon as 28 of 36: full except Bhakūṭa-free Nāḍī doṣa', () => {
+    const r = ashtakoota(100, 100);
+    expect(r.total).toBe(28);
+    expect(r.nadiDosha).toBe(true);
+    expect(r.kootas.find((k) => k.id === 'nadi')!.score).toBe(0);
+    expect(r.kootas.find((k) => k.id === 'bhakut')!.score).toBe(7);
+  });
+
+  it('applies the 6/8 Bhakūṭa doṣa unless the sign lords are friends', () => {
+    // Aries (Mars) boy, Virgo (Mercury) girl: 6/8, Mars-Mercury not mutual friends.
+    expect(ashtakoota(15, 165).kootas.find((k) => k.id === 'bhakut')!.score).toBe(0);
+    // Taurus (Venus) boy, Libra (Venus) girl: 6/8 with one lord: cancelled.
+    const c = ashtakoota(45, 195);
+    expect(c.bhakutDosha).toBe(true);
+    expect(c.bhakutCancelled).toBe(true);
+  });
+
+  it('builds the 36-segment table with every pāda once', () => {
+    const t = compatibilityTable(SPAN * 4.5, 'female');
+    expect(t).toHaveLength(36);
+    expect(t.reduce((a, r) => a + r.padas.length, 0)).toBe(108);
+    for (const r of t) expect(r.result.total).toBeLessThanOrEqual(36);
+  });
+
+  it('finds Maṅgala doṣa from the lagna, Moon and Venus', () => {
+    const lon = { sun: 0, moon: 100, mars: 215, mercury: 10, jupiter: 50, venus: 20, saturn: 300, rahu: 120, ketu: 300 };
+    const m = mangalaDosha({ lon, lagna: 5, retrograde: {} as never });
+    expect(m.fromLagna).toBe(8);
+    expect(m.byLagna).toBe(true);
+    expect(m.present).toBe(true);
+  });
+
+  it('tests yogas against their conditions, noting node-dependent ones', () => {
+    // Moon in Aries, Jupiter in Cancer (4th from the Moon): Gajakesarī.
+    const lon = { sun: 200, moon: 10, mars: 250, mercury: 205, jupiter: 100, venus: 230, saturn: 300, rahu: 40, ketu: 220 };
+    const y = yogas({ lon, lagna: 5, retrograde: {} as never });
+    expect(y.find((x) => x.id === 'gajakesari')!.holds).toBe(true);
+    expect(y.find((x) => x.id === 'budha-aditya')!.holds).toBe(true);
+    // Only Rāhu (Taurus) is 2nd from the Moon: Sunaphā holds only with nodes.
+    const s = y.find((x) => x.id === 'sunapha')!;
+    expect(s.holds).toBe(false);
+    expect(s.holdsWithNodes).toBe(true);
+  });
+});

@@ -201,6 +201,29 @@ conflating them is how a pañcāṅga ends up a day out.
 
 ---
 
+## 9. Aṣṭakūṭa matching, Maṅgala doṣa and yogas
+
+**Kūṭas** (boy's Moon, girl's Moon): Varṇa 1, Vaśya 2, Tārā 3, Yoni 4,
+Graha maitrī 5, Gaṇa 6, Bhakūṭa 7, Nāḍī 8 — 36 in all.
+
+- Vaśya by sign, with the classical halves: Dhanu 0–15° Mānava, 15–30°
+  Catuṣpada; Makara 0–15° Catuṣpada, 15–30° Jalacara. (The reference software
+  swaps both halves.)
+- Bhakūṭa: 2/12, 5/9 and 6/8 score 0, everything else 7; the doṣa is
+  cancelled (7) when the two sign lords are the same planet or mutual natural
+  friends. (The reference software prints 6s and 1s that change between
+  nakṣatras of the same pair of signs — no published rule produces them.)
+- Graha maitrī from natural relationships: same lord or mutual friends 5,
+  friend–neutral 4, neutral–neutral 3, friend–enemy 1, neutral–enemy 0.5,
+  enemies 0.
+
+**Maṅgala doṣa**: Mars in the 1st, 2nd, 4th, 7th, 8th or 12th house, reported
+from the lagna, the Moon and Venus.
+
+**Yogas** are tested against their stated conditions. The lunar and solar
+yogas count the five tārāgrahas only (the Sun is excluded from the Moon's);
+when counting Rāhu/Ketu would change a result, it says so.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:
