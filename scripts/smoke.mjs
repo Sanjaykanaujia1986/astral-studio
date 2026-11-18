@@ -155,6 +155,7 @@ if (bundle) {
     ['drawn zodiac glyphs (0.26)', 'data-glyph'],
     ['planet colours (0.27)', 'as-pl-sun'],
     ['Earth symbol (0.27.1)', 'as-pl-earth'],
+    ['Vedic horoscope print (0.28)', 'report.vedic.antardasha'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

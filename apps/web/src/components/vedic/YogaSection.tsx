@@ -6,16 +6,23 @@ import { useTranslator } from '@astro/i18n';
 import { yogas, grahaLongitudes, type VedicChart, type YogaResult } from '@astro/vedic';
 import { ROW, Select, Table, TD, MUTED, useJy } from './shared.js';
 
-export function YogaSection({ vchart }: { readonly vchart: VedicChart }): JSX.Element {
+/** A yoga's reason as a sentence in the reader's language. Shared with the printed horoscope. */
+export function useYogaReason(): (y: YogaResult) => string {
   const { t } = useTranslator();
-  const { gn, sc } = useJy();
-  const reason = (y: YogaResult): string => {
+  const { gn } = useJy();
+  return (y: YogaResult): string => {
     const d = y.detail;
     const params: Record<string, string | number> = { ...(d.n ?? {}) };
     for (const [k, v] of Object.entries(d.p ?? {})) params[k] = gn(v);
     for (const [k, v] of Object.entries(d.g ?? {})) params[k] = v.length ? v.map((x) => gn(x)).join(', ') : t('vedic.yoga.empty');
     return t(`vedic.yoga.why.${d.key}` as 'vedic.yoga.why.gk', params);
   };
+}
+
+export function YogaSection({ vchart }: { readonly vchart: VedicChart }): JSX.Element {
+  const { t } = useTranslator();
+  const { sc } = useJy();
+  const reason = useYogaReason();
   const [show, setShow] = useState<'present' | 'all'>('present');
   const list = useMemo(() => yogas(grahaLongitudes(vchart)), [vchart]);
   const rows = show === 'all' ? list : list.filter((y) => y.holds || y.holdsWithNodes);

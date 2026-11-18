@@ -2,6 +2,15 @@
 
 Newest first.
 
+## 0.28.0 — 2026-11-18
+- NEW: **Printable Vedic horoscope (janma kuṇḍalī).** Reports now offers a choice between the Western natal chart and the Vedic horoscope. The Vedic page has a "Print horoscope" button that opens it directly (`/reports?type=vedic`). It uses the same paper, orientation, margin and "Print / Save as PDF" as the Western report; the charts stay vector in the PDF. On A4 portrait it prints on four pages:
+  1. Birth details (local date and time, time zone, place, coordinates, ayanāṁśa, nodes, lagna, janma rāśi and nakṣatra, sunrise), the lagna (D1) and navāṁśa (D9) charts in North or South Indian style, and the placements with nakṣatra, pāda, nakṣatra lord and bhāva.
+  2. Pañcāṅga, avakahaḍā cakra and the yogas that hold, each with its reason.
+  3. Viṁśottarī mahādaśā with the balance at birth, and every antardaśā with its end date; the running periods are marked as of the time the report was made.
+  4. Aṣṭakavarga with the sarvāṣṭakavarga, the ṣaḍbala summary, and the sāḍe-sātī and panautī spells.
+  - Each section can be switched off. It prints in English, Hindi and Gujarati.
+  - The numbers come from the same functions and defaults as the Vedic page, and a test holds the printed mahādaśā dates equal to the page's. A tropical chart is refused, as on the Vedic page.
+
 ## 0.27.1 — 2026-11-18
 - NEW: **Earth symbol (⊕).** A green circled cross, drawn in the same bold style as the planets, now marks the centre of the chart wheel: the Earth is where a geocentric chart is seen from. It replaces the plain hub circle. It has its own colour token (`plEarth`, utility `as-pl-earth`), tested at 3:1 or better on every background in both themes, and is black in the print theme. `BodyGlyph` accepts "earth".
 

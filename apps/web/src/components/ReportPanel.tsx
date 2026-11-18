@@ -13,15 +13,22 @@
  * the reader picks the destination rather than the application writing a file,
  * which is a fair trade for keeping the wheel vector.
  */
-import { useCallback, useMemo, useState, type JSX } from 'react';
+import { lazy, Suspense, useCallback, useMemo, useState, type JSX } from 'react';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { NatalChart } from '@astro/engine';
 import { interpretChart, catalogueFor } from '@astro/interpretation';
 import { useTranslator } from '@astro/i18n';
 import {
   ReportDocument, ALL_REPORT_SECTIONS, paperSpec, PRINT_THEME,
-  type Orientation, type PaperSize, type ReportSections,
+  type Orientation, type PaperSize, type ReportSections, type VedicLayoutStyle,
 } from '@astro/ui';
 import { useSettings } from '../lib/settings.js';
+import { ALL_VEDIC_SECTIONS, VEDIC_SECTION_KEYS, type VedicReportSections } from './vedic/reportSections.js';
+
+// The Vedic report pulls in @astro/vedic; a reader printing a Western chart should not download it.
+const VedicReport = lazy(() => import('./vedic/VedicReport.js').then((m) => ({ default: m.VedicReport })));
+
+type ReportType = 'western' | 'vedic';
 
 export interface ReportPanelProps {
   readonly chart: NatalChart;
@@ -31,12 +38,30 @@ const PAPER_CHOICES: readonly PaperSize[] = ['a4', 'a3'];
 const ORIENTATIONS: readonly Orientation[] = ['portrait', 'landscape'];
 const SECTION_KEYS = ['wheel', 'positions', 'houses', 'aspects', 'interpretation'] as const;
 
+/** Toggle labels: the Vedic page's own section names where they fit. */
+const VEDIC_SECTION_LABEL = {
+  charts: 'report.vedic.include.charts',
+  planets: 'vedic.section.placements',
+  panchang: 'vedic.section.panchang',
+  dasha: 'vedic.section.dasha',
+  yogas: 'vedic.section.yogas',
+  ashtakavarga: 'vedic.section.ashtakavarga',
+  shadbala: 'report.vedic.include.shadbala',
+  sadeSati: 'report.vedic.include.sadeSati',
+} as const satisfies Record<keyof VedicReportSections, string>;
+
 const FIELD =
   'rounded-md border as-border-strong px-3 py-1.5 text-sm focus:as-border-strong focus:outline-none focus:ring-1 focus:ring-slate-500';
 
 export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
   const { t, locale } = useTranslator();
   const settings = useSettings();
+  const [params, setParams] = useSearchParams();
+  const type: ReportType = params.get('type') === 'vedic' ? 'vedic' : 'western';
+  const setType = (next: ReportType) => setParams(next === 'vedic' ? { type: 'vedic' } : {}, { replace: true });
+  const [vedicSections, setVedicSections] = useState<VedicReportSections>(ALL_VEDIC_SECTIONS);
+  const [vedicStyle, setVedicStyle] = useState<VedicLayoutStyle>('north');
+  const isSidereal = chart.settings.zodiac.kind === 'sidereal';
 
   const [size, setSize] = useState<PaperSize>('a4');
   const [orientation, setOrientation] = useState<Orientation>('portrait');
@@ -77,6 +102,32 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
         <p className="text-xs as-text-muted">{t('report.intro')}</p>
 
         <div className="flex flex-wrap items-end gap-3">
+          <label className="text-sm">
+            <span className="block font-medium as-text">{t('report.type')}</span>
+            <select
+              value={type}
+              onChange={(e) => setType(e.target.value as ReportType)}
+              className={`mt-1 ${FIELD}`}
+            >
+              <option value="western">{t('report.type.western')}</option>
+              <option value="vedic">{t('report.type.vedic')}</option>
+            </select>
+          </label>
+
+          {type === 'vedic' ? (
+            <label className="text-sm">
+              <span className="block font-medium as-text">{t('vedic.layout.label')}</span>
+              <select
+                value={vedicStyle}
+                onChange={(e) => setVedicStyle(e.target.value as VedicLayoutStyle)}
+                className={`mt-1 ${FIELD}`}
+              >
+                <option value="north">{t('vedic.layout.north')}</option>
+                <option value="south">{t('vedic.layout.south')}</option>
+              </select>
+            </label>
+          ) : null}
+
           <label className="text-sm">
             <span className="block font-medium as-text">{t('report.paper')}</span>
             <select
@@ -122,12 +173,29 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
           <button
             type="button"
             onClick={() => globalThis.print()}
+            disabled={type === 'vedic' && !isSidereal}
             className="ml-auto rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
             {t('report.print')}
           </button>
         </div>
 
+        {type === 'vedic' ? (
+          <fieldset className="flex flex-wrap items-center gap-4">
+            <legend className="text-sm font-medium as-text">{t('report.include')}</legend>
+            {VEDIC_SECTION_KEYS.map((key) => (
+              <label key={key} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={vedicSections[key]}
+                  onChange={() => setVedicSections((current) => ({ ...current, [key]: !current[key] }))}
+                  className="h-4 w-4 rounded as-border-strong"
+                />
+                {t(VEDIC_SECTION_LABEL[key])}
+              </label>
+            ))}
+          </fieldset>
+        ) : (
         <fieldset className="flex flex-wrap items-center gap-4">
           <legend className="text-sm font-medium as-text">{t('report.include')}</legend>
           {SECTION_KEYS.map((key) => (
@@ -142,8 +210,9 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
             </label>
           ))}
         </fieldset>
+        )}
 
-        {settings.glyphStyle === 'symbol' ? (
+        {type === 'western' && settings.glyphStyle === 'symbol' ? (
           <p className="text-xs as-text-muted">{t('report.glyphHint')}</p>
         ) : null}
       </div>
@@ -154,6 +223,27 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
         changing the millimetre dimensions the print stylesheet depends on.
       */}
       <div className="report-preview overflow-x-auto as-surface-inset py-6">
+        {type === 'vedic' ? (
+          isSidereal ? (
+            <Suspense fallback={<p className="px-3 text-sm as-text-muted">{t('report.vedic.pending')}</p>}>
+              <VedicReport
+                chart={chart}
+                paper={paper}
+                sections={vedicSections}
+                style={vedicStyle}
+                precision={settings.precision}
+                {...(settings.theme === 'print' ? { theme: PRINT_THEME } : {})}
+                attribution={attribution}
+                generatedIso={generatedIso}
+              />
+            </Suspense>
+          ) : (
+            <section className="as-card mx-3" style={{ borderColor: 'var(--as-accent)' }}>
+              <p className="as-body">{t('vedic.needsSidereal')}</p>
+              <Link to="/chart" className="as-button-secondary">{t('vedic.openChartStudio')}</Link>
+            </section>
+          )
+        ) : (
         <ReportDocument
           chart={chart}
           {...(chart.input.name ? { subjectName: chart.input.name } : {})}
@@ -166,6 +256,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
           attribution={attribution}
           generatedIso={generatedIso}
         />
+        )}
       </div>
     </div>
   );
