@@ -15,8 +15,8 @@ export {
   type Glyph,
 } from './chart-wheel/glyphs.js';
 export {
-  ASPECT_CLASSES, resolveTheme, LIGHT_THEME, DARK_THEME, PRINT_THEME,
-  type AspectClass, type ChartTheme,
+  ASPECT_CLASSES, resolveTheme, planetColourKey, LIGHT_THEME, DARK_THEME, PRINT_THEME,
+  type AspectClass, type ChartTheme, type PlanetColourKey,
 } from './chart-wheel/theme.js';
 export { PlanetTable, type PlanetTableProps } from './tables/PlanetTable.js';
 export { SignPosition, type SignPositionProps } from './tables/SignPosition.js';

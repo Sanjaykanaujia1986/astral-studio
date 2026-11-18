@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.27.0 — 2026-11-18
+- CHANGE: **Bold, coloured planet symbols.** The planet glyphs were redrawn in the heavier astronomical style:
+  - The Sun is a ring with a solid centre. The Moon is a solid crescent. Mars has a solid arrowhead. Uranus is the astronomical form: a circle with a centre dot under an arrow. Neptune's trident has barbed points. Pluto is the PL monogram. Mercury, Venus, Jupiter and Saturn are drawn with a heavier stroke.
+  - Each planet has its own colour: Sun orange, Moon blue, Mercury purple, Venus olive-gold, Mars red, Jupiter coral, Saturn amber, Uranus cyan, Neptune violet, Pluto crimson. The nodes, Chiron and Lilith share a soft lavender.
+  - The colours are new design tokens (`pl*`, utilities `as-pl-*`), tested at 3:1 contrast or better on every background in both themes. The lowest is 4.15:1.
+  - The chart wheel draws each planet in its colour. The print theme stays black.
+  - The planet column, aspect and transit tables, aspectarian, Vedic, Synastry, Returns, Sky Events, Cycles and Transits pages all use the coloured glyphs.
+
 ## 0.26.0 — 2026-11-14
 - NEW: **Drawn zodiac, planet and aspect glyphs.** All 12 signs, the planets, nodes, Chiron and Lilith, and the aspect symbols are now hand-drawn vector line art (`packages/ui/src/glyphs`), one consistent weight on a 24-unit grid. They replace the Unicode symbols, which looked different on every device: Windows drew some as colour emoji, and a machine without a symbol font printed empty boxes. They look the same on screen, in print and in exported SVG.
   - The chart wheel's sign ring is larger and coloured by element (fire, earth, air, water); planets are crisp line glyphs.

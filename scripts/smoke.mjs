@@ -153,6 +153,7 @@ if (bundle) {
     ['tables, sāyana pages, transits and KP events (0.24)', 'Daily transits and gochar'],
     ['Hindi and Gujarati Jyotiṣa terms (0.25)', 'vedic.yoga.why.'],
     ['drawn zodiac glyphs (0.26)', 'data-glyph'],
+    ['planet colours (0.27)', 'as-pl-sun'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

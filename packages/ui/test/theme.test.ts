@@ -115,6 +115,14 @@ describe.each(['light', 'dark'] as const)('%s theme contrast', (mode: ThemeMode)
     }
   });
 
+  it('keeps every planet glyph colour at 3:1 on every ground', () => {
+    for (const pl of ['plSun', 'plMoon', 'plMercury', 'plVenus', 'plMars', 'plJupiter', 'plSaturn', 'plUranus', 'plNeptune', 'plPluto', 'plPoint'] as const) {
+      for (const ground of ['canvas', 'surface', 'raised'] as const) {
+        expect(contrastRatio(tokens[pl], tokens[ground]), `${pl} on ${ground}`).toBeGreaterThanOrEqual(3);
+      }
+    }
+  });
+
   it('does not use gold as body text', () => {
     /*
      * Muted gold at AA on an off-white ground is impossible without darkening

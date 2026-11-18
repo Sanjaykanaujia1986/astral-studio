@@ -112,7 +112,7 @@ export function TransitsPanel({ chart }: TransitsPanelProps): JSX.Element {
           />
           {t('transit.bodies')}:
           <span className="inline-flex items-center gap-1">
-            <BodyGlyph body="sun" /><BodyGlyph body="mercury" /><BodyGlyph body="venus" />
+            <BodyGlyph body="sun" tinted /><BodyGlyph body="mercury" tinted /><BodyGlyph body="venus" tinted />
           </span>
         </label>
 

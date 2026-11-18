@@ -17,6 +17,7 @@ import type { CSSProperties, JSX } from 'react';
 import type { AspectName, Body, Element, SignName } from '@astro/engine';
 import { ASPECT_PATHS, BODY_PATHS, SIGN_PATHS, type GlyphPath } from './paths.js';
 import { ASPECT_GLYPHS, BODY_GLYPHS } from '../chart-wheel/glyphs.js';
+import { planetColourKey } from '../chart-wheel/theme.js';
 
 const ORDER: readonly SignName[] = [
   'aries', 'taurus', 'gemini', 'cancer', 'leo', 'virgo',
@@ -51,7 +52,7 @@ function Icon({ g, size = '1.15em', strokeWidth = 1.75, title, className, style 
       style={{ display: 'inline-block', verticalAlign: '-0.22em', flex: 'none', overflow: 'visible', ...style }}
     >
       {title ? <title>{title}</title> : null}
-      <path d={g.d} />
+      {g.d ? <path d={g.d} /> : null}
       {g.fill ? <path d={g.fill} fill="currentColor" stroke="none" /> : null}
     </svg>
   );
@@ -67,11 +68,18 @@ export function SignGlyph({ sign, tinted = false, className, ...rest }: GlyphPro
   );
 }
 
-/** A planet, node or point. */
-export function BodyGlyph({ body, ...rest }: GlyphProps & { readonly body: Body | string }): JSX.Element {
+/**
+ * A planet, node or point. `tinted` colours it in its own planet colour (the
+ * `as-pl-*` utilities); the strokes are a little heavier than the signs' so
+ * the bold planet style holds at text size.
+ */
+export function BodyGlyph({ body, tinted = false, className, strokeWidth = 2.1, ...rest }: GlyphProps & {
+  readonly body: Body | string; readonly tinted?: boolean;
+}): JSX.Element {
+  const cls = [tinted ? `as-pl-${planetColourKey(body)}` : '', className ?? ''].filter(Boolean).join(' ') || undefined;
   const g = BODY_PATHS[body as Body];
-  if (g) return <Icon g={g} {...rest} />;
-  return <span aria-hidden="true" className={rest.className}>{BODY_GLYPHS[body as Body]?.abbreviation ?? body.slice(0, 2)}</span>;
+  if (g) return <Icon g={g} strokeWidth={strokeWidth} {...rest} {...(cls ? { className: cls } : {})} />;
+  return <span aria-hidden="true" className={cls}>{BODY_GLYPHS[body as Body]?.abbreviation ?? body.slice(0, 2)}</span>;
 }
 
 /** An aspect. The quintile family has no drawing and prints its text symbol. */
@@ -92,7 +100,7 @@ export function svgGlyph(g: GlyphPath, x: number, y: number, size: number, colou
   return (
     <g key={name} {...(name ? { 'data-glyph': name, 'data-cx': x.toFixed(2), 'data-cy': y.toFixed(2) } : {})} transform={`translate(${(x - size / 2).toFixed(2)} ${(y - size / 2).toFixed(2)}) scale(${k.toFixed(4)})`}
       fill="none" stroke={colour} strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round">
-      <path d={g.d} />
+      {g.d ? <path d={g.d} /> : null}
       {g.fill ? <path d={g.fill} fill={colour} stroke="none" /> : null}
     </g>
   );

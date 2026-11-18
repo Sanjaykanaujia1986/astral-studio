@@ -156,6 +156,15 @@ describe('theming', () => {
     expect(dark).not.toContain('fill="#ffffff"');
   });
 
+  it('draws each planet in its own colour', () => {
+    const svg = render(<ChartWheel chart={chart} theme={DARK_THEME} />);
+    const strokeOf = (name: string) => svg.match(new RegExp(`data-glyph="${name}"[^>]*stroke="([^"]+)"`))?.[1];
+    expect(strokeOf('sun')).toBe(DARK_THEME.planets.sun);
+    expect(strokeOf('moon')).toBe(DARK_THEME.planets.moon);
+    expect(strokeOf('saturn')).toBe(DARK_THEME.planets.saturn);
+    expect(strokeOf('sun')).not.toBe(strokeOf('moon'));
+  });
+
   it('supports a print theme with no colour', () => {
     const print = render(<ChartWheel chart={chart} theme={PRINT_THEME} />);
     expect(print).toContain('#000000');

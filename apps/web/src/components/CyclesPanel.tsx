@@ -151,7 +151,7 @@ export function CyclesPanel(): JSX.Element {
       {estimate !== null ? (
         <p className="px-3 text-xs as-text-muted">
           <span className="me-1 inline-flex items-center gap-1 as-text">
-            <BodyGlyph body={fast} /><BodyGlyph body={slow} />
+            <BodyGlyph body={fast} tinted /><BodyGlyph body={slow} tinted />
           </span>
           {t('cycles.period.expected')}: {t('unit.days', { n: n(estimate, { maximumFractionDigits: 1 }) })}
           {' · '}

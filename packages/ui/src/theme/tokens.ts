@@ -89,6 +89,24 @@ export interface ColorTokens {
   readonly elEarth: string;
   readonly elAir: string;
   readonly elWater: string;
+  /**
+   * One colour per planet for the planet glyphs (`as-pl-*`), the classical
+   * astronomical-chart palette: Sun orange, Moon blue, Mercury purple, Venus
+   * olive-gold, Mars red, Jupiter coral, Saturn amber, Uranus cyan, Neptune
+   * violet, Pluto crimson. `plPoint` is for the nodes, Chiron and Lilith.
+   * Held to 3:1 on every ground, like the element colours.
+   */
+  readonly plSun: string;
+  readonly plMoon: string;
+  readonly plMercury: string;
+  readonly plVenus: string;
+  readonly plMars: string;
+  readonly plJupiter: string;
+  readonly plSaturn: string;
+  readonly plUranus: string;
+  readonly plNeptune: string;
+  readonly plPluto: string;
+  readonly plPoint: string;
 }
 
 /**
@@ -124,6 +142,17 @@ export const LIGHT_TOKENS: ColorTokens = {
   elEarth: '#1f7a4d',
   elAir: '#9a6a0e',
   elWater: '#1d6fa5',
+  plSun: '#c2530f',
+  plMoon: '#2463a8',
+  plMercury: '#9a2fb0',
+  plVenus: '#7d7110',
+  plMars: '#c22a20',
+  plJupiter: '#c0453e',
+  plSaturn: '#a35f00',
+  plUranus: '#0b7a93',
+  plNeptune: '#5b3fd6',
+  plPluto: '#b02a55',
+  plPoint: '#595073',
 };
 
 /**
@@ -160,6 +189,17 @@ export const DARK_TOKENS: ColorTokens = {
   elEarth: '#4cb583',
   elAir: '#e0b44a',
   elWater: '#5aa9dd',
+  plSun: '#f7853a',
+  plMoon: '#5ea8f0',
+  plMercury: '#d062e6',
+  plVenus: '#d9c94a',
+  plMars: '#ef5a4c',
+  plJupiter: '#f2817a',
+  plSaturn: '#eba13c',
+  plUranus: '#36c3df',
+  plNeptune: '#957cff',
+  plPluto: '#e2557f',
+  plPoint: '#b6abd6',
 };
 
 /** Spacing scale, in rem. A 4px base at the default root size. */
@@ -304,6 +344,17 @@ export function themeCss(): string {
     '.as-el-earth { color: var(--as-el-earth); }',
     '.as-el-air { color: var(--as-el-air); }',
     '.as-el-water { color: var(--as-el-water); }',
+    '.as-pl-sun { color: var(--as-pl-sun); }',
+    '.as-pl-moon { color: var(--as-pl-moon); }',
+    '.as-pl-mercury { color: var(--as-pl-mercury); }',
+    '.as-pl-venus { color: var(--as-pl-venus); }',
+    '.as-pl-mars { color: var(--as-pl-mars); }',
+    '.as-pl-jupiter { color: var(--as-pl-jupiter); }',
+    '.as-pl-saturn { color: var(--as-pl-saturn); }',
+    '.as-pl-uranus { color: var(--as-pl-uranus); }',
+    '.as-pl-neptune { color: var(--as-pl-neptune); }',
+    '.as-pl-pluto { color: var(--as-pl-pluto); }',
+    '.as-pl-point { color: var(--as-pl-point); }',
     '.as-border-strong { border-color: var(--as-border-strong); }',
     '.as-border-hair { border-color: var(--as-border); }',
     '.as-surface-solid { background-color: var(--as-raised); }',

@@ -34,7 +34,7 @@ import {
 import { BODY_GLYPHS, GLYPH_FONT_STACK, SIGN_GLYPHS } from './glyphs.js';
 import { BODY_PATHS, SIGN_PATHS } from '../glyphs/paths.js';
 import { svgGlyph } from '../glyphs/Glyph.js';
-import { ASPECT_CLASSES, resolveTheme, type ChartTheme } from './theme.js';
+import { ASPECT_CLASSES, planetColourKey, resolveTheme, type ChartTheme } from './theme.js';
 
 export interface ChartWheelProps {
   /**
@@ -404,7 +404,7 @@ export function ChartWheel({
                 )}
 
                 {glyphStyle === 'symbol' && BODY_PATHS[body.position.body]
-                  ? svgGlyph(BODY_PATHS[body.position.body], glyphPoint.x, glyphPoint.y, 19 * scale, t.aspects.hard, 1.8, body.position.body)
+                  ? svgGlyph(BODY_PATHS[body.position.body], glyphPoint.x, glyphPoint.y, 19 * scale, t.aspects.hard, 2, body.position.body)
                   : (
                     <text
                       x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}
@@ -466,7 +466,7 @@ export function ChartWheel({
                   )}
 
               {glyphStyle === 'symbol' && BODY_PATHS[body.position.body]
-                ? svgGlyph(BODY_PATHS[body.position.body], glyphPoint.x, glyphPoint.y, planetGlyphSize, INK, 1.75, body.position.body)
+                ? svgGlyph(BODY_PATHS[body.position.body], glyphPoint.x, glyphPoint.y, planetGlyphSize, t.planets[planetColourKey(body.position.body)], 2.1, body.position.body)
                 : (
                   <text
                     x={fmt(glyphPoint.x)} y={fmt(glyphPoint.y)}

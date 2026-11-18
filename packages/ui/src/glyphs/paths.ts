@@ -8,14 +8,15 @@
  * baseline — and they inherit colour, so the element tints and the dark theme
  * apply to them like text.
  *
- * Drawing rules, so additions match: stroke only (no fills, except the Sun's
- * centre), round caps and joins, nothing closer than 2 units to the edge, and
+ * Drawing rules, so additions match: strokes, with solid fills only where the
+ * symbol is solid (the Sun's boss, the Moon, spear and trident heads), round
+ * caps and joins, nothing closer than 2 units to the edge, and
  * the visual mass centred on (12, 12). Rendered at stroke-width 1.6 by default.
  */
 import type { AspectName, Body, SignName } from '@astro/engine';
 
 export interface GlyphPath {
-  /** Stroked path data. */
+  /** Stroked path data (empty for a glyph that is all fill, like the Moon). */
   readonly d: string;
   /** Filled path data (dots), drawn in the same colour. */
   readonly fill?: string;
@@ -88,26 +89,37 @@ export const SIGN_PATHS: Readonly<Record<SignName, GlyphPath>> = {
 };
 
 export const BODY_PATHS: Readonly<Record<Body, GlyphPath>> = {
-  sun: { d: circle(12, 12, 8.4), fill: circle(12, 12, 1.7) },
-  moon: { d: 'M15.2 3.3a9 9 0 1 0 0 17.4 10.6 10.6 0 0 1 0-17.4z' },
-  mercury: {
-    d: `${circle(12, 11.2, 4.1)}M12 15.3v6.2M9 18.4h6M7.9 2.8c.6 2.6 2 4.3 4.1 4.3s3.5-1.7 4.1-4.3`,
+  // A shield with a boss: a heavy ring round a solid centre.
+  sun: { d: circle(12, 12, 8.6), fill: circle(12, 12, 3) },
+  // A solid waxing crescent.
+  moon: { d: '', fill: 'M15.2 3.3A9 9 0 1 0 15.2 20.7A8.97 8.97 0 0 1 15.2 3.3Z' },
+  // The winged cap over the head, on a cross.
+  mercury: { d: `M7.6 2.8c.5 2.8 2.1 4.3 4.4 4.3s3.9-1.5 4.4-4.3${circle(12, 12.4, 4.3)}M12 16.7v5.3M8.8 19.4h6.4` },
+  // The hand mirror.
+  venus: { d: `${circle(12, 8.4, 5.6)}M12 14v8M8.4 18.4h7.2` },
+  // Shield and spear, with a solid head.
+  mars: {
+    d: `${circle(9.4, 14.6, 5.9)}M13.6 10.4l4.5-4.5`,
+    fill: 'M21.4 2.6 15.6 3.7l4.7 4.7z',
   },
-  venus: { d: `${circle(12, 8.6, 5.3)}M12 13.9v7.6M8.4 18h7.2` },
-  mars: { d: `${circle(9.6, 14.4, 5.6)}M13.6 10.4 20.6 3.4M14.6 3.4h6v6` },
-  jupiter: { d: 'M5 5.6c1.2-2 4.6-2.4 5.7.1 1.3 3-1.6 6.8-6.1 10.2h15.2M16 3v18.4' },
+  // The eagle's 4: a hooked stroke into a long crossbar, cut by the upright.
+  jupiter: { d: 'M4.4 6.4C5.2 4 7 2.8 9.1 2.8c2.4 0 4 1.6 4 3.9 0 3-2.7 5.8-8.3 9.7H21.2M17 2.8v19.2' },
+  // The scythe: a crossed upright with a sickle hooking down from it.
   saturn: {
-    d: 'M7.4 2.8v12M4.4 6h6M7.4 14.6c0-3 2-5.2 4.8-5.2 2.6 0 4.3 1.9 4.3 4.4 0 3.4-3.4 4.5-3.4 6.8'
-      + ' 0 1.1.8 1.7 2.1 1.6',
+    d: 'M8 2.6v13.6M4.8 5.8h6.4M8 12.2c0-2.8 2.2-4.8 4.8-4.8s4.6 2 4.6 4.6c0 3.2-3 4.4-3 7 0 1.6 1 2.4 2.6 2.2',
   },
-  uranus: { d: `M6 3.4v11.4M18 3.4v11.4M6 9.1h12M12 3.4v12.2${circle(12, 18.4, 2.6)}` },
+  // The Sun's boss under the spear of Mars.
+  uranus: {
+    d: `${circle(12, 15.6, 5.4)}M12 10.2V6.8`,
+    fill: `M12 2.2 8.8 7.4h6.4z${circle(12, 15.6, 1.8)}`,
+  },
+  // The barbed trident on its cross.
   neptune: {
-    d: 'M4.4 4.6c0 6.4 3.2 9.8 7.6 9.8s7.6-3.4 7.6-9.8M12 3v18.4M8.6 18h6.8'
-      + 'M2.9 6.2 4.4 4.4 5.9 6.2M10.5 4.7 12 3l1.5 1.7M18.1 6.2l1.5-1.8 1.5 1.8',
+    d: 'M4.6 7C4.6 12.8 7.8 15.6 12 15.6s7.4-2.8 7.4-8.6M12 6.6V22M8.6 18.8h6.8',
+    fill: 'M4.6 2.2 2.4 7.4h4.4zM12 1.6 9.8 6.8h4.4zM19.4 2.2l-2.2 5.2h4.4z',
   },
-  pluto: {
-    d: `${circle(12, 7.6, 3)}M5.6 5.2c0 4.6 2.8 8.2 6.4 8.2s6.4-3.6 6.4-8.2M12 13.4v8.2M8.6 18h6.8`,
-  },
+  // P and L, for Pluto and Percival Lowell.
+  pluto: { d: 'M7 2.8v18.4h10.2M7 3h4.8c3 0 5 2.1 5 5s-2 5-5 5H7' },
   // Dragon's head and tail: a horseshoe with knots at its feet.
   trueNode: {
     d: `M8.2 16.6C5.2 14.9 3.6 12.2 3.6 9.6c0-3.8 3.6-6.4 8.4-6.4s8.4 2.6 8.4 6.4c0 2.6-1.6 5.3-4.6 7`

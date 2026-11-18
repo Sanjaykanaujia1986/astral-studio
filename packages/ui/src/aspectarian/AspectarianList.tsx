@@ -79,14 +79,14 @@ export function AspectarianList(
                     </span>
 
                     <span className="inline-flex items-center gap-1.5">
-                      <BodyGlyph body={event.bodyA} />
+                      <BodyGlyph body={event.bodyA} tinted />
                       <span>{t(`body.${event.bodyA}`)}</span>
                       {event.retrogradeA ? <span className="as-text-danger">℞</span> : null}
 
                       <AspectGlyph aspect={event.aspect} className="mx-0.5" style={{ color: colour }} />
                       <span style={{ color: colour }}>{t(`aspect.${event.aspect}`)}</span>
 
-                      <BodyGlyph body={event.bodyB} />
+                      <BodyGlyph body={event.bodyB} tinted />
                       <span>{t(`body.${event.bodyB}`)}</span>
                       {event.retrogradeB ? <span className="as-text-danger">℞</span> : null}
                     </span>

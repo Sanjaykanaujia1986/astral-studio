@@ -32,7 +32,7 @@ function BodyCell({ placed, label }: { placed: PlacedBody; label: string }): JSX
   return (
     <th scope="row" className={`${TD} text-left font-medium`}>
       <span className="inline-flex items-center gap-2">
-        <BodyGlyph body={placed.position.body} size="1.3em" className="as-text-accent" />
+        <BodyGlyph body={placed.position.body} size="1.3em" tinted />
         <span>{label}</span>
       </span>
     </th>

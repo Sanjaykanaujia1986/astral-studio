@@ -249,7 +249,7 @@ export function ReturnsPanel({ chart }: ReturnsPanelProps): JSX.Element {
                   {outcome.directed.positions.map((position) => (
                     <tr key={position.body} className="border-b as-border-hair last:border-0">
                       <th scope="row" className="px-3 py-2 text-left font-normal">
-                        <span className="inline-flex items-center gap-1.5"><BodyGlyph body={position.body} className="as-text-accent" />{t(`body.${position.body}`)}</span>
+                        <span className="inline-flex items-center gap-1.5"><BodyGlyph body={position.body} tinted />{t(`body.${position.body}`)}</span>
                       </th>
                       <td className="px-3 py-2 tabular-nums">
                         <SignPosition longitude={position.longitude} precision={settings.precision} />

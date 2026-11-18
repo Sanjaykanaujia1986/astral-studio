@@ -193,7 +193,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                   <ul className="space-y-1 text-sm">
                     {entries.map((entry) => (
                       <li key={entry.body} className="flex justify-between gap-4">
-                        <span className="inline-flex items-center gap-1.5"><BodyGlyph body={entry.body} className="as-text-accent" />{t(`body.${entry.body}`)}</span>
+                        <span className="inline-flex items-center gap-1.5"><BodyGlyph body={entry.body} tinted />{t(`body.${entry.body}`)}</span>
                         <span className="tabular-nums as-text-muted">
                           <SignPosition longitude={entry.longitude} precision={'degree'} />
                         </span>
@@ -235,7 +235,7 @@ export function SynastryPanel({ chart }: SynastryPanelProps): JSX.Element {
                     {comparison.composite.positions.map((position) => (
                       <tr key={position.body} className="border-b as-border-hair last:border-0">
                         <th scope="row" className={`${TD} text-left font-normal`}>
-                          <span className="inline-flex items-center gap-1.5"><BodyGlyph body={position.body} className="as-text-accent" />{t(`body.${position.body}`)}</span>
+                          <span className="inline-flex items-center gap-1.5"><BodyGlyph body={position.body} tinted />{t(`body.${position.body}`)}</span>
                         </th>
                         <td className={`${TD} tabular-nums as-text-muted`}>
                           <SignPosition longitude={position.longitudeA} precision={'degree'} />

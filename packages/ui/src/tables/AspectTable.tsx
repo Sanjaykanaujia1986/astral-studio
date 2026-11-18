@@ -88,9 +88,9 @@ export function AspectTable({ chart, maxOrb, className }: AspectTableProps): JSX
               >
                 <th scope="row" className={`${TD} text-left font-normal`}>
                   <span className="inline-flex items-center gap-1.5">
-                    <BodyGlyph body={hit.bodyA} />
+                    <BodyGlyph body={hit.bodyA} tinted />
                     <AspectGlyph aspect={hit.aspect} className="mx-1" style={{ color: colour }} />
-                    <BodyGlyph body={hit.bodyB} />
+                    <BodyGlyph body={hit.bodyB} tinted />
                     <span className="ml-2 as-text-muted">
                       {nameA} {aspectName} {nameB}
                     </span>

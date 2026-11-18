@@ -168,7 +168,7 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
                 <tr key={p.body} style={{ borderBottom: '1px solid var(--as-border)' }}>
                   <th scope="row" className={`${TD} text-left font-normal`}>
                     <span className="inline-flex items-center gap-2">
-                      <BodyGlyph body={p.body} className="as-text-accent" />
+                      <BodyGlyph body={p.body} tinted />
                       {t(`body.${p.body}` as 'body.sun')}{p.retrograde ? ' ℞' : ''}
                     </span>
                   </th>

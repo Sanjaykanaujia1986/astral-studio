@@ -32,7 +32,7 @@ function targetLabel(target: TransitTarget, t: Translator['t']): string {
 }
 
 function targetGlyph(target: TransitTarget): JSX.Element | null {
-  return target.kind === 'natalBody' ? <BodyGlyph body={target.id as Body} /> : null;
+  return target.kind === 'natalBody' ? <BodyGlyph body={target.id as Body} tinted /> : null;
 }
 
 export function TransitTable({ hits, className }: TransitTableProps): JSX.Element {
@@ -84,7 +84,7 @@ export function TransitTable({ hits, className }: TransitTableProps): JSX.Elemen
                   </td>
                   <td className={TD}>
                     <span className="inline-flex items-center gap-1.5">
-                      <BodyGlyph body={hit.transitBody} />
+                      <BodyGlyph body={hit.transitBody} tinted />
                       {t(`body.${hit.transitBody}`)}
                     </span>
                   </td>

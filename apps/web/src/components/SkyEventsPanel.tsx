@@ -224,7 +224,7 @@ export function SkyEventsPanel(): JSX.Element {
                 checked={chosen.includes(body)}
                 onChange={() => toggle(body)}
               />
-              <BodyGlyph body={body} className="as-text-accent" />
+              <BodyGlyph body={body} tinted />
               {t(`body.${body}` as 'body.sun')}
             </label>
           ))}

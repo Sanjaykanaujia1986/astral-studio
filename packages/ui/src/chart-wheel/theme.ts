@@ -17,6 +17,18 @@ import type { AspectName, Element } from '@astro/engine';
 
 export type AspectClass = 'hard' | 'soft' | 'neutral' | 'minor';
 
+/** Planet colour keys: the ten bodies, plus `point` for the nodes, Chiron and Lilith. */
+export type PlanetColourKey =
+  | 'sun' | 'moon' | 'mercury' | 'venus' | 'mars'
+  | 'jupiter' | 'saturn' | 'uranus' | 'neptune' | 'pluto' | 'point';
+
+const PLANET_KEYS = new Set<string>(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']);
+
+/** The colour key for any body: itself for the ten planets, `point` otherwise. */
+export function planetColourKey(body: string): PlanetColourKey {
+  return (PLANET_KEYS.has(body) ? body : 'point') as PlanetColourKey;
+}
+
 export interface ChartTheme {
   readonly surface: string;
   readonly ink: string;
@@ -24,6 +36,8 @@ export interface ChartTheme {
   readonly faint: string;
   readonly elements: Readonly<Record<Element, string>>;
   readonly aspects: Readonly<Record<AspectClass, string>>;
+  /** Planet glyph colours, the same values as the `pl*` design tokens. */
+  readonly planets: Readonly<Record<PlanetColourKey, string>>;
   /** Opacity of the element tint behind each zodiac sector. */
   readonly signTintOpacity: number;
 }
@@ -48,6 +62,19 @@ export const LIGHT_THEME: ChartTheme = {
     soft: '#1d4ed8',
     neutral: '#6b7280',
     minor: '#a8adb8',
+  },
+  planets: {
+    sun: '#c2530f',
+    moon: '#2463a8',
+    mercury: '#9a2fb0',
+    venus: '#7d7110',
+    mars: '#c22a20',
+    jupiter: '#c0453e',
+    saturn: '#a35f00',
+    uranus: '#0b7a93',
+    neptune: '#5b3fd6',
+    pluto: '#b02a55',
+    point: '#595073',
   },
   signTintOpacity: 0.13,
 };
@@ -78,6 +105,19 @@ export const DARK_THEME: ChartTheme = {
     neutral: '#9ca3af',
     minor: '#6b7280',
   },
+  planets: {
+    sun: '#f7853a',
+    moon: '#5ea8f0',
+    mercury: '#d062e6',
+    venus: '#d9c94a',
+    mars: '#ef5a4c',
+    jupiter: '#f2817a',
+    saturn: '#eba13c',
+    uranus: '#36c3df',
+    neptune: '#957cff',
+    pluto: '#e2557f',
+    point: '#b6abd6',
+  },
   signTintOpacity: 0.18,
 };
 
@@ -92,6 +132,10 @@ export const PRINT_THEME: ChartTheme = {
   faint: '#d0d0d0',
   elements: { fire: '#000000', earth: '#000000', air: '#000000', water: '#000000' },
   aspects: { hard: '#000000', soft: '#666666', neutral: '#333333', minor: '#999999' },
+  planets: {
+    sun: '#000000', moon: '#000000', mercury: '#000000', venus: '#000000', mars: '#000000', jupiter: '#000000',
+    saturn: '#000000', uranus: '#000000', neptune: '#000000', pluto: '#000000', point: '#000000',
+  },
   signTintOpacity: 0.06,
 };
 
@@ -102,6 +146,7 @@ export function resolveTheme(theme?: Partial<ChartTheme>): ChartTheme {
     ...theme,
     elements: { ...LIGHT_THEME.elements, ...theme.elements },
     aspects: { ...LIGHT_THEME.aspects, ...theme.aspects },
+    planets: { ...LIGHT_THEME.planets, ...theme.planets },
   };
 }
 
