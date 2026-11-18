@@ -158,3 +158,10 @@ export const ASPECT_PATHS: Readonly<Partial<Record<AspectName, GlyphPath>>> = {
   semisquare: { d: 'M19.6 19.4H4.4L17 5.2' },
   sesquiquadrate: { d: 'M5.8 11.6h12.4v8.6H5.8ZM5.8 11.6 18.2 3.8' },
 };
+
+/**
+ * Earth (⊕), the circled cross. Not a `Body`: every chart here is drawn from
+ * the Earth, so it never has a position of its own. It marks the observer at
+ * the centre of the chart wheel and is available to `BodyGlyph` as "earth".
+ */
+export const EARTH_PATH: GlyphPath = { d: `${circle(12, 12, 8.6)}M12 3.4v17.2M3.4 12h17.2` };

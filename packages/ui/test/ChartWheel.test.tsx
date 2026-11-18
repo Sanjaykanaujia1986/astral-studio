@@ -165,6 +165,15 @@ describe('theming', () => {
     expect(strokeOf('sun')).not.toBe(strokeOf('moon'));
   });
 
+  it('marks the centre with the Earth, the point a geocentric chart is seen from', () => {
+    const svg = render(<ChartWheel chart={chart} theme={DARK_THEME} size={800} />);
+    const earth = svg.match(/data-glyph="earth" data-cx="([\d.]+)" data-cy="([\d.]+)"[^>]*stroke="([^"]+)"/);
+    expect(earth, 'earth glyph').not.toBeNull();
+    expect(Number(earth![1])).toBeCloseTo(400, 0);
+    expect(Number(earth![2])).toBeCloseTo(400, 0);
+    expect(earth![3]).toBe(DARK_THEME.planets.earth);
+  });
+
   it('supports a print theme with no colour', () => {
     const print = render(<ChartWheel chart={chart} theme={PRINT_THEME} />);
     expect(print).toContain('#000000');

@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.27.1 — 2026-11-18
+- NEW: **Earth symbol (⊕).** A green circled cross, drawn in the same bold style as the planets, now marks the centre of the chart wheel: the Earth is where a geocentric chart is seen from. It replaces the plain hub circle. It has its own colour token (`plEarth`, utility `as-pl-earth`), tested at 3:1 or better on every background in both themes, and is black in the print theme. `BodyGlyph` accepts "earth".
+
 ## 0.27.0 — 2026-11-18
 - CHANGE: **Bold, coloured planet symbols.** The planet glyphs were redrawn in the heavier astronomical style:
   - The Sun is a ring with a solid centre. The Moon is a solid crescent. Mars has a solid arrowhead. Uranus is the astronomical form: a circle with a centre dot under an arrow. Neptune's trident has barbed points. Pluto is the PL monogram. Mercury, Venus, Jupiter and Saturn are drawn with a heavier stroke.

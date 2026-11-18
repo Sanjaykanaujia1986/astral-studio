@@ -93,7 +93,8 @@ export interface ColorTokens {
    * One colour per planet for the planet glyphs (`as-pl-*`), the classical
    * astronomical-chart palette: Sun orange, Moon blue, Mercury purple, Venus
    * olive-gold, Mars red, Jupiter coral, Saturn amber, Uranus cyan, Neptune
-   * violet, Pluto crimson. `plPoint` is for the nodes, Chiron and Lilith.
+   * violet, Pluto crimson, Earth green. `plPoint` is for the nodes, Chiron
+   * and Lilith.
    * Held to 3:1 on every ground, like the element colours.
    */
   readonly plSun: string;
@@ -107,6 +108,7 @@ export interface ColorTokens {
   readonly plNeptune: string;
   readonly plPluto: string;
   readonly plPoint: string;
+  readonly plEarth: string;
 }
 
 /**
@@ -153,6 +155,7 @@ export const LIGHT_TOKENS: ColorTokens = {
   plNeptune: '#5b3fd6',
   plPluto: '#b02a55',
   plPoint: '#595073',
+  plEarth: '#2e8540',
 };
 
 /**
@@ -200,6 +203,7 @@ export const DARK_TOKENS: ColorTokens = {
   plNeptune: '#957cff',
   plPluto: '#e2557f',
   plPoint: '#b6abd6',
+  plEarth: '#5cc46a',
 };
 
 /** Spacing scale, in rem. A 4px base at the default root size. */
@@ -355,6 +359,7 @@ export function themeCss(): string {
     '.as-pl-neptune { color: var(--as-pl-neptune); }',
     '.as-pl-pluto { color: var(--as-pl-pluto); }',
     '.as-pl-point { color: var(--as-pl-point); }',
+    '.as-pl-earth { color: var(--as-pl-earth); }',
     '.as-border-strong { border-color: var(--as-border-strong); }',
     '.as-border-hair { border-color: var(--as-border); }',
     '.as-surface-solid { background-color: var(--as-raised); }',

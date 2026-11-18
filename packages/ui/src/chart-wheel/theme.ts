@@ -17,14 +17,17 @@ import type { AspectName, Element } from '@astro/engine';
 
 export type AspectClass = 'hard' | 'soft' | 'neutral' | 'minor';
 
-/** Planet colour keys: the ten bodies, plus `point` for the nodes, Chiron and Lilith. */
+/**
+ * Planet colour keys: the ten bodies, `point` for the nodes, Chiron and
+ * Lilith, and `earth` for the Earth symbol at the centre of the wheel.
+ */
 export type PlanetColourKey =
   | 'sun' | 'moon' | 'mercury' | 'venus' | 'mars'
-  | 'jupiter' | 'saturn' | 'uranus' | 'neptune' | 'pluto' | 'point';
+  | 'jupiter' | 'saturn' | 'uranus' | 'neptune' | 'pluto' | 'point' | 'earth';
 
-const PLANET_KEYS = new Set<string>(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto']);
+const PLANET_KEYS = new Set<string>(['sun', 'moon', 'mercury', 'venus', 'mars', 'jupiter', 'saturn', 'uranus', 'neptune', 'pluto', 'earth']);
 
-/** The colour key for any body: itself for the ten planets, `point` otherwise. */
+/** The colour key for any body: itself for the ten planets and Earth, `point` otherwise. */
 export function planetColourKey(body: string): PlanetColourKey {
   return (PLANET_KEYS.has(body) ? body : 'point') as PlanetColourKey;
 }
@@ -75,6 +78,7 @@ export const LIGHT_THEME: ChartTheme = {
     neptune: '#5b3fd6',
     pluto: '#b02a55',
     point: '#595073',
+    earth: '#2e8540',
   },
   signTintOpacity: 0.13,
 };
@@ -117,6 +121,7 @@ export const DARK_THEME: ChartTheme = {
     neptune: '#957cff',
     pluto: '#e2557f',
     point: '#b6abd6',
+    earth: '#5cc46a',
   },
   signTintOpacity: 0.18,
 };
@@ -134,7 +139,7 @@ export const PRINT_THEME: ChartTheme = {
   aspects: { hard: '#000000', soft: '#666666', neutral: '#333333', minor: '#999999' },
   planets: {
     sun: '#000000', moon: '#000000', mercury: '#000000', venus: '#000000', mars: '#000000', jupiter: '#000000',
-    saturn: '#000000', uranus: '#000000', neptune: '#000000', pluto: '#000000', point: '#000000',
+    saturn: '#000000', uranus: '#000000', neptune: '#000000', pluto: '#000000', point: '#000000', earth: '#000000',
   },
   signTintOpacity: 0.06,
 };

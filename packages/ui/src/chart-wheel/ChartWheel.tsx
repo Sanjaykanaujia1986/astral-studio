@@ -32,7 +32,7 @@ import {
   type WheelLayout,
 } from './geometry.js';
 import { BODY_GLYPHS, GLYPH_FONT_STACK, SIGN_GLYPHS } from './glyphs.js';
-import { BODY_PATHS, SIGN_PATHS } from '../glyphs/paths.js';
+import { BODY_PATHS, EARTH_PATH, SIGN_PATHS } from '../glyphs/paths.js';
 import { svgGlyph } from '../glyphs/Glyph.js';
 import { ASPECT_CLASSES, planetColourKey, resolveTheme, type ChartTheme } from './theme.js';
 
@@ -495,11 +495,9 @@ export function ChartWheel({
         })}
       </g>
 
-      {/* ---- hub ---- */}
-      <circle
-        cx={layout.cx} cy={layout.cy} r={fmt(6 * scale)}
-        fill={SURFACE} stroke={MUTED} strokeWidth={1 * scale}
-      />
+      {/* ---- hub: the Earth, where a geocentric chart is seen from ---- */}
+      <circle cx={layout.cx} cy={layout.cy} r={fmt(16 * scale)} fill={SURFACE} stroke="none" />
+      {svgGlyph(EARTH_PATH, layout.cx, layout.cy, 27 * scale, t.planets.earth, 2.1, 'earth')}
     </svg>
   );
 }

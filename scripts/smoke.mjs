@@ -154,6 +154,7 @@ if (bundle) {
     ['Hindi and Gujarati Jyotiṣa terms (0.25)', 'vedic.yoga.why.'],
     ['drawn zodiac glyphs (0.26)', 'data-glyph'],
     ['planet colours (0.27)', 'as-pl-sun'],
+    ['Earth symbol (0.27.1)', 'as-pl-earth'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

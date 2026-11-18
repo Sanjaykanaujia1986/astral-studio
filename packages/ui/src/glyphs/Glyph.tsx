@@ -15,7 +15,7 @@
  */
 import type { CSSProperties, JSX } from 'react';
 import type { AspectName, Body, Element, SignName } from '@astro/engine';
-import { ASPECT_PATHS, BODY_PATHS, SIGN_PATHS, type GlyphPath } from './paths.js';
+import { ASPECT_PATHS, BODY_PATHS, EARTH_PATH, SIGN_PATHS, type GlyphPath } from './paths.js';
 import { ASPECT_GLYPHS, BODY_GLYPHS } from '../chart-wheel/glyphs.js';
 import { planetColourKey } from '../chart-wheel/theme.js';
 
@@ -69,7 +69,7 @@ export function SignGlyph({ sign, tinted = false, className, ...rest }: GlyphPro
 }
 
 /**
- * A planet, node or point. `tinted` colours it in its own planet colour (the
+ * A planet, node or point, or "earth" for the Earth symbol. `tinted` colours it in its own planet colour (the
  * `as-pl-*` utilities); the strokes are a little heavier than the signs' so
  * the bold planet style holds at text size.
  */
@@ -77,7 +77,7 @@ export function BodyGlyph({ body, tinted = false, className, strokeWidth = 2.1, 
   readonly body: Body | string; readonly tinted?: boolean;
 }): JSX.Element {
   const cls = [tinted ? `as-pl-${planetColourKey(body)}` : '', className ?? ''].filter(Boolean).join(' ') || undefined;
-  const g = BODY_PATHS[body as Body];
+  const g = body === 'earth' ? EARTH_PATH : BODY_PATHS[body as Body];
   if (g) return <Icon g={g} strokeWidth={strokeWidth} {...rest} {...(cls ? { className: cls } : {})} />;
   return <span aria-hidden="true" className={cls}>{BODY_GLYPHS[body as Body]?.abbreviation ?? body.slice(0, 2)}</span>;
 }
@@ -106,4 +106,4 @@ export function svgGlyph(g: GlyphPath, x: number, y: number, size: number, colou
   );
 }
 
-export { SIGN_PATHS, BODY_PATHS, ASPECT_PATHS };
+export { SIGN_PATHS, BODY_PATHS, ASPECT_PATHS, EARTH_PATH };

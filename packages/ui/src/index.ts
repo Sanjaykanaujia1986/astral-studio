@@ -1,6 +1,6 @@
 export { ChartWheel, type ChartWheelProps } from './chart-wheel/ChartWheel.js';
 export {
-  SignGlyph, BodyGlyph, AspectGlyph, svgGlyph, elementOfSign, SIGN_PATHS, BODY_PATHS, ASPECT_PATHS,
+  SignGlyph, BodyGlyph, AspectGlyph, svgGlyph, elementOfSign, SIGN_PATHS, BODY_PATHS, ASPECT_PATHS, EARTH_PATH,
   type GlyphProps,
 } from './glyphs/Glyph.js';
 export type { GlyphPath } from './glyphs/paths.js';
