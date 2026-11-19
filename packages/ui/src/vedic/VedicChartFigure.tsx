@@ -82,6 +82,8 @@ const SHORT_ID: Readonly<Record<string, string>> = {
   sun: 'sun', moon: 'moon', mars: 'mars', mercury: 'mercury', jupiter: 'jupiter', venus: 'venus', saturn: 'saturn',
   trueNode: 'rahu', meanNode: 'rahu', southNode: 'ketu', meanSouthNode: 'ketu', rahu: 'rahu', ketu: 'ketu',
   uranus: 'uranus', neptune: 'neptune', pluto: 'pluto',
+  // Not a body: the Tājika year's progressed point, drawn in a varṣa chart.
+  muntha: 'muntha',
 };
 
 /** Short body label. Vedic charts are crowded; full names do not fit. */

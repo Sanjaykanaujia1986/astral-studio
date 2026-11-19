@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
 import { localDate } from '../src/components/vedic/shared.js';
@@ -115,6 +115,22 @@ describe('the booklet', () => {
     const d60 = [...container.querySelectorAll('svg[role="img"]')].find((s) => s.getAttribute('aria-label')!.endsWith('D60'))!;
     const lagnaCell = [...d60.querySelectorAll('g')].find((c) => c.querySelector('polygon')!.getAttribute('fill') !== 'none')!;
     expect(lagnaCell.querySelector('text')!.textContent).toBe(String(v[60]!.lagna + 1));
+  }, 60_000);
+
+  it('prints every varṣa chart from the birth year, with the engine’s mudda dates', async () => {
+    const { container } = booklet(only('annual'));
+    await waitFor(() => expect(container.querySelectorAll('[data-kundli-page^="varsha-"] [data-varsha-age]').length).toBe(96), { timeout: 40_000 });
+    expect(container.querySelectorAll('[data-kundli-page^="varsha-"]').length).toBe(12);
+    const v = varshaphal(provider, {
+      birthJd: sidereal.jdUT, latitude: sidereal.place.latitude, longitude: sidereal.place.longitude,
+      zodiac: sidereal.settings.zodiac, node: 'meanNode', utcOffsetMinutes: sidereal.offsetMinutes,
+    }, 36);
+    const year = container.querySelector('[data-varsha-age="36"]')!;
+    const ends = [...year.querySelectorAll('tbody tr td:nth-child(2)')].map((e) => e.textContent);
+    expect(ends).toEqual(v.mudda.map((m) => localDate(m.endJd, sidereal.offsetMinutes)));
+    // The Muntha is drawn in its sign.
+    const mu = [...year.querySelectorAll('svg text')].find((x) => x.textContent === 'Mu')!;
+    expect(mu.closest('g')!.querySelector('text')!.textContent).toBe(String(v.muntha + 1));
   }, 60_000);
 
   it('leaves out the sheets that are switched off', async () => {

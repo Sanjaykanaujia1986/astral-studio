@@ -2,6 +2,13 @@
 
 Newest first.
 
+## 0.29.1 — 2026-11-19
+- NEW: **Yearly varṣa charts in the kuṇḍalī booklet.** After the Varṣaphal page, the booklet now prints a varṣa lagna chart for every year from the birth year, 96 years in all, eight to a page (12 pages), as traditional printed horoscopes do. Each year shows:
+  - Its year, age, return moment and the Muntha's sign and house.
+  - The chart cast for the solar return at the birthplace, with the Muntha marked "Mu" (मु / મુ) in its sign.
+  - The mudda daśā lords with the date each period ends; the running one is in bold.
+  - The years come from the same function and options as the Varṣaphal page, and a test holds the printed mudda dates and Muntha to the engine. They print with the Varṣaphal switch.
+
 ## 0.29.0 — 2026-11-19
 - NEW: **Complete kuṇḍalī booklet.** Reports has a third type, "Complete kuṇḍalī (booklet)" (`/reports?type=kundli`). The Vedic page's "Print horoscope" button now opens it. It follows the order of a traditional printed horoscope, about 44 A4 pages:
   - A cover with the lagna chart and the key facts.

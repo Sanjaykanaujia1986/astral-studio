@@ -24,7 +24,7 @@ import {
 } from '@astro/ui';
 import {
   vedicChart, dashas, subPeriods, runningPath, yearsToYmd, localMidnightJd, grahaLongitudes, YEAR_LENGTHS,
-  yogas, avakahada, dignities, shodashavarga, SHODASHA, GRAHAS,
+  yogas, avakahada, dignities, shodashavarga, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
   type DashaNode, type DashaResult, type DashaSystemId, type Graha,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
@@ -181,6 +181,21 @@ export function KundliBooklet({
   const yogaList = useMemo(() => yogas(g).filter((y) => y.holds || y.holdsWithNodes), [g]);
   const vargas = useMemo(() => (hasLagna ? shodashavarga(g) : null), [g, hasLagna]);
   const dig = useMemo(() => new Map(dignities(g).map((d) => [d.body, d])), [g]);
+
+  /*
+   * Every varṣa from the birth year, as the printed kuṇḍalī carries them: 96
+   * years, eight to a sheet. The same function and options as the Varṣaphal
+   * page, so a year read here matches the year picked there.
+   */
+  const VARSHA_YEARS = 96;
+  const varshas = useMemo((): readonly Varsha[] | null => {
+    if (!provider || !hasLagna || !include.annual) return null;
+    const o = {
+      birthJd: chart.jdUT, latitude: chart.place.latitude, longitude: chart.place.longitude, zodiac: chart.settings.zodiac,
+      node: chart.settings.nodeType === 'true' ? 'trueNode' as const : 'meanNode' as const, utcOffsetMinutes: off,
+    };
+    return Array.from({ length: VARSHA_YEARS }, (_, a) => varshaphal(provider, o, a));
+  }, [provider, hasLagna, include.annual, chart, off]);
 
   const name = chart.input.name || t('report.untitledSubject');
   const moon = vchart.placements.find((p) => p.body === 'moon');
@@ -549,6 +564,57 @@ export function KundliBooklet({
         </Page>
       ) : null}
 
+      {/* ---- the yearly varṣa charts, eight to a sheet ---- */}
+      {include.annual && hasLagna ? (varshas ? Array.from({ length: VARSHA_YEARS / 8 }, (_, sheet) => {
+        const run = varshas.slice(sheet * 8, sheet * 8 + 8);
+        const yearOf = (v: Varsha): string => localDate(v.startJd, off).slice(6);
+        return (
+          <Page key={sheet} id={`varsha-${sheet + 1}`}
+            title={t('kundli.varshaCharts', { from: yearOf(run[0]!), to: yearOf(run[run.length - 1]!) })}>
+            <div className="grid grid-cols-2 gap-x-6 gap-y-2">
+              {run.map((v) => (
+                <section key={v.age} className="report-block" data-varsha-age={v.age}>
+                  <h3 className="as-h3 report-heading mb-0.5 flex items-baseline justify-between">
+                    <span>{yearOf(v)}</span>
+                    <span className="text-[8.5px] font-normal as-text-muted" style={{ fontFamily: 'var(--as-font-sans)' }}>
+                      {t('kundli.varshaAge', { age: v.age })} · {localDateTime(v.startJd, off)} · {t('vedic.varsha.muntha', { sign: rn(v.muntha), house: v.munthaHouse })}
+                    </span>
+                  </h3>
+                  <div className="flex items-start gap-2">
+                    <div style={figure(48)}>
+                      <VedicChartFigure
+                        chart={vchart} style={style} size={500} tinted label={`${t('vedic.varsha.lagna')} ${yearOf(v)}`} {...themeProp}
+                        placements={{
+                          lagnaSignIndex: Math.floor(v.positions.lagna / 30),
+                          bodies: [
+                            ...GRAHAS.map((b) => ({
+                              body: b, signIndex: Math.floor(v.positions.lon[b] / 30),
+                              retrograde: (SEVEN as readonly string[]).includes(b) && v.positions.retrograde[b],
+                            })),
+                            { body: 'muntha', signIndex: v.muntha },
+                          ],
+                        }}
+                      />
+                    </div>
+                    <table className="k-mini flex-1 border-collapse">
+                      <tbody>
+                        {v.mudda.map((m, i) => (
+                          <tr key={i} className={nowJd >= m.startJd && nowJd < m.endJd ? 'font-semibold' : ''}>
+                            <td className="whitespace-nowrap">{gn(m.lord)}</td>
+                            <td className="whitespace-nowrap text-right tabular-nums">{localDate(m.endJd, off)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </section>
+              ))}
+            </div>
+            {sheet === 0 ? <p className="as-fineprint mt-2">{t('kundli.varshaNote')}</p> : null}
+          </Page>
+        );
+      }) : <Page title={t('kundli.varshaChartsTitle')} id="varsha-pending">{pending}</Page>) : null}
+
       {include.transits ? (
         <>
           <Page title={t('vedic.section.sadeSati')} id="sadesati">
@@ -609,6 +675,7 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['kp', 'vedic.section.kp'],
   ['western', 'vedic.section.western'],
   ['annual', 'vedic.section.varshaphal'],
+  ['annual', 'kundli.varshaChartsTitle'],
   ['transits', 'vedic.section.transits'],
   ['matching', 'vedic.section.matching'],
 ];
