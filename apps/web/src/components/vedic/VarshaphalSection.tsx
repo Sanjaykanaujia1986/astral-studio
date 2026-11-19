@@ -10,9 +10,13 @@ import { ROW, Select, Table, TD, MUTED, localDate, localDateTime, utcOffsetLabel
 
 const BODIES: readonly (Graha | 'lagna')[] = ['lagna', 'sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn', 'rahu', 'ketu'];
 
-export function VarshaphalSection({ chart, provider }: { readonly chart: NatalChart; readonly provider: EphemerisProvider }): JSX.Element {
+export function VarshaphalSection({ chart, provider, print }: {
+  readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: the year of life to show, without the pickers. */
+  readonly print?: { readonly age: number };
+}): JSX.Element {
   const { t } = useTranslator();
-  const { gn, rn, signDms } = useJy();
+  const { gn, rn, rshort, signDms } = useJy();
   const off = chart.offsetMinutes;
   const birthYear = Number(localDate(chart.jdUT, off).slice(6));
   const nowAge = Math.max(0, Math.min(100, Math.floor((Date.now() / 86_400_000 + 2440587.5 - chart.jdUT) / 365.2564)));
@@ -22,23 +26,29 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
     birthJd: chart.jdUT, latitude: chart.place.latitude, longitude: chart.place.longitude, zodiac: chart.settings.zodiac,
     node: chart.settings.nodeType === 'true' ? 'trueNode' as const : 'meanNode' as const, utcOffsetMinutes: off,
   }), [chart, off]);
-  const a = Number(age);
+  const a = print ? print.age : Number(age);
   const v = useMemo(() => varshaphal(provider, o, a, conv), [provider, o, a, conv]);
   const run = useMemo(() => Array.from({ length: 10 }, (_, i) => Math.floor(a / 10) * 10 + i).filter((x) => x <= 100)
     .map((x) => varshaphal(provider, o, x)), [provider, o, a]);
   const prog = useMemo(() => Array.from({ length: 10 }, (_, i) => Math.floor(a / 10) * 10 + i).filter((x) => x <= 100)
     .map((x) => ({ age: x, p: progression(provider, o, x) })), [provider, o, a]);
   const pos = (b: Graha | 'lagna', p: typeof v.positions): number => (b === 'lagna' ? p.lagna : p.lon[b]);
+  /** Sign and degree-minute for the wide run tables; on paper the sign is abbreviated so twelve columns fit a sheet. */
+  const brief = (lon: number): string => {
+    if (!print) return signDms(lon).replace(/″$/, '').replace(/′\d\d$/, '′');
+    const l = ((lon % 360) + 360) % 360; const s = Math.floor(l / 30); const m = Math.floor((l - s * 30) * 60);
+    return `${rshort(s)} ${Math.floor(m / 60)}°${String(m % 60).padStart(2, '0')}′`;
+  };
 
   return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.varshaphal')}</h2>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
+    <section className={print ? '' : 'as-card'}>
+      {print ? null : <h2 className="as-h2">{t('vedic.section.varshaphal')}</h2>}
+      {print ? null : <div className="mb-3 flex flex-wrap items-end gap-3">
         <Select label={t('vedic.varsha.year')} value={age} onChange={setAge}
           options={Array.from({ length: 101 }, (_, i) => [String(i), t('vedic.varsha.yearOption', { year: birthYear + i, age: i })] as const)} />
         <Select label={t('vedic.varsha.mudda')} value={conv} onChange={setConv}
           options={[['printed', t('vedic.varsha.printed')], ['proportional', t('vedic.varsha.proportional')]]} />
-      </div>
+      </div>}
       <p className="mb-3 text-sm">
         {t('vedic.varsha.begins', { at: localDateTime(v.startJd, off), zone: utcOffsetLabel(off) })}
         {' · '}{t('vedic.varsha.lagna')}: {rn(Math.floor(v.positions.lagna / 30))}
@@ -77,7 +87,7 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
           <tr key={r.age} style={ROW}>
             <th scope="row" className={`${TD} text-left font-medium`}>{r.age}</th>
             <td className={TD}>{localDateTime(r.startJd, off)}</td>
-            {BODIES.map((b) => <td key={b} className={TD}>{signDms(pos(b, r.positions)).replace(/″$/, '').replace(/′\d\d$/, '′')}</td>)}
+            {BODIES.map((b) => <td key={b} className={TD}>{brief(pos(b, r.positions))}</td>)}
             <td className={TD}>{r.munthaHouse}</td>
           </tr>
         ))}
@@ -88,7 +98,7 @@ export function VarshaphalSection({ chart, provider }: { readonly chart: NatalCh
         {prog.map(({ age: x, p }) => (
           <tr key={x} style={ROW}>
             <th scope="row" className={`${TD} text-left font-medium`}>{x} <span style={MUTED}>({birthYear + x})</span></th>
-            {BODIES.map((b) => <td key={b} className={TD}>{signDms(pos(b, p)).replace(/″$/, '').replace(/′\d\d$/, '′')}</td>)}
+            {BODIES.map((b) => <td key={b} className={TD}>{brief(pos(b, p))}</td>)}
           </tr>
         ))}
       </Table>

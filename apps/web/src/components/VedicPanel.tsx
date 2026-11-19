@@ -114,7 +114,7 @@ export function VedicPanel({ chart }: VedicPanelProps): JSX.Element {
             </select>
           </label>
 
-          <Link to="/reports?type=vedic" className="as-button-secondary no-print">{t('vedic.print')}</Link>
+          <Link to="/reports?type=kundli" className="as-button-secondary no-print">{t('vedic.print')}</Link>
 
           <p className="ml-auto text-xs" style={{ color: 'var(--as-ink-muted)' }}>
             {t('vedic.ayanamsha')}: {t(`ayanamsha.${result.ayanamshaName}` as 'ayanamsha.lahiri')}

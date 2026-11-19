@@ -13,8 +13,13 @@ import { ROW, Select, Table, TD, MUTED, fix, useJy } from './shared.js';
 const OUTER = ['uranus', 'neptune', 'pluto'];
 
 type View = 'positions' | 'aspects' | 'cuspAspects';
+export type WesternView = View;
 
-export function WesternSection({ chart, provider }: { readonly chart: NatalChart; readonly provider: EphemerisProvider }): JSX.Element {
+export function WesternSection({ chart, provider, print }: {
+  readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: these views in turn, each under its heading, without the picker. */
+  readonly print?: { readonly views: readonly View[] };
+}): JSX.Element {
   const { t } = useTranslator();
   const jy = useJy();
   const gn = (g: string): string => (OUTER.includes(g) ? t(`body.${g}` as 'body.uranus') : jy.gn(g));
@@ -37,13 +42,9 @@ export function WesternSection({ chart, provider }: { readonly chart: NatalChart
     return <>{asp ? <span className="font-semibold">{ashort(asp.short)}</span> : <span style={MUTED}>{sep}°</span>}</>;
   };
 
-  return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.western')}</h2>
-      <div className="mb-3">
-        <Select label={t('vedic.tb.table')} value={view} onChange={setView}
-          options={[['positions', t('vedic.west.positions')], ['aspects', t('vedic.west.aspects')], ['cuspAspects', t('vedic.west.cuspAspects')]]} />
-      </div>
+  const viewTitle: Record<View, string> = { positions: t('vedic.west.positions'), aspects: t('vedic.west.aspects'), cuspAspects: t('vedic.west.cuspAspects') };
+  const renderView = (view: View): JSX.Element => (
+    <>
       {view === 'positions' ? (
         <div className="grid gap-5 lg:grid-cols-2">
           <Table head={[t('vedic.kp.body'), t('vedic.kp.longitude'), t('vedic.west.speed'), t('vedic.west.latitude'), t('vedic.west.declination'), t('vedic.kp.starLord'), t('vedic.kp.subLord')]}>
@@ -92,6 +93,31 @@ export function WesternSection({ chart, provider }: { readonly chart: NatalChart
           {ASPECTS.map((a) => `${ashort(a.short)} = ${t(`vedic.west.asp.${a.short}` as 'vedic.west.asp.conj')} ${a.angle}° (±${a.orb}°)`).join(' · ')}
         </p>
       ) : null}
+    </>
+  );
+
+  if (print) {
+    return (
+      <>
+        {print.views.map((v) => (
+          <section key={v} className="mb-4">
+            <h3 className="as-h3 report-heading mb-1">{viewTitle[v]}</h3>
+            {renderView(v)}
+          </section>
+        ))}
+        <p className="as-fineprint mt-3">{t('vedic.west.note')}</p>
+      </>
+    );
+  }
+
+  return (
+    <section className="as-card">
+      <h2 className="as-h2">{t('vedic.section.western')}</h2>
+      <div className="mb-3">
+        <Select label={t('vedic.tb.table')} value={view} onChange={setView}
+          options={[['positions', viewTitle.positions], ['aspects', viewTitle.aspects], ['cuspAspects', viewTitle.cuspAspects]]} />
+      </div>
+      {renderView(view)}
       <p className="as-fineprint mt-3">{t('vedic.west.note')}</p>
     </section>
   );

@@ -21,7 +21,13 @@ function ChainLink({ l }: { readonly l: KpLink }): JSX.Element {
   return <>{gn(l.planet)} <span style={MUTED}>{list(l.inHouses)} / {list(l.owns)}</span></>;
 }
 
-export function KpSection({ chart, provider }: { readonly chart: NatalChart; readonly provider: EphemerisProvider }): JSX.Element {
+export type KpPart = 'cusps' | 'planets' | 'significators' | 'fourStep' | 'events';
+
+export function KpSection({ chart, provider, print }: {
+  readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: only these parts, with every KP event rather than the picked one. */
+  readonly print?: { readonly parts: readonly KpPart[] };
+}): JSX.Element {
   const { t } = useTranslator();
   const { gn, signDms } = useJy();
   const k = useMemo(() => kpChart(provider, chart.jdUT, {
@@ -29,18 +35,47 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
     node: chart.settings.nodeType === 'true' ? 'trueNode' : 'meanNode',
   }), [chart, provider]);
   const [ev, setEv] = useState(KP_EVENTS[0]!.id);
-  const event = useMemo(() => kpEvent(k, KP_EVENTS.find((e) => e.id === ev)!), [k, ev]);
-  const d = event.def;
+  const show = (part: KpPart): boolean => !print || print.parts.includes(part);
   const lordHead = [t('vedic.kp.signLord'), t('vedic.kp.starLord'), t('vedic.kp.subLord'), t('vedic.kp.subSubLord')];
+  const eventTable = (id: string): JSX.Element => {
+    const event = kpEvent(k, KP_EVENTS.find((e) => e.id === id)!);
+    const d = event.def;
+    return (
+      <>
+        <p className="mb-2 text-sm">
+          {t('vedic.kp.evHouses')}: {d.houses.join(', ')}
+          {' · '}{t('vedic.kp.evFavourable')}: {d.favourable.join(', ')}{d.alsoFavourable ? ` (${d.alsoFavourable.join(', ')})` : ''}
+          {' · '}{t('vedic.kp.evUnfavourable')}: {d.unfavourable.join(', ') || '—'}{d.alsoUnfavourable ? ` (${d.alsoUnfavourable.join(', ')})` : ''}
+        </p>
+        <Table head={['', t('vedic.kp.evLead'), t('vedic.kp.evStar'), t('vedic.kp.significators'), t('vedic.kp.evFavourable'), t('vedic.kp.evUnfavourable')]}>
+          {event.rows.map((r, i) => (
+            <tr key={i} style={ROW}>
+              <th scope="row" className={`${TD} text-left font-medium`}>
+                {r.cusp ? t('vedic.kp.evCusp', { house: r.cusp }) : t('vedic.kp.evKaraka')}
+                {r.role ? <span style={MUTED}> ({t(`vedic.kp.role.${r.role}` as 'vedic.kp.role.judge')})</span> : null}
+              </th>
+              <td className={TD}><ChainLink l={r.lead} /></td>
+              <td className={TD}><ChainLink l={r.star} /></td>
+              <td className={TD}>{r.significators ? r.significators.map((x) => gn(x)).join(', ') || '—' : '—'}</td>
+              <td className={TD}>{list(r.favourableHit)}</td>
+              <td className={TD}>{list(r.unfavourableHit)}</td>
+            </tr>
+          ))}
+        </Table>
+      </>
+    );
+  };
+
   return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.kp')}</h2>
-      <p className="mb-3 text-sm">
+    <section className={print ? '' : 'as-card'}>
+      {print ? null : <h2 className="as-h2">{t('vedic.section.kp')}</h2>}
+      {show('cusps') ? <p className="mb-3 text-sm">
         {t('vedic.kp.ayanamsha')}: <span className="tabular-nums">{signDms(k.ayanamsha).replace(/^\S+ /, '')}</span>
         {' · '}{t('vedic.kp.ruling')}: {k.ruling.map((x) => gn(x)).join(', ')}
-      </p>
+      </p> : null}
 
-      <h3 className="as-h3 mb-2">{t('vedic.kp.cusps')}</h3>
+      {show('cusps') ? <>
+      <h3 className="as-h3 report-heading mb-2">{t('vedic.kp.cusps')}</h3>
       <Table head={[t('vedic.kp.house'), t('vedic.kp.longitude'), ...lordHead]}>
         {k.cusps.map((c) => (
           <tr key={c.house} style={ROW}>
@@ -50,8 +85,10 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
           </tr>
         ))}
       </Table>
+      </> : null}
 
-      <h3 className="as-h3 mb-2 mt-5">{t('vedic.kp.planets')}</h3>
+      {show('planets') ? <>
+      <h3 className="as-h3 report-heading mb-2 mt-5">{t('vedic.kp.planets')}</h3>
       <Table head={[t('vedic.kp.body'), t('vedic.kp.longitude'), ...lordHead, t('vedic.kp.inHouse'), t('vedic.kp.owns'), t('vedic.kp.subOfCusps')]}>
         {k.bodies.map((b) => (
           <tr key={b.body} style={ROW}>
@@ -64,8 +101,10 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
           </tr>
         ))}
       </Table>
+      </> : null}
 
-      <h3 className="as-h3 mb-2 mt-5">{t('vedic.kp.significators')}</h3>
+      {show('significators') ? <>
+      <h3 className="as-h3 report-heading mb-2 mt-5">{t('vedic.kp.significators')}</h3>
       <Table head={[t('vedic.kp.body'), ...Array.from({ length: 12 }, (_, i) => String(i + 1))]}>
         {NINE.map((g) => (
           <tr key={g} style={ROW}>
@@ -76,8 +115,10 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
           </tr>
         ))}
       </Table>
+      </> : null}
 
-      <h3 className="as-h3 mb-2 mt-5">{t('vedic.kp.fourStep')}</h3>
+      {show('fourStep') ? <>
+      <h3 className="as-h3 report-heading mb-2 mt-5">{t('vedic.kp.fourStep')}</h3>
       <Table head={[t('vedic.kp.body'), t('vedic.kp.step1'), t('vedic.kp.step2'), t('vedic.kp.step3'), t('vedic.kp.step4')]}>
         {NINE.map((g) => (
           <tr key={g} style={ROW}>
@@ -90,34 +131,23 @@ export function KpSection({ chart, provider }: { readonly chart: NatalChart; rea
           </tr>
         ))}
       </Table>
+      </> : null}
 
-      <h3 className="as-h3 mb-2 mt-5">{t('vedic.kp.events')}</h3>
-      <div className="mb-3">
-        <Select label={t('vedic.kp.event')} value={ev} onChange={setEv}
-          options={KP_EVENTS.map((e) => [e.id, t(`vedic.kp.ev.${e.id}` as 'vedic.kp.ev.vehicle')] as const)} />
-      </div>
-      <p className="mb-2 text-sm">
-        {t('vedic.kp.evHouses')}: {d.houses.join(', ')}
-        {' · '}{t('vedic.kp.evFavourable')}: {d.favourable.join(', ')}{d.alsoFavourable ? ` (${d.alsoFavourable.join(', ')})` : ''}
-        {' · '}{t('vedic.kp.evUnfavourable')}: {d.unfavourable.join(', ') || '—'}{d.alsoUnfavourable ? ` (${d.alsoUnfavourable.join(', ')})` : ''}
-      </p>
-      <Table head={['', t('vedic.kp.evLead'), t('vedic.kp.evStar'), t('vedic.kp.significators'), t('vedic.kp.evFavourable'), t('vedic.kp.evUnfavourable')]}>
-        {event.rows.map((r, i) => (
-          <tr key={i} style={ROW}>
-            <th scope="row" className={`${TD} text-left font-medium`}>
-              {r.cusp ? t('vedic.kp.evCusp', { house: r.cusp }) : t('vedic.kp.evKaraka')}
-              {r.role ? <span style={MUTED}> ({t(`vedic.kp.role.${r.role}` as 'vedic.kp.role.judge')})</span> : null}
-            </th>
-            <td className={TD}><ChainLink l={r.lead} /></td>
-            <td className={TD}><ChainLink l={r.star} /></td>
-            <td className={TD}>{r.significators ? r.significators.map((x) => gn(x)).join(', ') || '—' : '—'}</td>
-            <td className={TD}>{list(r.favourableHit)}</td>
-            <td className={TD}>{list(r.unfavourableHit)}</td>
-          </tr>
-        ))}
-      </Table>
-      <p className="as-fineprint mt-3">{t('vedic.kp.evNote')}</p>
-      <p className="as-fineprint mt-3">{t('vedic.kp.note')}</p>
+      {show('events') ? (print ? KP_EVENTS.map((e) => (
+        <section key={e.id} className="report-block mb-4">
+          <h3 className="as-h3 report-heading mb-1">{t(`vedic.kp.ev.${e.id}` as 'vedic.kp.ev.vehicle')}</h3>
+          {eventTable(e.id)}
+        </section>
+      )) : <>
+        <h3 className="as-h3 mb-2 mt-5">{t('vedic.kp.events')}</h3>
+        <div className="mb-3">
+          <Select label={t('vedic.kp.event')} value={ev} onChange={setEv}
+            options={KP_EVENTS.map((e) => [e.id, t(`vedic.kp.ev.${e.id}` as 'vedic.kp.ev.vehicle')] as const)} />
+        </div>
+        {eventTable(ev)}
+      </>) : null}
+      {show('events') ? <p className="as-fineprint mt-3">{t('vedic.kp.evNote')}</p> : null}
+      {show('cusps') ? <p className="as-fineprint mt-3">{t('vedic.kp.note')}</p> : null}
     </section>
   );
 }

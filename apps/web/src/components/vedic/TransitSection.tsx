@@ -11,16 +11,21 @@ import {
 } from '@astro/vedic';
 import { ROW, Select, Table, TD, MUTED, localDateTime, useJy } from './shared.js';
 
-export function TransitSection({ vchart, chart, provider }: {
+export function TransitSection({ vchart, chart, provider, print }: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: one table for a fixed month (or year, for gochar), without the pickers. */
+  readonly print?: { readonly view: 'power' | 'moon' | 'gochar'; readonly year: number; readonly month: number };
 }): JSX.Element {
   const { t, locale } = useTranslator();
   const { gn, gshort, rn } = useJy();
   const dashaText = (d: readonly string[]): string => d.map((x) => gshort(x)).join('/');
   const now = new Date();
-  const [year, setYear] = useState(String(now.getFullYear()));
-  const [month, setMonth] = useState(String(now.getMonth() + 1));
-  const [view, setView] = useState<'power' | 'moon' | 'gochar'>('power');
+  const [yearState, setYear] = useState(String(now.getFullYear()));
+  const [monthState, setMonth] = useState(String(now.getMonth() + 1));
+  const [viewState, setView] = useState<'power' | 'moon' | 'gochar'>('power');
+  const year = print ? String(print.year) : yearState;
+  const month = print ? String(print.month) : monthState;
+  const view = print ? print.view : viewState;
   const g = useMemo(() => grahaLongitudes(vchart), [vchart]);
   const off = chart.offsetMinutes;
   const ctx = useMemo(() => ({
@@ -40,9 +45,9 @@ export function TransitSection({ vchart, chart, provider }: {
   const nak = (n: number): string => t(`nakshatra.${NAKSHATRAS[n]!}` as 'nakshatra.ashwini');
 
   return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.transits')}</h2>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
+    <section className={print ? '' : 'as-card'}>
+      {print ? null : <h2 className="as-h2">{t('vedic.section.transits')}</h2>}
+      {print ? null : <div className="mb-3 flex flex-wrap items-end gap-3">
         <Select label={t('vedic.tb.table')} value={view} onChange={setView}
           options={[['power', t('vedic.tr.power')], ['moon', t('vedic.tr.moon')], ['gochar', t('vedic.tr.gochar')]]} />
         <Select label={t('vedic.varsha.year')} value={year} onChange={setYear}
@@ -51,7 +56,7 @@ export function TransitSection({ vchart, chart, provider }: {
           <Select label={t('vedic.tr.month')} value={month} onChange={setMonth}
             options={Array.from({ length: 12 }, (_, i) => [String(i + 1), monthName(i + 1)] as const)} />
         ) : null}
-      </div>
+      </div>}
 
       {data.power ? (
         <>

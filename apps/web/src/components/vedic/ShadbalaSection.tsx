@@ -16,8 +16,10 @@ const ROWS: readonly (readonly [ShadbalaRow, boolean])[] = [
   ['total', true], ['rupas', true], ['minimum', false], ['ratio', true], ['rank', false], ['ishta', false], ['kashta', false],
 ];
 
-export function ShadbalaSection({ vchart, chart, provider }: {
+export function ShadbalaSection({ vchart, chart, provider, print = false }: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: without the card and its heading (the page supplies one). */
+  readonly print?: boolean;
 }): JSX.Element {
   const { t } = useTranslator();
   const { gn, signDms } = useJy();
@@ -27,8 +29,8 @@ export function ShadbalaSection({ vchart, chart, provider }: {
   }), [vchart, chart, provider]);
   const b = r.bhava;
   return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.shadbala')}</h2>
+    <section className={print ? '' : 'as-card'}>
+      {print ? null : <h2 className="as-h2">{t('vedic.section.shadbala')}</h2>}
       <Table head={['', ...SEVEN.map((g) => gn(g))]}>
         {ROWS.map(([id, bold]) => (
           <tr key={id} style={ROW}>
@@ -43,7 +45,7 @@ export function ShadbalaSection({ vchart, chart, provider }: {
       </Table>
       {r.wars.length ? <p className="mt-2 text-sm">{t('vedic.sb.war', { pairs: r.wars.map(([a, c]) => `${gn(a)}–${gn(c)}`).join(', ') })}</p> : null}
 
-      <h3 className="as-h3 mb-2 mt-5">{t('vedic.sb.bhava')}</h3>
+      <h3 className="as-h3 report-heading mb-2 mt-5">{t('vedic.sb.bhava')}</h3>
       <Table head={[t('vedic.kp.house'), t('vedic.sb.madhya'), t('vedic.sb.adhipati'), t('vedic.sb.bhavaDig'), t('vedic.sb.bhavaDrishti'), t('vedic.sb.total'), t('vedic.sb.rupas'), t('vedic.sb.rank')]}>
         {b.madhya.map((m, i) => (
           <tr key={i} style={ROW}>

@@ -14,6 +14,7 @@ import { useTranslator, type MessageKey } from '@astro/i18n';
 import { SIGN_PATHS } from '../glyphs/paths.js';
 import { elementOfSign, svgGlyph } from '../glyphs/Glyph.js';
 import type { VedicChart, Varga } from '@astro/vedic';
+import { planetColourKey } from '../chart-wheel/theme.js';
 import { BODY_GLYPHS } from '../chart-wheel/glyphs.js';
 import { resolveTheme, type ChartTheme } from '../chart-wheel/theme.js';
 import {
@@ -39,6 +40,19 @@ export interface VedicChartFigureProps {
    */
   readonly glyphStyle?: 'symbol' | 'abbreviation';
   readonly className?: string;
+  /**
+   * Draw these sign placements instead of one of the chart's built vargas:
+   * any of the sixteen ṣoḍaśavarga, a chart cast from the Moon, a varṣa
+   * chart. `varga` then only names the figure.
+   */
+  readonly placements?: {
+    readonly lagnaSignIndex: number;
+    readonly bodies: readonly { readonly body: string; readonly signIndex: number; readonly retrograde?: boolean }[];
+  };
+  /** Name for the figure's accessible label when `placements` is given (e.g. "D16"). */
+  readonly label?: string;
+  /** Each graha in its own planet colour (the theme's `planets` map; all ink in the print theme). */
+  readonly tinted?: boolean;
 }
 
 /**
@@ -66,7 +80,7 @@ const GRAHA_NAMES: Readonly<Record<string, string>> = {
 /** Bodies whose short label is in the catalogue (jy.short.*), so Hindi and Gujarati get सू / સૂ. */
 const SHORT_ID: Readonly<Record<string, string>> = {
   sun: 'sun', moon: 'moon', mars: 'mars', mercury: 'mercury', jupiter: 'jupiter', venus: 'venus', saturn: 'saturn',
-  trueNode: 'rahu', meanNode: 'rahu', southNode: 'ketu', meanSouthNode: 'ketu',
+  trueNode: 'rahu', meanNode: 'rahu', southNode: 'ketu', meanSouthNode: 'ketu', rahu: 'rahu', ketu: 'ketu',
   uranus: 'uranus', neptune: 'neptune', pluto: 'pluto',
 };
 
@@ -87,6 +101,9 @@ export function VedicChartFigure({
   size = 420,
   theme,
   className,
+  placements,
+  label,
+  tinted = false,
 }: VedicChartFigureProps): JSX.Element {
   const { t } = useTranslator();
   const colours = resolveTheme(theme);
@@ -101,23 +118,31 @@ export function VedicChartFigure({
    */
   const vargaChart = chart.vargas[varga];
   const bodiesBySign = new Map<number, string[]>();
-  if (varga === 'D1' || !vargaChart) {
+  const bodyIds = new Map<string, string>();
+  const push = (signIndex: number, body: string, text: string): void => {
+    const list = bodiesBySign.get(signIndex) ?? [];
+    list.push(text);
+    bodiesBySign.set(signIndex, list);
+    bodyIds.set(`${signIndex}:${list.length - 1}`, body);
+  };
+  if (placements) {
+    for (const p of placements.bodies) push(p.signIndex, p.body, bodyLabel(p.body, t) + (p.retrograde ? '℞' : ''));
+  } else if (varga === 'D1' || !vargaChart) {
     for (const placement of chart.placements) {
-      const list = bodiesBySign.get(placement.signIndex) ?? [];
-      list.push(bodyLabel(placement.body, t) + (placement.retrograde ? '℞' : ''));
-      bodiesBySign.set(placement.signIndex, list);
+      push(placement.signIndex, placement.body, bodyLabel(placement.body, t) + (placement.retrograde ? '℞' : ''));
     }
   } else {
     for (const placement of vargaChart.placements) {
-      const list = bodiesBySign.get(placement.signIndex) ?? [];
-      list.push(bodyLabel(placement.body, t));
-      bodiesBySign.set(placement.signIndex, list);
+      push(placement.signIndex, placement.body, bodyLabel(placement.body, t));
     }
   }
 
-  const effectiveLagna = varga === 'D1' || !vargaChart
-    ? lagnaSignIndex
-    : vargaChart.lagnaSignIndex;
+  const effectiveLagna = placements
+    ? placements.lagnaSignIndex
+    : varga === 'D1' || !vargaChart
+      ? lagnaSignIndex
+      : vargaChart.lagnaSignIndex;
+  const figureName = placements ? (label ?? varga) : varga;
 
   const title = t(`vedic.layout.${style}` as 'vedic.layout.north');
   const f = (n: number) => (n * size).toFixed(2);
@@ -129,11 +154,11 @@ export function VedicChartFigure({
       width="100%"
       height="100%"
       role="img"
-      aria-label={`${title} — ${varga}`}
+      aria-label={`${title} — ${figureName}`}
       style={{ maxWidth: `${size}px`, height: 'auto', display: 'block' }}
       xmlns="http://www.w3.org/2000/svg"
     >
-      <title>{`${title} — ${varga}`}</title>
+      <title>{`${title} — ${figureName}`}</title>
       <rect x={0} y={0} width={size} height={size} fill={colours.surface} />
 
       {cells.map((cell, index) => {
@@ -187,7 +212,7 @@ export function VedicChartFigure({
                 key={bodies[row]! + row}
                 x={f(slot.x)}
                 y={f(slot.y)}
-                fill={colours.ink}
+                fill={tinted ? colours.planets[planetColourKey(bodyIds.get(`${sign}:${row}`) ?? '')] : colours.ink}
                 fontSize={size * GLYPH_SIZE * slot.scale}
                 /*
                  * Bold, and in the body font rather than the glyph stack:

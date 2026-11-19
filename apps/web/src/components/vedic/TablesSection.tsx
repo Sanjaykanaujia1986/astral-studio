@@ -26,6 +26,8 @@ export const SAHAM_TERM: Readonly<Record<string, string>> = {
 };
 const WEEKDAY_KEYS = ['ravivara', 'somavara', 'mangalavara', 'budhavara', 'guruvara', 'shukravara', 'shanivara'] as const;
 
+export type TableView = View;
+type Rel = 'permanent' | 'temporary' | 'five';
 type View = 'friendship' | 'dignity' | 'vargas' | 'vimshopaka' | 'sahams' | 'lagnas' | 'avakahada' | 'favourable' | 'tara' | 'sudarshana' | 'chalit';
 const VIEWS: readonly View[] = ['friendship', 'dignity', 'vargas', 'vimshopaka', 'sahams', 'lagnas', 'avakahada', 'favourable', 'tara', 'sudarshana', 'chalit'];
 
@@ -42,8 +44,10 @@ function KeyValues({ rows }: { readonly rows: readonly (readonly [string, string
   );
 }
 
-export function TablesSection({ vchart, chart, provider }: {
+export function TablesSection({ vchart, chart, provider, print }: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: these tables one after another, each under its own heading, with no pickers (friendship in all three forms). */
+  readonly print?: { readonly views: readonly View[] };
 }): JSX.Element {
   const { t, locale } = useTranslator();
   const { gn, rn: rs, rshort: short, signDms, sc } = useJy();
@@ -51,8 +55,8 @@ export function TablesSection({ vchart, chart, provider }: {
     `${[a, b, c].map((x) => SAHAM_TERM[x] ? t(`vedic.tb.term.${SAHAM_TERM[x]}` as 'vedic.tb.term.sun') : x).join(' − ').replace(/ − (?=[^−]*$)/, ' + ')}${p30 ?? ''}`);
   const gem = (p: Graha): string => t(`vedic.tb.gemName.${p}` as 'vedic.tb.gemName.sun');
   const [view, setView] = useState<View>('friendship');
-  const [rel, setRel] = useState<'permanent' | 'temporary' | 'five'>('five');
-  const [weights, setWeights] = useState<'parashara' | 'printed'>('parashara');
+  const [relState, setRel] = useState<Rel>('five');
+  const [weightsState, setWeights] = useState<'parashara' | 'printed'>('parashara');
   const g = useMemo(() => grahaLongitudes(vchart), [vchart]);
   const zodiac = chart.settings.zodiac;
   const houses = useMemo(() => provider.houses(chart.jdUT, chart.place.latitude, chart.place.longitude, 'placidus', { zodiac }),
@@ -63,7 +67,7 @@ export function TablesSection({ vchart, chart, provider }: {
     return { year: y!, month: m!, day: d! };
   }, [chart, off]);
 
-  const body = ((): JSX.Element => {
+  const renderView = (view: View, rel: Rel = relState, weights: 'parashara' | 'printed' = weightsState): JSX.Element => {
     switch (view) {
       case 'friendship': {
         const cell = (a: Graha, b: Graha): string => {
@@ -74,8 +78,8 @@ export function TablesSection({ vchart, chart, provider }: {
         };
         return (
           <>
-            <div className="mb-3"><Select label={t('vedic.tb.relation')} value={rel} onChange={setRel}
-              options={[['permanent', t('vedic.tb.permanent')], ['temporary', t('vedic.tb.temporary')], ['five', t('vedic.tb.fiveFold')]]} /></div>
+            {print ? null : <div className="mb-3"><Select label={t('vedic.tb.relation')} value={rel} onChange={setRel}
+              options={[['permanent', t('vedic.tb.permanent')], ['temporary', t('vedic.tb.temporary')], ['five', t('vedic.tb.fiveFold')]]} /></div>}
             <Table head={['', ...GRAHAS.map((x) => gn(x))]}>
               {GRAHAS.map((a) => (
                 <tr key={a} style={ROW}>
@@ -118,8 +122,8 @@ export function TablesSection({ vchart, chart, provider }: {
         const schemes: VimshopakaScheme[] = ['shad', 'sapta', 'dasha', 'shodasha'];
         return (
           <>
-            <div className="mb-3"><Select label={t('vedic.tb.saptaWeights')} value={weights} onChange={setWeights}
-              options={[['parashara', t('vedic.tb.parashara')], ['printed', t('vedic.tb.asPrinted')]]} /></div>
+            {print ? null : <div className="mb-3"><Select label={t('vedic.tb.saptaWeights')} value={weights} onChange={setWeights}
+              options={[['parashara', t('vedic.tb.parashara')], ['printed', t('vedic.tb.asPrinted')]]} /></div>}
             <Table head={['', ...SEVEN.map((x) => gn(x))]}>
               {schemes.map((s) => {
                 const r = vimshopaka(g, s, weights);
@@ -334,7 +338,29 @@ export function TablesSection({ vchart, chart, provider }: {
         );
       }
     }
-  })();
+  };
+
+  if (print) {
+    const title = (v: View): string => t(`vedic.tb.view.${v}` as 'vedic.tb.view.dignity');
+    return (
+      <>
+        {print.views.flatMap((v) => (v === 'friendship'
+          ? (['permanent', 'temporary', 'five'] as const).map((r) => (
+            <section key={`${v}-${r}`} className="report-block mb-4">
+              <h3 className="as-h3 report-heading mb-1">{title(v)} · {t(r === 'permanent' ? 'vedic.tb.permanent' : r === 'temporary' ? 'vedic.tb.temporary' : 'vedic.tb.fiveFold')}</h3>
+              {renderView(v, r)}
+            </section>
+          ))
+          : [(
+            <section key={v} className="mb-4">
+              <h3 className="as-h3 report-heading mb-1">{title(v)}</h3>
+              {renderView(v, 'five', 'parashara')}
+            </section>
+          )]))}
+      </>
+    );
+  }
+  const body = renderView(view);
 
   return (
     <section className="as-card">

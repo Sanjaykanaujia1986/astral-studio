@@ -63,10 +63,15 @@ function MangalaLine({ m, label }: { readonly m: MangalaDosha; readonly label: s
   );
 }
 
-export function MatchingSection({ vchart, chart }: { readonly vchart: VedicChart; readonly chart: NatalChart }): JSX.Element {
+export function MatchingSection({ vchart, chart, print }: {
+  readonly vchart: VedicChart; readonly chart: NatalChart;
+  /** Printed: this chart's sex fixed, no partner form. */
+  readonly print?: { readonly sex: 'male' | 'female' };
+}): JSX.Element {
   const { t } = useTranslator();
   const { rn, nak, sc } = useJy();
-  const [sex, setSex] = useState<'male' | 'female'>('female');
+  const [sexState, setSex] = useState<'male' | 'female'>('female');
+  const sex = print ? print.sex : sexState;
   const [partner, setPartner] = useState<{ v: VedicChart } | null>(null);
   const [busy, setBusy] = useState(false);
   const g = useMemo(() => grahaLongitudes(vchart), [vchart]);
@@ -90,12 +95,12 @@ export function MatchingSection({ vchart, chart }: { readonly vchart: VedicChart
   })() : null;
 
   return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.matching')}</h2>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
+    <section className={print ? '' : 'as-card'}>
+      {print ? null : <h2 className="as-h2">{t('vedic.section.matching')}</h2>}
+      {print ? null : <div className="mb-3 flex flex-wrap items-end gap-3">
         <Select label={t('vedic.match.thisChartIs')} value={sex} onChange={setSex}
           options={[['female', t('vedic.match.girl')], ['male', t('vedic.match.boy')]]} />
-      </div>
+      </div>}
       <ul className="mb-4 space-y-1 text-sm">
         <MangalaLine m={mine} label={t('vedic.match.thisChart')} />
         {pair ? <MangalaLine m={pair.m} label={t('vedic.match.partner')} /> : null}
@@ -107,7 +112,7 @@ export function MatchingSection({ vchart, chart }: { readonly vchart: VedicChart
           <ScoreTable r={pair.r} />
           <button type="button" className="as-button-secondary mt-3" onClick={() => setPartner(null)}>{t('vedic.match.another')}</button>
         </>
-      ) : (
+      ) : print ? null : (
         <details className="mb-4">
           <summary className="cursor-pointer text-sm font-medium">{t('vedic.match.enterPartner')}</summary>
           <div className="mt-3 max-w-md"><BirthForm onSubmit={(b, s) => void compare(b, s)} busy={busy} /></div>

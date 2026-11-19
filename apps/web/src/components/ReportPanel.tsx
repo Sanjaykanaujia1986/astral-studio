@@ -23,12 +23,17 @@ import {
   type Orientation, type PaperSize, type ReportSections, type VedicLayoutStyle,
 } from '@astro/ui';
 import { useSettings } from '../lib/settings.js';
-import { ALL_VEDIC_SECTIONS, VEDIC_SECTION_KEYS, type VedicReportSections } from './vedic/reportSections.js';
+import {
+  ALL_VEDIC_SECTIONS, VEDIC_SECTION_KEYS, ALL_KUNDLI_SECTIONS, KUNDLI_SECTION_KEYS,
+  type VedicReportSections, type KundliSections,
+} from './vedic/reportSections.js';
 
 // The Vedic report pulls in @astro/vedic; a reader printing a Western chart should not download it.
 const VedicReport = lazy(() => import('./vedic/VedicReport.js').then((m) => ({ default: m.VedicReport })));
+const KundliBooklet = lazy(() => import('./vedic/KundliBooklet.js').then((m) => ({ default: m.KundliBooklet })));
 
-type ReportType = 'western' | 'vedic';
+type ReportType = 'western' | 'vedic' | 'kundli';
+const REPORT_TYPES: readonly ReportType[] = ['western', 'vedic', 'kundli'];
 
 export interface ReportPanelProps {
   readonly chart: NatalChart;
@@ -57,8 +62,11 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
   const { t, locale } = useTranslator();
   const settings = useSettings();
   const [params, setParams] = useSearchParams();
-  const type: ReportType = params.get('type') === 'vedic' ? 'vedic' : 'western';
-  const setType = (next: ReportType) => setParams(next === 'vedic' ? { type: 'vedic' } : {}, { replace: true });
+  const type: ReportType = REPORT_TYPES.find((x) => x === params.get('type')) ?? 'western';
+  const setType = (next: ReportType) => setParams(next === 'western' ? {} : { type: next }, { replace: true });
+  const sidereal = type === 'vedic' || type === 'kundli';
+  const [kundliSections, setKundliSections] = useState<KundliSections>(ALL_KUNDLI_SECTIONS);
+  const [sex, setSex] = useState<'male' | 'female'>('male');
   const [vedicSections, setVedicSections] = useState<VedicReportSections>(ALL_VEDIC_SECTIONS);
   const [vedicStyle, setVedicStyle] = useState<VedicLayoutStyle>('north');
   const isSidereal = chart.settings.zodiac.kind === 'sidereal';
@@ -111,10 +119,21 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
             >
               <option value="western">{t('report.type.western')}</option>
               <option value="vedic">{t('report.type.vedic')}</option>
+              <option value="kundli">{t('report.type.kundli')}</option>
             </select>
           </label>
 
-          {type === 'vedic' ? (
+          {type === 'kundli' ? (
+            <label className="text-sm">
+              <span className="block font-medium as-text">{t('kundli.native')}</span>
+              <select value={sex} onChange={(e) => setSex(e.target.value as 'male' | 'female')} className={`mt-1 ${FIELD}`}>
+                <option value="male">{t('kundli.male')}</option>
+                <option value="female">{t('kundli.female')}</option>
+              </select>
+            </label>
+          ) : null}
+
+          {sidereal ? (
             <label className="text-sm">
               <span className="block font-medium as-text">{t('vedic.layout.label')}</span>
               <select
@@ -173,14 +192,29 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
           <button
             type="button"
             onClick={() => globalThis.print()}
-            disabled={type === 'vedic' && !isSidereal}
+            disabled={sidereal && !isSidereal}
             className="ml-auto rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
             {t('report.print')}
           </button>
         </div>
 
-        {type === 'vedic' ? (
+        {type === 'kundli' ? (
+          <fieldset className="flex flex-wrap items-center gap-4">
+            <legend className="text-sm font-medium as-text">{t('report.include')}</legend>
+            {KUNDLI_SECTION_KEYS.map((key) => (
+              <label key={key} className="flex items-center gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={kundliSections[key]}
+                  onChange={() => setKundliSections((current) => ({ ...current, [key]: !current[key] }))}
+                  className="h-4 w-4 rounded as-border-strong"
+                />
+                {t(`kundli.include.${key}` as 'kundli.include.charts')}
+              </label>
+            ))}
+          </fieldset>
+        ) : type === 'vedic' ? (
           <fieldset className="flex flex-wrap items-center gap-4">
             <legend className="text-sm font-medium as-text">{t('report.include')}</legend>
             {VEDIC_SECTION_KEYS.map((key) => (
@@ -223,9 +257,21 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
         changing the millimetre dimensions the print stylesheet depends on.
       */}
       <div className="report-preview overflow-x-auto as-surface-inset py-6">
-        {type === 'vedic' ? (
+        {sidereal ? (
           isSidereal ? (
             <Suspense fallback={<p className="px-3 text-sm as-text-muted">{t('report.vedic.pending')}</p>}>
+              {type === 'kundli' ? (
+                <KundliBooklet
+                  chart={chart}
+                  paper={paper}
+                  sections={kundliSections}
+                  style={vedicStyle}
+                  sex={sex}
+                  {...(settings.theme === 'print' ? { theme: PRINT_THEME } : {})}
+                  attribution={attribution}
+                  generatedIso={generatedIso}
+                />
+              ) : (
               <VedicReport
                 chart={chart}
                 paper={paper}
@@ -236,6 +282,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
                 attribution={attribution}
                 generatedIso={generatedIso}
               />
+              )}
             </Suspense>
           ) : (
             <section className="as-card mx-3" style={{ borderColor: 'var(--as-accent)' }}>

@@ -2,6 +2,25 @@
 
 Newest first.
 
+## 0.29.0 — 2026-11-19
+- NEW: **Complete kuṇḍalī booklet.** Reports has a third type, "Complete kuṇḍalī (booklet)" (`/reports?type=kundli`). The Vedic page's "Print horoscope" button now opens it. It follows the order of a traditional printed horoscope, about 44 A4 pages:
+  - A cover with the lagna chart and the key facts.
+  - Birth particulars, pañcāṅga, avakahaḍā cakra and a contents list.
+  - The nirayana positions with nakṣatra, pāda, star lord, bhāva, dignity and combustion, beside the lagna and Moon charts.
+  - Bhāva and chalit, Sudarśana. All sixteen ṣoḍaśavarga charts, nine to a sheet. The ṣoḍaśavarga and viṁśopaka tables. Planetary friendship (permanent, temporary, five-fold).
+  - Ṣaḍbala and bhāva bala. Tārā cakra, sahams, Jaimini and special lagnas, favourable points, yogas.
+  - Aṣṭakavarga with both reductions and the piṇḍas, then every planet's bhinnāṣṭakavarga.
+  - Viṁśottarī daśā to pratyantar; Aṣṭottarī and Yoginī to antardaśā.
+  - KP cusps, planets, significators, four-step theory and every KP event table.
+  - The sāyana positions, cusps and aspect grids. Varṣaphal and progressions for the current year of life.
+  - Sāḍe-sātī with its phases and Śani's ingresses. The year's gochar, the month's daily power chart and the Moon's daily tārā.
+  - The matching table, and a closing note.
+- Each group of pages can be switched off, and the native can be set as male or female for the matching table. It prints in English, Hindi and Gujarati.
+- Design: one saffron-maroon accent for the rules and headings, parchment table heads with alternate-row shading, the name on every sheet, a page number in the page margin, and the grahas in their planet colours (black in the print theme).
+- The tables are the Vedic page's own sections in a new print mode, which shows every view at once instead of a picker, so the booklet cannot disagree with the page. Tests hold its daśā dates and divisional charts to the engine.
+- The long "you will…" predictions that commercial prints carry are left out on purpose: they are interpretation, not calculation.
+- The North and South Indian chart figure can now draw any given sign placements (`placements`), which the sixteen vargas and the Moon chart use. It can colour each graha (`tinted`), and it names Rāhu and Ketu correctly when given their graha ids.
+
 ## 0.28.0 — 2026-11-18
 - NEW: **Printable Vedic horoscope (janma kuṇḍalī).** Reports now offers a choice between the Western natal chart and the Vedic horoscope. The Vedic page has a "Print horoscope" button that opens it directly (`/reports?type=vedic`). It uses the same paper, orientation, margin and "Print / Save as PDF" as the Western report; the charts stay vector in the PDF. On A4 portrait it prints on four pages:
   1. Birth details (local date and time, time zone, place, coordinates, ayanāṁśa, nodes, lagna, janma rāśi and nakṣatra, sunrise), the lagna (D1) and navāṁśa (D9) charts in North or South Indian style, and the placements with nakṣatra, pāda, nakṣatra lord and bhāva.

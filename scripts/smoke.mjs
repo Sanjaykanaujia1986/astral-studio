@@ -156,6 +156,7 @@ if (bundle) {
     ['planet colours (0.27)', 'as-pl-sun'],
     ['Earth symbol (0.27.1)', 'as-pl-earth'],
     ['Vedic horoscope print (0.28)', 'report.vedic.antardasha'],
+    ['Complete kundli booklet (0.29)', 'kundli.pratyantarNote'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

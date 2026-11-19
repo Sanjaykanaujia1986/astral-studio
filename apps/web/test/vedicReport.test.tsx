@@ -76,10 +76,10 @@ function tableAfter(container: HTMLElement, heading: RegExp): string[][] {
 }
 
 describe('the report type', () => {
-  it('opens on the Vedic horoscope from the link the Vedic page uses', async () => {
+  it('links the Vedic page to the booklet, and opens the short horoscope from its own type', async () => {
     renderPanel();
     const link = screen.getByRole('link', { name: 'Print horoscope' });
-    expect(link.getAttribute('href')).toBe('/reports?type=vedic');
+    expect(link.getAttribute('href')).toBe('/reports?type=kundli');
     cleanup();
 
     renderReport(sidereal);

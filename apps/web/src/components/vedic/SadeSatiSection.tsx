@@ -10,8 +10,10 @@ import { ROW, Select, Table, TD, localDate, MUTED, useJy } from './shared.js';
 
 export function SadeSatiSection(props: {
   readonly vchart: VedicChart; readonly chart: NatalChart; readonly provider: EphemerisProvider;
+  /** Printed: no card, and the ingress table is Śani's over the whole span rather than a picked decade. */
+  readonly print?: boolean;
 }): JSX.Element {
-  const { vchart, chart, provider } = props;
+  const { vchart, chart, provider, print = false } = props;
   const { t } = useTranslator();
   const { gn, rn } = useJy();
   const off = chart.offsetMinutes;
@@ -29,15 +31,16 @@ export function SadeSatiSection(props: {
 
   const yearJd = (y: number) => 2451545 + (y - 2000) * 365.25;
   const ingress = useMemo(() => {
+    if (print) return signStays(provider, 'saturn', chart.jdUT, chart.jdUT + 100 * 365.25, zodiac, g.lon.moon, g.lagna).slice(1);
     const from = yearJd(decade); const to = yearJd(decade + 10);
     return signStays(provider, body, from, to, zodiac, g.lon.moon, g.lagna).slice(1);
-  }, [provider, body, decade, zodiac, g]);
+  }, [provider, body, decade, zodiac, g, print, chart.jdUT]);
   const decades: number[] = [];
   for (let y = Math.floor(birthYear / 10) * 10; y <= birthYear + 100; y += 10) decades.push(y);
 
   return (
-    <section className="as-card">
-      <h2 className="as-h2">{t('vedic.section.sadeSati')}</h2>
+    <section className={print ? '' : 'as-card'}>
+      {print ? null : <h2 className="as-h2">{t('vedic.section.sadeSati')}</h2>}
       <p className="mb-3 text-sm" style={MUTED}>
         {t('vedic.sadeSati.lede', { moon: rn(Math.floor(g.lon.moon / 30)) })}
       </p>
@@ -76,13 +79,13 @@ export function SadeSatiSection(props: {
         ))}
       </Table>
 
-      <h3 className="as-h3 mb-2 mt-5">{t('vedic.transit.ingresses')}</h3>
-      <div className="mb-3 flex flex-wrap items-end gap-3">
+      <h3 className="as-h3 report-heading mb-2 mt-5">{t('vedic.transit.ingresses')}{print ? ` · ${gn('saturn')}` : ''}</h3>
+      {print ? null : <div className="mb-3 flex flex-wrap items-end gap-3">
         <Select label={t('vedic.column.body')} value={body} onChange={setBody}
           options={[['jupiter', gn('jupiter')], ['saturn', gn('saturn')], ['mars', gn('mars')]]} />
         <Select label={t('vedic.transit.decade')} value={String(decade)} onChange={(v) => setDecade(Number(v))}
           options={decades.map((d) => [String(d), `${d}–${d + 9}`] as const)} />
-      </div>
+      </div>}
       <Table head={[t('vedic.column.sign'), t('vedic.column.start'), t('vedic.column.end'), t('vedic.transit.fromMoon'), t('vedic.transit.fromLagna')]}>
         {ingress.map((s) => (
           <tr key={s.startJd} style={ROW}>
