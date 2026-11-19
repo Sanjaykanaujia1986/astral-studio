@@ -14,10 +14,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
-import { localDate } from '../src/components/vedic/shared.js';
+import { localDate, localDateTime } from '../src/components/vedic/shared.js';
 
 const SYNTHETIC: BirthData = {
   name: 'Test Subject',
@@ -148,6 +148,38 @@ describe('the booklet', () => {
     await waitFor(() => expect(screen.queryByText('Calculating…')).toBeNull());
     expect(container.querySelector('[data-kundli-page="kp-events"] table')).not.toBeNull();
     expect(container.querySelector('[data-kundli-page="shadbala"] table')).not.toBeNull();
+  }, 60_000);
+
+  it('prints the pañcāṅga spans and the extra points from the engine', async () => {
+    const { container } = booklet(only());
+    await waitFor(() => expect(container.querySelector('[data-kundli-page="panchang"] table')).not.toBeNull());
+    const spans = limbSpans(provider, sidereal.jdUT, sidereal.settings.zodiac);
+    const rows = [...container.querySelector('[data-kundli-page="panchang"] table')!.querySelectorAll('tbody tr')];
+    expect(rows.length).toBe(15);
+    // The tithi in force: its row ends when the engine says it ends.
+    const tithiNow = rows[4]!;
+    expect(tithiNow.textContent).toContain(localDateTime(spans.tithi[1].endJd, sidereal.offsetMinutes));
+    const grahas = container.querySelector('[data-kundli-page="grahas"]')!;
+    await waitFor(() => expect(within(grahas as HTMLElement).getByText('Māndi')).toBeTruthy());
+    expect(within(grahas as HTMLElement).getByText('Gulika')).toBeTruthy();
+    expect(within(grahas as HTMLElement).getByText('Fortuna')).toBeTruthy();
+    const particulars = container.querySelector('[data-kundli-page="particulars"]')!;
+    const cal = hinduCalendar(provider, sidereal.jdUT, sidereal.settings.zodiac, SYNTHETIC.date);
+    expect(particulars.textContent).toContain(`${cal.shaka} · `);
+  }, 60_000);
+
+  it('prints the Jaimini kārakas, the bindu charts and the daśā from each graha', async () => {
+    const { container } = booklet(only('tables', 'strength', 'dasha'));
+    await waitFor(() => expect(container.querySelector('[data-kundli-page="jaimini-charts"]')).not.toBeNull());
+    const g = grahaLongitudes(vedicChart(sidereal));
+    const ak = charaKarakas(g)[0]!.body;
+    const first = container.querySelector('[data-kundli-page="jaimini-charts"] tbody tr')!;
+    expect(first.querySelectorAll('td')[0]!.textContent).toBe({ sun: 'Sūrya', moon: 'Candra', mars: 'Maṅgala', mercury: 'Budha', jupiter: 'Guru', venus: 'Śukra', saturn: 'Śani' }[ak]);
+    // Nine bindu charts; the sarvāṣṭakavarga always totals 337.
+    expect(container.querySelectorAll('[data-bindu]').length).toBe(9);
+    expect(container.querySelector('[data-bindu="sarva"] figcaption')!.textContent).toMatch(/337$/);
+    expect(container.querySelectorAll('[data-dasha-from]').length).toBe(10);
+    expect(container.querySelector('[data-kundli-page="sukshma"]')).not.toBeNull();
   }, 60_000);
 
   it('prints in Gujarati, without tracking the script apart', async () => {

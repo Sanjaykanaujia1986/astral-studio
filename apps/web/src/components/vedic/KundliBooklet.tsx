@@ -22,10 +22,14 @@ import {
   BodyGlyph, VedicChartFigure, pageCss,
   type ChartTheme, type PaperSpec, type VedicLayoutStyle,
 } from '@astro/ui';
+import { norm360, SIGNS, type Body } from '@astro/engine';
 import {
   vedicChart, dashas, subPeriods, runningPath, yearsToYmd, localMidnightJd, grahaLongitudes, YEAR_LENGTHS,
-  yogas, avakahada, dignities, shodashavarga, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
-  type DashaNode, type DashaResult, type DashaSystemId, type Graha,
+  yogas, dignities, shodashavarga, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
+  birthDay, limbSpans, hinduCalendar, baladi, charaKarakas, fortuna, gulikaMandi, LIMBS, MASA, RITU, SAMVATSARA,
+  kpLords, sripati, chalit, arcHouse, arudhas, rasiDrishti, ashtakavarga, AV_OWNERS, SIGN_LORDS, WEEKDAYS,
+  tithiFrom, yogaFrom, karanaFrom,
+  type DashaNode, type DashaResult, type DashaSystemId, type Graha, type Limb, type Avastha,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
 import { ROW, Table, TD, localDate, localDateTime, utcOffsetLabel, useJy } from './shared.js';
@@ -64,6 +68,25 @@ const NODE_GRAHA: Readonly<Record<string, Graha>> = {
 };
 const DASHA_NAME: Readonly<Record<DashaSystemId, string>> = {
   vimshottari: 'Viṁśottarī', ashtottari: 'Aṣṭottarī', yogini: 'Yoginī',
+};
+/** Sanskrit names, IAST; `sc` writes them in the reader's script. */
+const AVASTHA_NAME: Readonly<Record<Avastha, string>> = { bala: 'Bāla', kumara: 'Kumāra', yuva: 'Yuva', vriddha: 'Vṛddha', mrita: 'Mṛta' };
+const KARAKA_NAME = ['Ātmakāraka', 'Amātyakāraka', 'Bhrātṛkāraka', 'Mātṛkāraka', 'Putrakāraka', 'Jñātikāraka', 'Dārakāraka'] as const;
+const NATURE_NAME = ['Cara', 'Sthira', 'Dvisvabhāva'] as const;
+const ELEMENT_KEY = ['element.fire', 'element.earth', 'element.air', 'element.water'] as const;
+/** The south node is not a body the ephemeris serves: it is the north node's opposite point. */
+const NORTH_OF: Readonly<Record<string, Body>> = { southNode: 'trueNode', meanSouthNode: 'meanNode' };
+
+const pad2 = (x: number): string => String(x).padStart(2, '0');
+/** Hours as HH:MM:SS. */
+const hms = (hours: number): string => {
+  const s = Math.round(hours * 3600);
+  return `${pad2(Math.floor(s / 3600))}:${pad2(Math.floor(s / 60) % 60)}:${pad2(s % 60)}`;
+};
+/** Signed degrees as ±D°MM′SS″. */
+const dmsSigned = (x: number): string => {
+  const s = Math.round(Math.abs(x) * 3600);
+  return `${x < 0 ? '−' : '+'}${Math.floor(s / 3600)}°${pad2(Math.floor(s / 60) % 60)}′${pad2(s % 60)}″`;
 };
 
 /*
@@ -167,12 +190,13 @@ export function KundliBooklet({
   const hasLagna = vchart.lagna !== undefined;
 
   // The Vedic page's daśā defaults: from the Moon, civil-date anchor, 365.25-day years.
-  const dashaOf = useMemo(() => (system: DashaSystemId): DashaResult => dashas(system, g.lon.moon, chart.jdUT, {
+  const dashaFrom = useMemo(() => (system: DashaSystemId, lon: number): DashaResult => dashas(system, lon, chart.jdUT, {
     yearDays: YEAR_LENGTHS.julian,
     anchor: 'civilDate',
     localMidnightJd: localMidnightJd(chart.jdUT, off),
     spanYears: 120,
-  }), [g, chart.jdUT, off]);
+  }), [chart.jdUT, off]);
+  const dashaOf = useMemo(() => (system: DashaSystemId): DashaResult => dashaFrom(system, g.lon.moon), [dashaFrom, g]);
   const vim = useMemo(() => dashaOf('vimshottari'), [dashaOf]);
   const nowJd = Date.parse(generatedIso) / 86_400_000 + 2440587.5;
   const now = new Date(generatedIso);
@@ -181,6 +205,36 @@ export function KundliBooklet({
   const yogaList = useMemo(() => yogas(g).filter((y) => y.holds || y.holdsWithNodes), [g]);
   const vargas = useMemo(() => (hasLagna ? shodashavarga(g) : null), [g, hasLagna]);
   const dig = useMemo(() => new Map(dignities(g).map((d) => [d.body, d])), [g]);
+  const zodiac = chart.settings.zodiac;
+
+  /*
+   * The particulars a printed kuṇḍalī opens with — the day, the calendar, the
+   * pañcāṅga's spans — and the ephemeris figures of the graha tables: motion,
+   * latitude and declination, the cusps, Gulika and Māndi, the true node.
+   */
+  const ex = useMemo(() => {
+    if (!provider) return null;
+    const place = { latitude: chart.place.latitude, longitude: chart.place.longitude };
+    const jd = chart.jdUT;
+    const motion = new Map(vchart.placements.map((p) => {
+      const north = NORTH_OF[p.body];
+      const q = provider.calc(jd, north ?? (p.body as Body), { zodiac, includeEquatorial: true });
+      const flip = north ? -1 : 1;
+      return [p.body, { speed: q.longitudeSpeed, latitude: flip * q.latitude, declination: flip * (q.equatorial?.declination ?? 0) }] as const;
+    }));
+    const h = hasLagna ? provider.houses(jd, place.latitude, place.longitude, 'placidus', { zodiac }) : undefined;
+    return {
+      day: birthDay(provider, jd, place, off),
+      cal: hinduCalendar(provider, jd, zodiac, chart.input.date),
+      spans: limbSpans(provider, jd, zodiac),
+      upa: hasLagna ? gulikaMandi(provider, jd, place, zodiac, off) : undefined,
+      motion,
+      houses: h,
+      chalit: h ? chalit(g, sripati(h.ascendant, h.midheaven).sandhi) : [],
+      trueRahu: vchart.usesMeanNodes ? provider.calc(jd, 'trueNode', { zodiac }).longitude : undefined,
+      tropicalSun: provider.calc(jd, 'sun').longitude,
+    };
+  }, [provider, chart, vchart, g, zodiac, off, hasLagna]);
 
   /*
    * Every varṣa from the birth year, as the printed kuṇḍalī carries them: 96
@@ -200,7 +254,6 @@ export function KundliBooklet({
   const name = chart.input.name || t('report.untitledSubject');
   const moon = vchart.placements.find((p) => p.body === 'moon');
   const pc = vchart.panchang;
-  const a = avakahada(g.lon.moon);
   const figure = (mm: number) => ({ width: `${mm}mm` });
   const W = paper.contentWidthMm;
   const themeProp = theme ? { theme } : {};
@@ -290,10 +343,97 @@ export function KundliBooklet({
     );
   };
 
+  const day = ex?.day; const cal = ex?.cal;
+  const wait = t('report.vedic.pending');
+  const asht = useMemo(() => dashaOf('ashtottari'), [dashaOf]);
+  const balance = (d: DashaResult): string => {
+    const b = yearsToYmd(d.balanceYears);
+    return t('vedic.dasha.balanceYmd', { lord: gn(d.firstLord), y: b.years, m: b.months, d: b.days });
+  };
+  /** Local clock time of an instant, HH:MM:SS. */
+  const clock = (jd: number): string => hms((((jd + 0.5 + off / 1440) % 1) + 1) % 1 * 24);
+  const ghati = (x: number): string => {
+    const v = Math.round(x * 3600);
+    return `${pad2(Math.floor(v / 3600))}:${pad2(Math.floor(v / 60) % 60)}:${pad2(v % 60)}`;
+  };
+  const fortunaLon = fortuna(g);
+  const LIMB_KEY: Readonly<Record<Limb, MessageKey>> = {
+    rasi: 'kundli.rashi', tithi: 'vedic.panchang.tithi', nakshatra: 'vedic.panchang.nakshatra', yoga: 'vedic.panchang.yoga', karana: 'vedic.panchang.karana',
+  };
+  const limbName = (limb: Limb): string => t(LIMB_KEY[limb]);
+  /** A limb's name from its index, by asking the pañcāṅga functions about a longitude inside it. */
+  const limbValue = (limb: Limb, i: number): string => {
+    switch (limb) {
+      case 'rasi': return rn(i);
+      case 'nakshatra': return nak(i);
+      case 'tithi': {
+        const x = tithiFrom(0, i * 12 + 6);
+        return `${t(`vedic.paksha.${x.paksha}` as 'vedic.paksha.shukla')} ${n(x.inPaksha)} · ${t(x.nameKey as 'tithi.purnima')}`;
+      }
+      case 'yoga': return t(yogaFrom(0, i * (40 / 3) + 1).nameKey as 'yoga.vishkambha');
+      case 'karana': return t(karanaFrom(0, i * 6 + 3).nameKey as 'karana.bava');
+    }
+  };
+  const lagnaSign = vchart.lagna?.signIndex ?? 0;
+  /** A row of the longitudes table for a point that is not a graha: lagna, Gulika, Māndi, Fortuna, MC. */
+  const pointRow = (key: string, label: ReactNode, lon: number): JSX.Element => {
+    const l = kpLords(lon);
+    const ni = Math.floor(norm360(lon) / (40 / 3));
+    const pada = Math.floor((norm360(lon) % (40 / 3)) / (10 / 3)) + 1;
+    return (
+      <tr key={key} style={ROW}>
+        <th scope="row" className={`${TD} text-left font-normal`}>{label}</th>
+        <td className={TD}>{signDms(lon)}</td>
+        <td className={TD}>{nak(ni)} {n(pada)}</td>
+        <td className={TD}>{gn(l.sign)}</td>
+        <td className={TD}>{gn(l.star)}</td>
+        <td className={TD}>{gn(l.sub)}</td>
+        <td className={TD}>{hasLagna ? n(((Math.floor(norm360(lon) / 30) - lagnaSign + 12) % 12) + 1) : '—'}</td>
+        <td className={TD}>—</td>
+        <td className={TD}>—</td>
+        <td className={TD}>—</td>
+      </tr>
+    );
+  };
+
   const placementsFor = (lagnaSignIndex: number) => ({
     lagnaSignIndex,
     bodies: vchart.placements.map((p) => ({ body: p.body, signIndex: p.signIndex, retrograde: p.retrograde })),
   });
+
+  const av = useMemo(() => ashtakavarga(g), [g]);
+
+  /** The running antardaśā's pratyantars, each to its sūkṣmas with their end dates and times. */
+  const sukshma = (() => {
+    const path = runningPath(vim, nowJd, 2);
+    const md = path[0]; const ad = path[1];
+    if (!md || !ad) return null;
+    const running = new Set(runningPath(vim, nowJd, 4).map((r) => r.path.join('/')));
+    return (
+      <Page title={`${t('kundli.page.sukshma')} · ${gn(md.lord)} / ${gn(ad.lord)}`} id="sukshma">
+        <p className="as-fineprint mb-2">{t('kundli.sukshmaNote', { offset: utcOffsetLabel(off) })}</p>
+        <div className="k-mini grid grid-cols-3 gap-x-4 gap-y-2">
+          {subPeriods(ad).map((pd) => (
+            <div key={pd.path.join('/')} className="report-block">
+              <h4 className={running.has(pd.path.join('/')) ? 'font-bold' : ''}>
+                {gn(md.lord)}–{gn(ad.lord)}–{gn(pd.lord)} · {localDate(pd.endJd, off)}
+              </h4>
+              <table className="w-full border-collapse" style={{ border: 0 }}>
+                <tbody>
+                  {subPeriods(pd).map((sk) => (
+                    <tr key={sk.path.join('/')} className={running.has(sk.path.join('/')) ? 'font-semibold' : ''}>
+                      <td className="whitespace-nowrap">{gn(sk.lord)}</td>
+                      <td className="whitespace-nowrap text-right tabular-nums">{localDateTime(sk.endJd, off)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          ))}
+        </div>
+      </Page>
+    );
+  })();
 
   return (
     <div className={`report-root kundli as-paper as-text${locale.code === 'en' ? '' : ' kundli-indic'}`}>
@@ -337,74 +477,74 @@ export function KundliBooklet({
         <h3 className="as-h3 report-heading mb-2">{t('report.vedic.birthDetails')}</h3>
         <Facts rows={[
           [t('report.vedic.dateTime'), localDateTime(chart.jdUT, off)],
+          [t('kundli.f.weekday'), day ? t(`weekday.${WEEKDAYS[day.weekday]!}` as 'weekday.ravivara') : wait],
           [t('report.vedic.timeZone'), utcOffsetLabel(off)],
           [t('summary.birthplace'), chart.place.label ?? '—'],
           [t('report.vedic.coordinates'), `${n(chart.place.latitude, { maximumFractionDigits: 4 })}°, ${n(chart.place.longitude, { maximumFractionDigits: 4 })}°`],
+          [t('kundli.native'), t(sex === 'male' ? 'kundli.male' : 'kundli.female')],
+          [t('vedic.panchang.sunrise'), day ? (day.sunriseJd !== undefined ? clock(day.sunriseJd) : '—') : wait],
+          [t('kundli.f.sunset'), day ? (day.sunsetJd !== undefined ? clock(day.sunsetJd) : '—') : wait],
+          [t('kundli.f.dayLength'), day ? (day.dayHours !== undefined ? hms(day.dayHours) : '—') : wait],
+          [t('kundli.f.ghati'), day ? (day.ghatis !== undefined ? ghati(day.ghatis) : '—') : wait],
+          [t('kundli.f.lmt'), day ? hms(day.localMeanTime) : wait],
+          [t('kundli.f.ltc'), day ? `${day.localCorrectionMinutes < 0 ? '−' : '+'}${hms(Math.abs(day.localCorrectionMinutes) / 60)}` : wait],
+          [t('kundli.f.lst'), day ? hms(day.siderealTime) : wait],
           [t('vedic.ayanamsha'), `${t(`ayanamsha.${vchart.ayanamshaName}` as 'ayanamsha.lahiri')} · ${n(vchart.ayanamsha, { maximumFractionDigits: 4 })}°`],
           [t('summary.nodeType'), vchart.usesMeanNodes ? t('vedic.nodes.mean') : t('vedic.nodes.true')],
           [t('vedic.lagna'), vchart.lagna ? signDms(vchart.lagna.longitude) : '—'],
           [t('report.vedic.moon'), moon ? `${rn(moon.signIndex)} · ${nak(moon.nakshatra.index)} ${n(moon.nakshatra.pada)}` : '—'],
-          [t('vedic.panchang.sunrise'), pc?.sunriseIso ? `${localTime(pc.sunriseIso)} (${utcOffsetLabel(off)})` : '—'],
-          [t('kundli.balance'), (() => { const b = yearsToYmd(vim.balanceYears); return t('vedic.dasha.balanceYmd', { lord: gn(vim.firstLord), y: b.years, m: b.months, d: b.days }); })()],
-          [t('kundli.native'), t(sex === 'male' ? 'kundli.male' : 'kundli.female')],
+          [t('kundli.f.westernSun'), ex ? t(`sign.${SIGNS[Math.floor(norm360(ex.tropicalSun) / 30)]!}` as 'sign.aries') : wait],
+          [t('kundli.f.ayana'), cal ? t(`kundli.f.${cal.ayana}`) : wait],
+          [t('kundli.f.gola'), cal ? t(`kundli.f.${cal.gola}`) : wait],
+          [t('kundli.f.ritu'), cal ? sc(RITU[cal.ritu]!) : wait],
+          [t('kundli.f.shaka'), cal ? `${cal.shaka} · ${sc(SAMVATSARA[cal.samvatsara]!)}` : wait],
+          [t('kundli.f.vikrama'), cal ? t('kundli.f.vikramaValue', { c: String(cal.vikramaChaitradi), k: String(cal.vikramaKarttikadi) }) : wait],
+          [t('kundli.f.amanta'), cal ? `${cal.adhika ? `${t('kundli.f.adhika')} ` : ''}${sc(MASA[cal.amanta]!)}` : wait],
+          [t('kundli.f.purnimanta'), cal ? `${cal.adhika ? `${t('kundli.f.adhika')} ` : ''}${sc(MASA[cal.purnimanta]!)}` : wait],
+          [t('kundli.balance'), balance(vim)],
+          [t('kundli.f.ashtottariBalance'), balance(asht)],
           [t('report.generated'), localDate(nowJd, off)],
         ]} />
-        <div className="mt-5 grid grid-cols-2 gap-6">
-          <section>
-            <h3 className="as-h3 report-heading mb-2">{t('vedic.section.panchang')}</h3>
-            {pc ? (
-              <Facts cols={2} rows={[
-                [t('vedic.panchang.tithi'), `${t(pc.tithi.nameKey as 'tithi.purnima')} · ${t(`vedic.paksha.${pc.tithi.paksha}` as 'vedic.paksha.shukla')}`],
-                [t('vedic.panchang.vara'), pc.vara ? t(`weekday.${pc.vara}` as 'weekday.ravivara') : (provider ? '—' : t('report.vedic.pending'))],
-                [t('vedic.panchang.nakshatra'), t(`nakshatra.${pc.nakshatra.nakshatra}` as 'nakshatra.ashwini')],
-                [t('vedic.panchang.yoga'), t(pc.yoga.nameKey as 'yoga.vishkambha')],
-                [t('vedic.panchang.karana'), t(pc.karana.nameKey as 'karana.bava')],
-                [t('vedic.panchang.sunrise'), pc.sunriseIso ? localTime(pc.sunriseIso) : '—'],
-              ]} />
-            ) : pending}
-          </section>
-          <section>
-            <h3 className="as-h3 report-heading mb-2">{t('vedic.tb.avakahada')}</h3>
-            <Facts cols={2} rows={[
-              [t('vedic.tb.av.nakshatra'), `${nak(a.nakshatra)} ${a.pada}`],
-              [t('vedic.tb.av.syllable'), sc(a.syllable)],
-              [t('vedic.tb.av.varna'), sc(a.varna)],
-              [t('vedic.tb.av.vashya'), sc(a.vashya)],
-              [t('vedic.tb.av.yoni'), sc(a.yoni)],
-              [t('vedic.tb.av.gana'), sc(a.gana)],
-              [t('vedic.tb.av.nadi'), sc(a.nadi)],
-              [t('vedic.tb.av.tattva'), sc(a.tattva)],
-              [t('vedic.tb.av.signLord'), gn(a.signLord)],
-              [t('vedic.tb.av.starLord'), gn(a.nakshatraLord)],
-            ]} />
-          </section>
-        </div>
         <section className="report-block mt-5">
           <h3 className="as-h3 report-heading mb-2">{t('kundli.contents')}</h3>
           <ol className="grid grid-cols-3 gap-x-6 gap-y-0.5 text-[10.5px]" style={{ listStyle: 'decimal inside' }}>
             {CONTENTS.filter(([k]) => k === 'always' || include[k]).map(([, key]) => <li key={key}>{t(key)}</li>)}
           </ol>
         </section>
-        <p className="as-fineprint mt-4">{t('kundli.abbreviations')}: {GRAHAS.map((x) => `${t(`jy.short.${x}` as 'jy.short.sun')} = ${gn(x)}`).join(' · ')} · ℞ = {t('kundli.retrograde')}</p>
+        <p className="as-fineprint mt-4">{t('kundli.abbreviations')}: {GRAHAS.map((x) => `${t(`jy.short.${x}` as 'jy.short.sun')} = ${gn(x)}`).join(' · ')} · {t('kundli.short.mandi')} = {t('kundli.mandi')} · {t('kundli.short.fortuna')} = {t('kundli.fortuna')} · ℞ = {t('kundli.retrograde')}</p>
+      </Page>
+
+      {/* ---- pañcāṅga spans, avakahaḍā, conventions ---- */}
+      <Page title={t('kundli.page.panchang')} id="panchang">
+        <h3 className="as-h3 report-heading mb-1">{t('kundli.spans')}</h3>
+        {ex ? (
+          <Table head={[t('kundli.col.limb'), t('kundli.col.name'), t('vedic.column.start'), t('vedic.column.end')]}>
+            {LIMBS.flatMap((limb) => ex.spans[limb].map((sp, k) => (
+              <tr key={`${limb}${k}`} style={ROW} className={k === 1 ? 'font-semibold' : ''}>
+                {k === 0 ? <th scope="rowgroup" rowSpan={3} className={`${TD} text-left align-middle font-medium`}>{limbName(limb)}</th> : null}
+                <td className={TD}>{limbValue(limb, sp.index)}{k === 1 ? <span className="ms-1 as-text-muted">●</span> : null}</td>
+                <td className={`${TD} tabular-nums`}>{localDateTime(sp.startJd, off)}</td>
+                <td className={`${TD} tabular-nums`}>{localDateTime(sp.endJd, off)}</td>
+              </tr>
+            )))}
+          </Table>
+        ) : pending}
+        <p className="as-fineprint mt-1">{t('kundli.spansNote', { offset: utcOffsetLabel(off) })}</p>
+        <div className="mt-4">
+          {provider ? <TablesSection vchart={vchart} chart={chart} provider={provider} print={{ views: ['avakahada'] }} /> : pending}
+        </div>
       </Page>
 
       {/* ---- grahas ---- */}
       <Page title={t('kundli.page.grahas')} id="grahas">
-        <Table head={[t('vedic.column.body'), t('vedic.kp.longitude'), t('vedic.column.nakshatra'), t('vedic.column.pada'), t('vedic.tb.av.starLord'), t('vedic.column.house'), t('vedic.tb.status'), t('vedic.tb.combust')]}>
-          {vchart.lagna ? (
-            <tr style={ROW}>
-              <th scope="row" className={`${TD} text-left font-semibold`}>{t('vedic.lagna')}</th>
-              <td className={TD}>{signDms(vchart.lagna.longitude)}</td>
-              <td className={TD}>{nak(vchart.lagna.nakshatra.index)}</td>
-              <td className={TD}>{n(vchart.lagna.nakshatra.pada)}</td>
-              <td className={TD}>{gn(vchart.lagna.nakshatra.lord)}</td>
-              <td className={TD}>{n(1)}</td>
-              <td className={TD}>—</td>
-              <td className={TD}>—</td>
-            </tr>
-          ) : null}
+        <Table head={[
+          t('vedic.column.body'), t('vedic.kp.longitude'), `${t('vedic.column.nakshatra')} · ${t('vedic.column.pada')}`,
+          t('kundli.col.rl'), t('kundli.col.nl'), t('kundli.col.sl'), t('vedic.column.house'), t('vedic.tb.status'), t('kundli.col.avastha'), t('vedic.tb.combust'),
+        ]}>
+          {vchart.lagna ? pointRow('lagna', <span className="font-semibold">{t('vedic.lagna')}</span>, vchart.lagna.longitude) : null}
           {vchart.placements.map((p) => {
             const d = dig.get((NODE_GRAHA[p.body] ?? p.body) as Graha);
+            const l = kpLords(p.longitude);
             return (
               <tr key={p.body} style={ROW}>
                 <th scope="row" className={`${TD} text-left font-normal`}>
@@ -414,30 +554,85 @@ export function KundliBooklet({
                   </span>
                 </th>
                 <td className={TD}>{signDms(p.longitude)}</td>
-                <td className={TD}>{nak(p.nakshatra.index)}</td>
-                <td className={TD}>{n(p.nakshatra.pada)}</td>
-                <td className={TD}>{gn(p.nakshatra.lord)}</td>
+                <td className={TD}>{nak(p.nakshatra.index)} {n(p.nakshatra.pada)}</td>
+                <td className={TD}>{gn(l.sign)}</td>
+                <td className={TD}>{gn(l.star)}</td>
+                <td className={TD}>{gn(l.sub)}</td>
                 <td className={TD}>{p.house === 0 ? '—' : n(p.house)}</td>
                 <td className={TD}>{d ? t(`vedic.tb.dig.${d.status}` as 'vedic.tb.dig.own') : '—'}</td>
+                <td className={TD}>{sc(AVASTHA_NAME[baladi(p.longitude)])}</td>
                 <td className={TD}>{d?.combust ? t('vedic.tb.yes') : '—'}</td>
               </tr>
             );
           })}
+          {ex?.upa ? pointRow('gulika', t('kundli.gulika'), ex.upa.gulika.longitude) : null}
+          {ex?.upa ? pointRow('mandi', t('kundli.mandi'), ex.upa.mandi.longitude) : null}
+          {fortunaLon !== undefined ? pointRow('fortuna', t('kundli.fortuna'), fortunaLon) : null}
+          {ex?.houses ? pointRow('mc', t('kundli.mc'), ex.houses.midheaven) : null}
         </Table>
+        <p className="as-fineprint mt-1">
+          {vargas ? t('kundli.vargottama', { list: GRAHAS.filter((b) => vargas[1]![b] === vargas[9]![b]).map((b) => gn(b)).join(', ') || '—' }) : null}
+          {ex?.trueRahu !== undefined ? ` ${t('kundli.trueNode', { pos: signDms(ex.trueRahu) })}` : null}
+        </p>
+        <p className="as-fineprint mt-0.5">{t('kundli.lordsNote')}</p>
+
+
         {hasLagna && include.charts ? (
-          <div className="report-block mt-5 flex justify-center gap-6">
-            <figure style={figure((W - 8) / 2)}>
+          <div className="report-block mt-3 flex justify-center gap-6">
+            <figure style={figure(Math.min(74, (W - 8) / 2))}>
               <figcaption className="mb-1 text-center text-[11px] font-semibold">{t('report.vedic.lagnaChart')}</figcaption>
-              <VedicChartFigure chart={vchart} style={style} size={1000} tinted {...themeProp} />
+              <VedicChartFigure
+                chart={vchart} style={style} size={1000} tinted label={t('report.vedic.lagnaChart')} {...themeProp}
+                placements={{
+                  ...placementsFor(vchart.lagna!.signIndex),
+                  bodies: [
+                    ...placementsFor(vchart.lagna!.signIndex).bodies,
+                    ...(ex?.upa ? [{ body: 'mandi', signIndex: Math.floor(ex.upa.mandi.longitude / 30), text: t('kundli.short.mandi') }] : []),
+                    ...(fortunaLon !== undefined ? [{ body: 'fortuna', signIndex: Math.floor(fortunaLon / 30), text: t('kundli.short.fortuna') }] : []),
+                  ],
+                }}
+              />
             </figure>
             {moon ? (
-              <figure style={figure((W - 8) / 2)}>
+              <figure style={figure(Math.min(74, (W - 8) / 2))}>
                 <figcaption className="mb-1 text-center text-[11px] font-semibold">{t('kundli.moonChart')}</figcaption>
                 <VedicChartFigure chart={vchart} style={style} size={1000} tinted placements={placementsFor(moon.signIndex)} label={t('kundli.moonChart')} {...themeProp} />
               </figure>
             ) : null}
           </div>
         ) : null}
+      </Page>
+
+      {/* ---- motion, latitude, declination; the rāśi conventions ---- */}
+      <Page title={t('kundli.page.motion')} id="motion">
+        {ex ? (
+          <Table head={[t('vedic.column.body'), t('vedic.west.speed'), t('vedic.west.latitude'), t('vedic.west.declination')]}>
+            {vchart.placements.map((p) => {
+              const m = ex.motion.get(p.body)!;
+              return (
+                <tr key={p.body} style={ROW}>
+                  <th scope="row" className={`${TD} text-left font-normal`}>{t(`body.${p.body}` as 'body.sun')}</th>
+                  <td className={`${TD} tabular-nums`}>{dmsSigned(m.speed)}</td>
+                  <td className={`${TD} tabular-nums`}>{dmsSigned(m.latitude)}</td>
+                  <td className={`${TD} tabular-nums`}>{dmsSigned(m.declination)}</td>
+                </tr>
+              );
+            })}
+          </Table>
+        ) : pending}
+        <section className="report-block mt-6">
+          <h3 className="as-h3 report-heading mb-1">{t('kundli.conventionsTable')}</h3>
+          <Table head={[t('vedic.column.sign'), t('vedic.column.lord'), t('kundli.col.element'), t('kundli.col.nature')]}>
+            {Array.from({ length: 12 }, (_, s) => (
+              <tr key={s} style={ROW}>
+                <th scope="row" className={`${TD} text-left font-medium`}>{n(s + 1)} · {rn(s)}</th>
+                <td className={TD}>{gn(SIGN_LORDS[s]!)}</td>
+                <td className={TD}>{t(ELEMENT_KEY[s % 4]!)}</td>
+                <td className={TD}>{sc(NATURE_NAME[s % 3]!)}</td>
+              </tr>
+            ))}
+          </Table>
+        </section>
       </Page>
 
       {/* ---- bhāva, sudarśana ---- */}
@@ -447,13 +642,54 @@ export function KundliBooklet({
         </Page>
       ) : null}
 
+      {/* ---- chalit, cusp and bhāva charts ---- */}
+      {include.charts && hasLagna ? (
+        <Page title={t('kundli.page.bhavaCharts')} id="bhava-charts">
+          {ex?.houses ? (
+            <>
+              <div className="report-block flex justify-center gap-6">
+                {([
+                  ['kundli.chalitChart', (b: Graha) => ex.chalit.find((c) => c.body === b)!.bhava],
+                  ['kundli.cuspChart', (b: Graha) => arcHouse(ex.houses!.cusps.map(norm360), g.lon[b])],
+                ] as const).map(([key, houseOf]) => (
+                  <figure key={key} style={figure(Math.min(72, (W - 8) / 2))}>
+                    <figcaption className="mb-1 text-center text-[11px] font-semibold">{t(key)}</figcaption>
+                    <VedicChartFigure
+                      chart={vchart} style={style} size={1000} tinted label={t(key)} {...themeProp}
+                      placements={{
+                        lagnaSignIndex: lagnaSign,
+                        bodies: GRAHAS.map((b) => ({ body: b, signIndex: (lagnaSign + houseOf(b) - 1) % 12, retrograde: b !== 'rahu' && b !== 'ketu' && g.retrograde[b] })),
+                      }}
+                    />
+                  </figure>
+                ))}
+              </div>
+              <h3 className="as-h3 report-heading mb-1 mt-3">{t('kundli.bhavaKundli')}</h3>
+              <div className="grid grid-cols-4 gap-x-3 gap-y-1.5">
+                {Array.from({ length: 12 }, (_, h) => (
+                  <figure key={h} className="report-block">
+                    <figcaption className="text-center text-[9.5px] font-semibold">{t('kundli.houseN', { n: h + 1 })}</figcaption>
+                    <VedicChartFigure chart={vchart} style={style} size={500} tinted label={t('kundli.houseN', { n: h + 1 })}
+                      placements={placementsFor((lagnaSign + h) % 12)} {...themeProp} />
+                  </figure>
+                ))}
+              </div>
+              <p className="as-fineprint mt-2">{t('kundli.bhavaNote')}</p>
+            </>
+          ) : pending}
+        </Page>
+      ) : null}
+
       {/* ---- the sixteen vargas, six to a sheet ---- */}
       {include.vargas && vargas ? [0, 9].map((from) => (
         <Page key={from} title={`${t('kundli.page.vargas')} · ${from / 9 + 1}/2`} id={`vargas-${from / 9 + 1}`}>
           <div className="grid grid-cols-3 gap-x-4 gap-y-3">
             {SHODASHA.slice(from, from + 9).map((d) => (
               <figure key={d} className="report-block">
-                <figcaption className="mb-0.5 text-center text-[10px] font-semibold">D{d} · {sc(VARGA_NAME[d]!)}</figcaption>
+                <figcaption className="mb-0.5 text-center text-[10px] font-semibold">
+                  D{d} · {sc(VARGA_NAME[d]!)}
+                  <span className="block text-[8.5px] font-normal as-text-muted">{t(`kundli.varga.${d}` as 'kundli.varga.1')}</span>
+                </figcaption>
                 <VedicChartFigure
                   chart={vchart} style={style} size={600} tinted label={`D${d}`} {...themeProp}
                   placements={{
@@ -464,6 +700,7 @@ export function KundliBooklet({
               </figure>
             ))}
           </div>
+          {from === 0 ? <p className="as-fineprint mt-2">{t('kundli.vargaNote')}</p> : null}
         </Page>
       )) : null}
 
@@ -495,6 +732,56 @@ export function KundliBooklet({
         </>
       ) : null}
 
+      {/* ---- Jaimini: kārakas, kāraka and pada charts, graha dṛṣṭi ---- */}
+      {include.tables && hasLagna && vargas ? (() => {
+        const ck = charaKarakas(g); const ak = ck[0]!.body; const ar = arudhas(g);
+        const d1 = (lagnaSignIndex: number) => placementsFor(lagnaSignIndex);
+        const charts: readonly (readonly [MessageKey, { lagnaSignIndex: number; bodies: { body: string; signIndex: number; retrograde?: boolean; text?: string }[] }])[] = [
+          ['kundli.karakaChart', d1(Math.floor(g.lon[ak] / 30))],
+          ['kundli.karakamsaChart', { lagnaSignIndex: vargas[9]![ak], bodies: GRAHAS.map((b) => ({ body: b, signIndex: vargas[9]![b] })) }],
+          ['kundli.arudhaChart', d1(ar[0]!)],
+          ['kundli.upapadaChart', d1(ar[11]!)],
+          ['kundli.padaChart', { lagnaSignIndex: lagnaSign, bodies: ar.map((s, i) => ({ body: 'pada', signIndex: s, text: `A${i + 1}` })) }],
+        ];
+        return (
+          <Page title={t('kundli.page.jaiminiCharts')} id="jaimini-charts">
+            <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+              <section className="report-block">
+                <Table head={[t('kundli.col.karaka'), t('vedic.column.body'), t('kundli.col.inSign')]}>
+                  {ck.map((k, i) => (
+                    <tr key={k.karaka} style={ROW} className={i === 0 ? 'font-semibold' : ''}>
+                      <th scope="row" className={`${TD} text-left font-medium`}>{sc(KARAKA_NAME[i]!)}</th>
+                      <td className={TD}>{gn(k.body)}</td>
+                      <td className={`${TD} tabular-nums`}>{signDms(k.degrees).replace(/^\S+\s/, '')}</td>
+                    </tr>
+                  ))}
+                </Table>
+              </section>
+              {charts.map(([key, pl]) => (
+                <figure key={key} className="report-block">
+                  <figcaption className="mb-0.5 text-center text-[10px] font-semibold">{t(key)}</figcaption>
+                  <VedicChartFigure chart={vchart} style={style} size={600} tinted label={t(key)} placements={pl} {...themeProp} />
+                </figure>
+              ))}
+            </div>
+            <h3 className="as-h3 report-heading mb-1 mt-3">{t('kundli.grahaDrishti')}</h3>
+            <Table head={[t('vedic.column.body'), t('kundli.col.aspHouses'), t('kundli.col.aspGrahas')]}>
+              {GRAHAS.map((b) => {
+                const asp = rasiDrishti(Math.floor(g.lon[b] / 30));
+                return (
+                  <tr key={b} style={ROW}>
+                    <th scope="row" className={`${TD} text-left font-medium`}>{gn(b)}</th>
+                    <td className={TD}>{asp.map((x) => n(((x - lagnaSign + 12) % 12) + 1)).join(', ')}</td>
+                    <td className={TD}>{GRAHAS.filter((o) => o !== b && asp.includes(Math.floor(g.lon[o] / 30))).map((o) => gn(o)).join(', ') || '—'}</td>
+                  </tr>
+                );
+              })}
+            </Table>
+            <p className="as-fineprint mt-2">{t('kundli.jaiminiNote')}</p>
+          </Page>
+        );
+      })() : null}
+
       {/* ---- yogas ---- */}
       {include.yogas ? (
         <Page title={`${t('vedic.section.yogas')} (${n(yogaList.length)})`} id="yogas">
@@ -522,13 +809,61 @@ export function KundliBooklet({
           <Page title={t('kundli.page.bhinna')} id="bhinna">
             <AshtakavargaSection vchart={vchart} print="contributors" />
           </Page>
+          <Page title={t('kundli.page.binduCharts')} id="bindu-charts">
+            <div className="grid grid-cols-3 gap-x-4 gap-y-2">
+              {[...AV_OWNERS.map((o) => [o, av.bhinna[o].totals] as const), ['sarva', av.sarva] as const].map(([o, bindus]) => {
+                const label = o === 'sarva' ? t('vedic.av.sarva') : o === 'lagna' ? t('vedic.lagna') : gn(o);
+                return (
+                  <figure key={o} className="report-block" data-bindu={o}>
+                    <figcaption className="mb-0.5 text-center text-[10px] font-semibold">
+                      {label} · {bindus.reduce((x, y) => x + y, 0)}
+                    </figcaption>
+                    <VedicChartFigure
+                      chart={vchart} style={style} size={600} tinted label={label} {...themeProp}
+                      placements={{ lagnaSignIndex: lagnaSign, bodies: bindus.map((v, s) => ({ body: o === 'sarva' || o === 'lagna' ? 'point' : o, signIndex: s, text: String(v) })) }}
+                    />
+                  </figure>
+                );
+              })}
+            </div>
+            <p className="as-fineprint mt-2">{t('kundli.binduNote')}</p>
+          </Page>
         </>
       ) : null}
 
-      {include.dasha ? dashaPages('vimshottari', vim, true) : null}
+      {include.dasha ? (
+        <>
+          {dashaPages('vimshottari', vim, true)}
+          {sukshma}
+          <Page title={t('kundli.page.dashaFromEach')} id="dasha-from-each">
+            <div className="k-mini grid grid-cols-5 gap-x-3 gap-y-3">
+              {[...(g.lagna !== undefined ? [['lagna', g.lagna] as const] : []), ...GRAHAS.map((b) => [b, g.lon[b]] as const)].map(([b, lon]) => {
+                const d = dashaFrom('vimshottari', lon);
+                const label = b === 'lagna' ? t('vedic.lagna') : gn(b);
+                return (
+                  <div key={b} className="report-block" data-dasha-from={b}>
+                    <h4>{t('kundli.fromBody', { body: label })} · {nak(Math.floor(norm360(lon) / (40 / 3)))}</h4>
+                    <table className="w-full border-collapse" style={{ border: 0 }}>
+                      <tbody>
+                        {d.mahadashas.map((m) => (
+                          <tr key={m.path.join('/')}>
+                            <td className="whitespace-nowrap">{gn(m.lord)}</td>
+                            <td className="whitespace-nowrap text-right tabular-nums">{localDate(m.endJd, off)}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                );
+              })}
+            </div>
+            <p className="as-fineprint mt-2">{t('kundli.dashaFromNote')}</p>
+          </Page>
+        </>
+      ) : null}
       {include.otherDashas ? (
         <>
-          {dashaPages('ashtottari', dashaOf('ashtottari'), false)}
+          {dashaPages('ashtottari', asht, true)}
           {dashaPages('yogini', dashaOf('yogini'), false)}
         </>
       ) : null}
@@ -660,17 +995,24 @@ function monthLabel(d: Date): string {
 /** The contents list, in page order: [the switch that prints it, its title]. */
 const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey])[] = [
   ['always', 'kundli.page.particulars'],
+  ['always', 'kundli.page.panchang'],
   ['always', 'kundli.page.grahas'],
+  ['always', 'kundli.page.motion'],
   ['tables', 'kundli.page.bhava'],
+  ['charts', 'kundli.page.bhavaCharts'],
   ['vargas', 'kundli.page.vargas'],
   ['tables', 'vedic.tb.view.vargas'],
   ['tables', 'vedic.tb.view.friendship'],
   ['strength', 'vedic.section.shadbala'],
   ['tables', 'kundli.page.taraSahams'],
   ['tables', 'kundli.page.jaimini'],
+  ['tables', 'kundli.page.jaiminiCharts'],
   ['yogas', 'vedic.section.yogas'],
   ['strength', 'vedic.section.ashtakavarga'],
+  ['strength', 'kundli.page.binduCharts'],
   ['dasha', 'kundli.toc.vimshottari'],
+  ['dasha', 'kundli.page.sukshma'],
+  ['dasha', 'kundli.page.dashaFromEach'],
   ['otherDashas', 'kundli.toc.otherDashas'],
   ['kp', 'vedic.section.kp'],
   ['western', 'vedic.section.western'],

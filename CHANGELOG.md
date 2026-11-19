@@ -2,6 +2,33 @@
 
 Newest first.
 
+## 0.30.0 — 2026-11-19
+- NEW: **Everything a traditional printed kuṇḍalī calculates, in the booklet.** Checked field by field against a commercial print:
+  - **Birth particulars:** day of birth (vāra), sunrise and sunset, day duration, iṣṭa ghaṭī, local mean time and its correction, sidereal time, Western sun sign, ayana and gola, ṛtu, Śaka with the saṁvatsara, Vikrama saṁvat (Caitrādi and Kārttikādi), the Hindu month amānta and pūrṇimānta (marked adhika when it is), and the Aṣṭottarī balance.
+  - **A pañcāṅga page:**
+    - When the Moon's rāśi, tithi, nakṣatra, yoga and karaṇa at birth began and ended, with the one before and after each.
+    - The avakahaḍā and ghātaka cakras.
+    - A conventions table of each rāśi's lord, element and nature.
+  - **Longitudes:**
+    - Rāśi, nakṣatra and KP sub lord (R.L, N.L, S.L) and the bālādi avasthā for every graha.
+    - New rows for Gulika, Māndi, Fortuna and the MC.
+    - The vargottama grahas, and the true Rāhu when mean nodes are used.
+    - A table of motion, latitude and declination.
+    - Māndi and Fortuna marked in the lagna chart.
+  - **Chalit and cusp charts, and the bhāva kuṇḍalī:** the rāśi chart turned to each of the twelve houses.
+  - **The sixteen vargas** now carry what each is traditionally read for.
+  - **Jaimini:**
+    - The seven chara kārakas.
+    - Kāraka, kārakāṁśa, ārūḍha lagna, upapada and pada (A1–A12) charts.
+    - Graha dṛṣṭi by rāśi dṛṣṭi.
+  - **Aṣṭakavarga bindu charts:** each graha's, the lagna's and the sarvāṣṭakavarga, with the bindus in each sign.
+  - **Daśā:**
+    - The running antardaśā to sūkṣma, with end dates and times.
+    - Viṁśottarī counted from each graha and the lagna.
+    - Aṣṭottarī to pratyantar.
+  - **The engine behind it:** a new `particulars` module in `@astro/vedic`, with its conventions in docs/VEDIC_CONVENTIONS.md §13 and tested on synthetic data. Gulika and Māndi follow two traditions (Saturn's eighth of the day or night, and the Praśna Mārga ghaṭī), so both are printed and labelled.
+  - **Still left out on purpose:** the long predictive readings and remedy instructions commercial prints carry.
+
 ## 0.29.1 — 2026-11-19
 - NEW: **Yearly varṣa charts in the kuṇḍalī booklet.** After the Varṣaphal page, the booklet now prints a varṣa lagna chart for every year from the birth year, 96 years in all, eight to a page (12 pages), as traditional printed horoscopes do. Each year shows:
   - Its year, age, return moment and the Muntha's sign and house.

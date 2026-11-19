@@ -47,7 +47,11 @@ export interface VedicChartFigureProps {
    */
   readonly placements?: {
     readonly lagnaSignIndex: number;
-    readonly bodies: readonly { readonly body: string; readonly signIndex: number; readonly retrograde?: boolean }[];
+    /**
+     * `text` replaces the body's short name: a bindu count, a pada (A7), a
+     * point the catalogue has no short name for. `body` still picks the colour.
+     */
+    readonly bodies: readonly { readonly body: string; readonly signIndex: number; readonly retrograde?: boolean; readonly text?: string }[];
   };
   /** Name for the figure's accessible label when `placements` is given (e.g. "D16"). */
   readonly label?: string;
@@ -128,7 +132,7 @@ export function VedicChartFigure({
     bodyIds.set(`${signIndex}:${list.length - 1}`, body);
   };
   if (placements) {
-    for (const p of placements.bodies) push(p.signIndex, p.body, bodyLabel(p.body, t) + (p.retrograde ? '℞' : ''));
+    for (const p of placements.bodies) push(p.signIndex, p.body, (p.text ?? bodyLabel(p.body, t)) + (p.retrograde ? '℞' : ''));
   } else if (varga === 'D1' || !vargaChart) {
     for (const placement of chart.placements) {
       push(placement.signIndex, placement.body, bodyLabel(placement.body, t) + (placement.retrograde ? '℞' : ''));

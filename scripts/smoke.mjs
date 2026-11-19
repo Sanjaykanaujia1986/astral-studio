@@ -158,6 +158,7 @@ if (bundle) {
     ['Vedic horoscope print (0.28)', 'report.vedic.antardasha'],
     ['Complete kundli booklet (0.29)', 'kundli.pratyantarNote'],
     ['Yearly varsha charts (0.29.1)', 'kundli.varshaCharts'],
+    ['Kundli particulars, Jaimini and bindu charts (0.30)', 'kundli.page.jaiminiCharts'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

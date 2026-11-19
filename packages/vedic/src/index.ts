@@ -108,3 +108,9 @@ export {
   kpEvent, kpEvents, KP_EVENTS,
   type KpEventDef, type KpEvent, type KpEventRow, type KpLink,
 } from './kpEvents.js';
+
+export {
+  birthDay, limbSpans, hinduCalendar, baladi, charaKarakas, fortuna, gulikaMandi,
+  LIMBS, MASA, RITU, SAMVATSARA, AVASTHA, CHARA_KARAKAS,
+  type BirthDay, type Limb, type LimbSpan, type HinduCalendar, type Avastha, type CharaKaraka, type Upagraha,
+} from './particulars.js';

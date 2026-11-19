@@ -393,17 +393,50 @@ The other five are one report's cusps 3 and 9: they print Rāhu as the star
 lord of Mars, while the same report's KP table places Mars in Viśākhā, whose
 lord is Jupiter. The KP table, and so Jupiter, is used here.
 
+## 13. Birth particulars, the pañcāṅga's spans, avasthā, kārakas and upagrahas
+
+Code: `packages/vedic/src/particulars.ts`. Checked by hand against a printed
+kuṇḍalī (not committed): every span below agreed to the minute, the calendar
+fields exactly, avasthā and kārakas for every graha, Fortuna to 11″.
+
+- **The day.** Sunrise and sunset of the civil birth date, upper limb with
+  refraction (§7). A birth before sunrise belongs to the previous Hindu day,
+  so its ghaṭīs count from the previous sunrise. Ghaṭīs = hours × 2.5. Local
+  mean time = UT + longitude/15 h; the correction printed is LMT − zone time.
+  Sidereal time is the local one (ARMC/15).
+- **Spans.** The Moon's rāśi, tithi (12° of elongation), nakṣatra (13°20′ of
+  the Moon), yoga (13°20′ of Sun + Moon) and karaṇa (6° of elongation), each
+  with the span before and after, from sidereal longitudes. Edges are found by
+  hour steps and bisection to one second.
+- **Calendar.** Ayana from the tropical Sun (uttarāyaṇa Capricorn → Cancer);
+  gola north while the tropical Sun is in Aries–Virgo. The amānta month is
+  named for the saṅkrānti that falls between its new moons (the Sun entering
+  Tula falls in Āśvina); with none it is adhika. The pūrṇimānta month is the
+  next one in the dark half. Ṛtu by month pairs from Caitra (Vasanta). Śaka =
+  year − 78 from Caitra, − 79 before it; Vikrama saṁvat (Caitrādi) = Śaka +
+  135, and the Kārttikādi year (Gujarat) is one less from Caitra to Āśvina.
+  Saṁvatsara by the luni-solar cycle: (Śaka + 11) mod 60 from Prabhava.
+- **Bālādi avasthā.** Fifths of 6°: bāla, kumāra, yuva, vṛddha, mṛta in odd
+  signs, the reverse in even ones.
+- **Chara kārakas.** The seven grahas (not Rāhu) by degrees travelled in their
+  sign, highest first: ātma, amātya, bhrātṛ, mātṛ, putra, jñāti, dāra.
+- **Fortuna.** Lagna + Moon − Sun, day and night alike, as Indian prints give it.
+- **Gulika and Māndi.** Two readings, both printed and labelled. Gulika: the
+  lagna rising when Saturn's eighth of the day (eighths ruled from the
+  weekday's lord) or night (from the fifth weekday's lord) begins. Māndi
+  (Praśna Mārga): the lagna rising 26, 22, 18, 14, 10, 6, 2 ghaṭīs into the
+  day from Sunday, or 10, 6, 2, 26, 22, 18, 14 into the night, the ghaṭīs
+  scaled to that day's or night's length. A printed Māndi checked against
+  this rule lay 1.1° from it; the cause (their sunrise is 2 minutes later than
+  ours) is noted rather than copied.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:
 
-- Bhāva-chalita houses
-- Vargas beyond those listed
-- Śaḍbala, aṣṭakavarga, or any strength calculation
-- Yogas (rāja, dhana, etc.) — pattern detection needs documented rules per yoga
-- Kuṭa / guṇa-milāna matching
-- Muhūrta, praśna, varṣaphala
-- Daśā systems other than Viṁśottarī (Aṣṭottarī, Yoginī, Cara, Kālacakra)
-- Lunar month, ṛtu, saṁvatsara naming, and the amānta/pūrṇimānta distinction
+- Vargas beyond the sixteen of the ṣoḍaśavarga
+- Muhūrta and praśna
+- Cara and Kālacakra daśā
+- The Sarvatobhadra cakra
 
 Each would need its own conventions documented first, exactly as these are.
