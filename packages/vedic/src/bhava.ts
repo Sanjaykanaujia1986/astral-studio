@@ -176,3 +176,36 @@ export function sbcCellOf(index28: number): readonly [number, number] {
   }
   throw new Error(`no cell for nakṣatra ${index28}`);
 }
+
+export type FunctionalNature = 'benefic' | 'malefic' | 'neutral';
+export const FUNCTIONAL_NATURES: readonly FunctionalNature[] = ['benefic', 'malefic', 'neutral'];
+
+/**
+ * Functional nature of each graha for a lagna sign, by the Laghu Pārāśarī
+ * lordship rules, checked in this order:
+ *
+ * 1. the lagna lord is benefic;
+ * 2. a lord of the 5th or 9th (a trikoṇa) is benefic, also when it owns a
+ *    kendra (the yogakāraka) or another house;
+ * 3. a lord of the 3rd, 6th, 11th or 8th is malefic; the Sun and the Moon
+ *    are not blemished by owning the 8th;
+ * 4. the rest (lords of kendras, the 2nd and the 12th) are neutral: they give
+ *    the results of the grahas they join.
+ *
+ * Rāhu and Ketu own no sign; each takes the nature of its dispositor (the lord
+ * of the sign it occupies). Used for the bhāva kuṇḍalī, where each house in turn
+ * is read as the lagna. See docs/VEDIC_CONVENTIONS.md §14.
+ */
+export function functionalNature(lagnaSign: number, g: GrahaLongitudes): Record<Graha, FunctionalNature> {
+  const out = {} as Record<Graha, FunctionalNature>;
+  const houseOf = (s: number): number => ((s - lagnaSign + 12) % 12) + 1;
+  for (const b of GRAHAS) {
+    if (b === 'rahu' || b === 'ketu') continue;
+    const owned = SIGN_LORDS.flatMap((l, s) => (l === b ? [houseOf(s)] : []));
+    if (owned.includes(1) || owned.includes(5) || owned.includes(9)) out[b] = 'benefic';
+    else if (owned.some((h) => h === 3 || h === 6 || h === 11 || (h === 8 && b !== 'sun' && b !== 'moon'))) out[b] = 'malefic';
+    else out[b] = 'neutral';
+  }
+  for (const n of ['rahu', 'ketu'] as const) out[n] = out[SIGN_LORDS[sgn(g.lon[n])]!];
+  return out;
+}

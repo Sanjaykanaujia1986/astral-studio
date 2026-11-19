@@ -116,7 +116,7 @@ export {
 } from './particulars.js';
 
 export {
-  bhavaFacts, aspectedSigns, nakshatra28, sbcCellOf,
+  bhavaFacts, aspectedSigns, nakshatra28, sbcCellOf, functionalNature, FUNCTIONAL_NATURES,
   BHAVA_KARAKAS, GRAHA_DRISHTI, BENEFICS, MALEFICS, SARVATOBHADRA, ABHIJIT_INDEX,
-  type BhavaFacts, type BhavaFactor, type SbcCell,
+  type BhavaFacts, type BhavaFactor, type SbcCell, type FunctionalNature,
 } from './bhava.js';

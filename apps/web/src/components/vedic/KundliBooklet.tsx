@@ -28,7 +28,7 @@ import {
   yogas, dignities, shodashavarga, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
   birthDay, limbSpans, hinduCalendar, baladi, charaKarakas, fortuna, gulikaMandi, LIMBS, MASA, RITU, SAMVATSARA,
   kpLords, sripati, chalit, arcHouse, arudhas, rasiDrishti, ashtakavarga, AV_OWNERS, SIGN_LORDS, WEEKDAYS,
-  tithiFrom, yogaFrom, karanaFrom, bhavaFacts, sadeSati, progression,
+  tithiFrom, yogaFrom, karanaFrom, bhavaFacts, sadeSati, progression, functionalNature, FUNCTIONAL_NATURES,
   type DashaNode, type DashaResult, type DashaSystemId, type Graha, type Limb, type Avastha,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
@@ -171,7 +171,7 @@ export function KundliBooklet({
   chart, paper, sections, style = 'north', sex = 'male', theme, attribution, generatedIso,
 }: KundliBookletProps): JSX.Element {
   const { t, n, locale } = useTranslator();
-  const { gn, rn, rshort, sc, signDms, nak } = useJy();
+  const { gn, gshort, rn, rshort, sc, signDms, nak } = useJy();
   const reason = useYogaReason();
   const include: KundliSections = { ...ALL_KUNDLI_SECTIONS, ...sections };
   const off = chart.offsetMinutes;
@@ -771,19 +771,34 @@ export function KundliBooklet({
                   </figure>
                 ))}
               </div>
-              <h3 className="as-h3 report-heading mb-1 mt-3">{t('kundli.bhavaKundli')}</h3>
-              <div className="grid grid-cols-4 gap-x-3 gap-y-1.5">
-                {Array.from({ length: 12 }, (_, h) => (
-                  <figure key={h} className="report-block">
-                    <figcaption className="text-center text-[9.5px] font-semibold">{t('kundli.houseN', { n: h + 1 })}</figcaption>
-                    <VedicChartFigure chart={vchart} style={style} size={500} tinted label={t('kundli.houseN', { n: h + 1 })}
-                      placements={placementsFor((lagnaSign + h) % 12)} {...themeProp} />
-                  </figure>
-                ))}
-              </div>
               <p className="as-fineprint mt-2">{t('kundli.bhavaNote')}</p>
             </>
           ) : pending}
+        </Page>
+      ) : null}
+      {include.charts && hasLagna ? (
+        <Page title={t('kundli.bhavaKundli')} id="bhava-kundli">
+          <p className="as-fineprint mb-2">{t('kundli.fn.note')}</p>
+          <div className="grid grid-cols-4 gap-x-3 gap-y-2.5">
+            {Array.from({ length: 12 }, (_, h) => {
+              const fn = functionalNature((lagnaSign + h) % 12, g);
+              return (
+                <figure key={h} className="report-block" data-bhava-kundli={h + 1}>
+                  <figcaption className="text-center text-[9.5px] font-semibold">{t('kundli.houseN', { n: h + 1 })}</figcaption>
+                  <VedicChartFigure chart={vchart} style={style} size={500} tinted label={t('kundli.houseN', { n: h + 1 })}
+                    placements={placementsFor((lagnaSign + h) % 12)} {...themeProp} />
+                  <dl className="mt-0.5 text-[8.5px] leading-tight">
+                    {FUNCTIONAL_NATURES.map((n) => (
+                      <div key={n} className="flex gap-1" data-fn={n}>
+                        <dt className={n === 'benefic' ? 'font-semibold' : n === 'malefic' ? 'font-semibold as-text-muted' : 'as-text-muted'}>{t(`kundli.fn.${n}`)}:</dt>
+                        <dd>{GRAHAS.filter((b) => fn[b] === n).map((b) => gshort(b)).join(', ') || '—'}</dd>
+                      </div>
+                    ))}
+                  </dl>
+                </figure>
+              );
+            })}
+          </div>
         </Page>
       ) : null}
 
@@ -1119,6 +1134,7 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['always', 'kundli.page.motion'],
   ['tables', 'kundli.page.bhava'],
   ['charts', 'kundli.page.bhavaCharts'],
+  ['charts', 'kundli.bhavaKundli'],
   ['vargas', 'kundli.page.vargas'],
   ['tables', 'vedic.tb.view.vargas'],
   ['tables', 'vedic.tb.view.friendship'],

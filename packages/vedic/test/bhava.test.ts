@@ -2,7 +2,7 @@
  * Bhāva facts and the Sarvatobhadra cakra against their rules. Synthetic charts only.
  */
 import { describe, it, expect } from 'vitest';
-import { bhavaFacts, aspectedSigns, nakshatra28, sbcCellOf, SARVATOBHADRA, ABHIJIT_INDEX } from '../src/bhava.js';
+import { bhavaFacts, aspectedSigns, nakshatra28, sbcCellOf, functionalNature, SARVATOBHADRA, ABHIJIT_INDEX } from '../src/bhava.js';
 import { ashtakavarga } from '../src/ashtakavarga.js';
 import { GRAHAS, type Graha, type GrahaLongitudes } from '../src/grahas.js';
 
@@ -72,5 +72,27 @@ describe('Sarvatobhadra', () => {
     expect(nakshatra28(285)).toBe(22); // Śravaṇa
     expect(nakshatra28(359)).toBe(27); // Revatī
     expect(nakshatra28(10)).toBe(0);
+  });
+});
+
+describe('functional nature (Laghu Pārāśarī)', () => {
+  const at = (lagna: number) => functionalNature(lagna, G);
+  it('reads Meṣa: trikoṇa and lagna lords benefic, 3/6/11 lords malefic, kendra and 2/12 lords neutral', () => {
+    expect(at(0)).toEqual({
+      sun: 'benefic', moon: 'neutral', mars: 'benefic', mercury: 'malefic', jupiter: 'benefic',
+      venus: 'neutral', saturn: 'malefic',
+      rahu: 'neutral', // in Tulā: takes Venus
+      ketu: 'benefic', // in Meṣa: takes Mars
+    });
+  });
+  it('makes the kendra-and-trikoṇa lord a benefic (Saturn for Vṛṣabha, Mars for Karka)', () => {
+    expect(at(1).saturn).toBe('benefic');
+    expect(at(3).mars).toBe('benefic');
+    expect(at(1).jupiter).toBe('malefic'); // 8th and 11th
+  });
+  it('lets a trikoṇa outweigh a 6th (Jupiter for Karka) and spares the luminaries the 8th', () => {
+    expect(at(3).jupiter).toBe('benefic');
+    expect(at(8).moon).toBe('neutral'); // Dhanu: Moon owns only the 8th
+    expect(at(2).saturn).toBe('benefic'); // Mithuna: 8th and 9th
   });
 });

@@ -450,6 +450,16 @@ Code: `packages/vedic/src/bhava.ts`.
   company: simpler than the classical qualifications, and stated.
   The text printed with them is the app's own: what the house is read for,
   then these facts. No event is predicted.
+- **Bhāva kuṇḍalī labels.** Each small chart is the rāśi chart turned so the
+  named house is the lagna. Under it, each graha's functional nature for that
+  lagna (`functionalNature`), by the Laghu Pārāśarī lordship rules, checked in
+  this order: the lagna lord is benefic; a lord of the 5th or 9th is benefic
+  (a trikoṇa outweighs any other house it owns, so the kendra-and-trikoṇa
+  yogakāraka is benefic); a lord of the 3rd, 6th, 11th or 8th is malefic, but
+  the Sun and the Moon are not blemished by the 8th; lords of kendras, the 2nd
+  and the 12th are neutral. Rāhu and Ketu take their dispositor's nature.
+  Commercial prints label these with their own unpublished weightings (one
+  marks most grahas "average"), so their labels will not always agree.
 - **Sarvatobhadra.** The 9×9 cakra of the printed kuṇḍalīs: 28 nakṣatras
   clockwise from Kṛttikā at the top left, Abhijit between Uttarāṣāḍhā and
   Śravaṇa (276°40′ – 280°53′20″); vowels at the ring corners, consonants on

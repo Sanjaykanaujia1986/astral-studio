@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28 } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, GRAHAS } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
 import { localDate, localDateTime } from '../src/components/vedic/shared.js';
@@ -199,6 +199,22 @@ describe('the booklet', () => {
     const now = Date.parse('2026-11-19T06:00:00Z') / 86_400_000 + 2440587.5;
     const md = vim.mahadashas.find((m) => now >= m.startJd && now < m.endJd)!;
     expect(container.querySelector(`[data-remedy="${md.lord}"]`)!.textContent).toContain('mahādaśā lord');
+  }, 60_000);
+
+  it('labels each bhāva kuṇḍalī with the grahas’ functional nature for that house as lagna', async () => {
+    const { container } = booklet(only('charts'));
+    await waitFor(() => expect(container.querySelectorAll('[data-bhava-kundli]').length).toBe(12));
+    const g = grahaLongitudes(vedicChart(sidereal));
+    const short = { sun: 'Su', moon: 'Mo', mars: 'Ma', mercury: 'Me', jupiter: 'Ju', venus: 'Ve', saturn: 'Sa', rahu: 'Ra', ketu: 'Ke' } as const;
+    const lagna = Math.floor(g.lagna! / 30);
+    for (let h = 0; h < 12; h++) {
+      const fn = functionalNature((lagna + h) % 12, g);
+      const fig = container.querySelector(`[data-bhava-kundli="${h + 1}"]`)!;
+      for (const n of ['benefic', 'malefic', 'neutral'] as const) {
+        const want = GRAHAS.filter((b) => fn[b] === n).map((b) => short[b]).join(', ') || '—';
+        expect(fig.querySelector(`[data-fn="${n}"] dd`)!.textContent).toBe(want);
+      }
+    }
   }, 60_000);
 
   it('draws the Sarvatobhadra with the natal Moon in its nakṣatra', async () => {

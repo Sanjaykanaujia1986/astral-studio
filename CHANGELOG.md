@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.32.0 — 2026-11-19
+- NEW: **Benefic, malefic and neutral labels on the bhāva kuṇḍalī.** The twelve house charts now have a page of their own, and under each one every graha is listed by its functional nature for that house taken as lagna (Laghu Pārāśarī lordship rules; the nodes take their dispositor's). The rules are stated on the page and in docs/VEDIC_CONVENTIONS.md §14.
+
 ## 0.31.0 — 2026-11-19
 - NEW: **The rest of a printed kuṇḍalī, in the booklet.** About 80 pages now.
   - **Bhāva by bhāva** (2 pages): each house is shown with:
