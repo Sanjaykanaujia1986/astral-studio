@@ -13,7 +13,7 @@
  * the reader picks the destination rather than the application writing a file,
  * which is a fair trade for keeping the wheel vector.
  */
-import { lazy, Suspense, useCallback, useMemo, useState, type JSX } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState, type CSSProperties, type JSX } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { NatalChart } from '@astro/engine';
 import { interpretChart, catalogueFor } from '@astro/interpretation';
@@ -80,6 +80,28 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
     () => paperSpec(size, orientation, margin),
     [size, orientation, margin],
   );
+
+  /*
+   * A page is a fixed number of millimetres wide. In a window narrower than
+   * that the right-hand column used to sit behind a sideways scroll, which on
+   * a chart grid looks like the charts are cut off. On screen the pages are
+   * zoomed down to fit (`zoom`, unlike `transform`, also shrinks the layout
+   * box, so nothing is left to scroll); print never sees the zoom.
+   */
+  const [previewEl, setPreviewEl] = useState<HTMLDivElement | null>(null);
+  const [zoom, setZoom] = useState(1);
+  useEffect(() => {
+    if (!previewEl || typeof ResizeObserver === 'undefined') return undefined;
+    const pagePx = (paper.widthMm * 96) / 25.4;
+    const fit = (): void => {
+      const room = previewEl.clientWidth - 16;
+      setZoom(room > 0 ? Math.min(1, Math.round((room / pagePx) * 1000) / 1000) : 1);
+    };
+    fit();
+    const ro = new ResizeObserver(fit);
+    ro.observe(previewEl);
+    return () => ro.disconnect();
+  }, [previewEl, paper.widthMm]);
 
   /*
    * Interpretation is only produced for a language that actually has a
@@ -191,7 +213,7 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
 
           <button
             type="button"
-            onClick={() => globalThis.print()}
+            onClick={() => { void document.fonts.ready.then(() => globalThis.print()); }}
             disabled={sidereal && !isSidereal}
             className="ml-auto rounded-md bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-800"
           >
@@ -252,11 +274,16 @@ export function ReportPanel({ chart }: ReportPanelProps): JSX.Element {
       </div>
 
       {/*
-        The preview is scaled down on narrow screens so a 297mm page is
-        legible on a phone. `transform` scales the box visually without
-        changing the millimetre dimensions the print stylesheet depends on.
+        The preview is zoomed down on narrow screens (see `zoom` above) so a
+        whole page fits; the millimetre dimensions the print stylesheet
+        depends on are untouched.
       */}
-      <div className="report-preview overflow-x-auto as-surface-inset py-6">
+      <div
+        ref={setPreviewEl}
+        className="report-preview overflow-x-auto as-surface-inset py-6"
+        style={{ '--report-zoom': String(zoom) } as CSSProperties}
+        data-report-zoom={zoom}
+      >
         {sidereal ? (
           isSidereal ? (
             <Suspense fallback={<p className="px-3 text-sm as-text-muted">{t('report.vedic.pending')}</p>}>

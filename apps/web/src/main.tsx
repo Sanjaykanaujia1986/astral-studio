@@ -10,6 +10,7 @@ import {
   SettingsRoute,
 } from './shell/routes.js';
 import { SelfTestPanel } from './components/SelfTestPanel.js';
+import './fonts.css';
 import './index.css';
 import './shell/shell.css';
 import './shell/cosmic.css';

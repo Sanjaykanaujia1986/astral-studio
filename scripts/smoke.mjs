@@ -164,6 +164,8 @@ if (bundle) {
     ['Ṣoḍaśavarga aṣṭakavarga charts (0.33)', 'kundli.vargaAvNote'],
     ['Kundli readings (phala) (0.34)', 'kundli.ph.note'],
     ['Kundli glance, gemstones, KP favourable points (0.35)', 'kundli.ratna.intro'],
+    ['Report preview fits the window (0.36)', 'data-report-zoom'],
+    ['Reviewed Hindi catalogue (0.36)', 'निरयन भोगांश पर ज्योतिष'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

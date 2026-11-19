@@ -1,0 +1,97 @@
+/*
+ * The app's two type families, served from the app itself (no CDN: the CSP is
+ * font-src 'self', and the app must work offline).
+ *
+ * Each family is ONE name stitched from the Noto faces built to sit together:
+ * Noto Sans / Noto Serif for Latin and IAST (ā ṣ ṛ ṁ ṇ … are in latin-ext),
+ * and the Devanagari and Gujarati Noto faces with matching weight, x-height
+ * and stroke for Hindi and Gujarati. One name means a line that mixes scripts
+ * (a Gujarati sentence with a date, a Hindi table with a degree sign) keeps one
+ * rhythm instead of falling through to whatever the system has.
+ *
+ * Only the subsets the app writes in are bundled, and `unicode-range` means a
+ * browser downloads a face only when a character on the page needs it: an
+ * English reader never fetches the Devanagari file.
+ *
+ * Variable weight (100–900), so every font-weight the UI uses is the real
+ * weight rather than a synthesised bold.
+ */
+
+@font-face {
+  font-family: 'Astro Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-sans/files/noto-sans-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Astro Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-sans/files/noto-sans-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Astro Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-sans-devanagari/files/noto-sans-devanagari-devanagari-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF;
+}
+@font-face {
+  font-family: 'Astro Sans';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-sans-gujarati/files/noto-sans-gujarati-gujarati-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0A80-0AFF;
+}
+
+@font-face {
+  font-family: 'Astro Serif';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-serif/files/noto-serif-latin-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+  font-family: 'Astro Serif';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-serif/files/noto-serif-latin-ext-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+  font-family: 'Astro Serif';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-serif-devanagari/files/noto-serif-devanagari-devanagari-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0900-097F, U+1CD0-1CF9, U+200C-200D, U+20A8, U+20B9, U+20F0, U+25CC, U+A830-A839, U+A8E0-A8FF;
+}
+@font-face {
+  font-family: 'Astro Serif';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 100 900;
+  src: url('@fontsource-variable/noto-serif-gujarati/files/noto-serif-gujarati-gujarati-wght-normal.woff2') format('woff2-variations');
+  unicode-range: U+0A80-0AFF;
+}
+
+/*
+ * Indic scripts need room above and below the line for vowel signs and
+ * conjuncts, and letter-spacing pulls a conjunct apart. Tracking and capitals
+ * are Latin devices; in Hindi and Gujarati they are switched off.
+ */
+:lang(hi) .tracking-wide, :lang(hi) .tracking-wider, :lang(hi) .tracking-widest,
+:lang(gu) .tracking-wide, :lang(gu) .tracking-wider, :lang(gu) .tracking-widest {
+  letter-spacing: normal;
+}
+/* On the element that carries the lang attribute only: `:lang()` matches every
+   descendant too, which would override each table's own line height. */
+[lang|="hi"], [lang|="gu"] { line-height: 1.6; }

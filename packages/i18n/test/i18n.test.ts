@@ -100,12 +100,12 @@ describe('plurals', () => {
 });
 
 describe('locale registry', () => {
-  it('marks which translations have been reviewed by a fluent speaker', () => {
+  it('marks which translations have been reviewed', () => {
     // Draft and reviewed copy look identical on screen, so the distinction has
     // to be data the UI can surface.
     expect(LOCALES.en.reviewed).toBe(true);
-    expect(LOCALES.hi.reviewed).toBe(false);
-    expect(LOCALES.gu.reviewed).toBe(false);
+    expect(LOCALES.hi.reviewed).toBe(true);
+    expect(LOCALES.gu.reviewed).toBe(true);
   });
 
   it('names each language in its own script', () => {

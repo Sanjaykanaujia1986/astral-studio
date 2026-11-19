@@ -7,7 +7,11 @@ import { useMemo, type JSX, type ReactNode } from 'react';
 import { useTranslator, iastToScript, type MessageKey } from '@astro/i18n';
 import { NAKSHATRAS } from '@astro/vedic';
 
-export const TH = 'px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wide';
+/*
+ * Sentence case, not uppercase: capitals mangle IAST (VṚŚC) and mean nothing
+ * in Devanagari or Gujarati, so the headings read differently per language.
+ */
+export const TH = 'px-2 py-1.5 text-left text-xs font-semibold';
 export const TD = 'px-2 py-1.5 whitespace-nowrap tabular-nums';
 export const FIELD = 'w-full max-w-full rounded-md border px-3 py-1.5 text-sm';
 export const FIELD_STYLE = { borderColor: 'var(--as-border-strong)', background: 'var(--as-surface)', color: 'var(--as-ink)' } as const;

@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 0.36.0 — 2026-11-19
+- NEW: **Type for English, Hindi and Gujarati.** The app now bundles its own fonts: Noto Sans and Noto Serif for Latin with every IAST mark (ā ṣ ṛ ṁ), and the matching Noto Devanagari and Gujarati faces, stitched into one "Astro Sans" and one "Astro Serif" family. They are served from the app (no CDN, still offline), and a browser fetches a script's file only when the page uses that script. Before this, nothing was loaded and every device fell back to whatever it had. Hindi and Gujarati get a looser line height and no Latin letter-spacing; in the booklet their table text is set half a point larger. Printing waits for the fonts.
+- FIX: **The report preview no longer cuts pages off.** An A4 page is 210 mm wide; in a narrower window the right-hand column of the varga grid sat behind a sideways scroll. On screen the pages now shrink to fit (print is untouched).
+- FIX: **Table headings are in sentence case.** Capitals mangled IAST (VṚŚC) and meant nothing in Devanagari or Gujarati. The aṣṭakavarga tables, where the signs are column headings, now spell them out (Vṛścika, not VṚŚC); the Hindi and Gujarati short names are the names themselves (मिथुन, not मिथु). The year-by-year tables keep the four-letter English stems so twelve columns still fit a sheet: a table wider than the page made Chrome shrink the whole PDF.
+- CHANGED: **Hindi and Gujarati are no longer marked as drafts.** Every string was read against the English: notes that had dropped a sentence are complete, Gujarati no longer uses the Devanagari danda, Hindi sentences end in ।, ecliptic longitude is भोगांश / ભોગાંશ (not the geographic देशांतर / રેખાંશ), dates on the Jyotiṣa pages are दिनांक so they cannot be read as a tithi, digits are Western throughout, and workspace names match the navigation. The house style is written at the top of each catalogue.
+
 ## 0.35.0 — 2026-11-19
 - NEW: **The last sections of a printed kuṇḍalī**, each derived by a stated rule:
   - **The chart at a glance**: rāśi, navāṁśa and sarvāṣṭakavarga charts, functional benefics and malefics, the yogakāraka, Maṅgala doṣa, today's sāḍe-sātī, and the Viṁśottarī mahādaśās and running antardaśās.

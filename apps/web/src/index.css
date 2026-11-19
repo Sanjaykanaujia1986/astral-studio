@@ -14,8 +14,14 @@
 @source "./state";
 
 @theme {
-  --font-sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sans: "Astro Sans", "Noto Sans", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-serif: "Astro Serif", "Noto Serif", Georgia, serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+
+/* The report preview fits its pages to the window on screen (ReportPanel). */
+@media screen {
+  .report-preview > * { zoom: var(--report-zoom, 1); }
 }
 
 /* Print: the chart and tables must survive being sent to paper. */
@@ -44,4 +50,5 @@
     padding: 0 !important;
     overflow: visible !important;
   }
+  .report-preview > * { zoom: 1 !important; }
 }

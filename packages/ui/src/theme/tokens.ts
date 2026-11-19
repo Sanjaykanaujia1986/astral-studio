@@ -234,8 +234,10 @@ export const RADIUS = {
  * astrological-symbol fallback chain the chart wheel already relies on.
  */
 export const FONTS = {
-  sans: "'Inter var', Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
-  serif: "'Source Serif 4', Georgia, 'Times New Roman', serif",
+  // 'Astro Sans' / 'Astro Serif' are the bundled Noto faces (apps/web/src/fonts.css):
+  // one family per role covering Latin with IAST, Devanagari and Gujarati.
+  sans: "'Astro Sans', 'Noto Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif",
+  serif: "'Astro Serif', 'Noto Serif', Georgia, 'Times New Roman', serif",
   numeric: "ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, Consolas, monospace",
 } as const;
 

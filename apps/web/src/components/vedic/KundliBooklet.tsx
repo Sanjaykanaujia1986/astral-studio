@@ -105,7 +105,7 @@ function bookletCss(paper: PaperSpec, runningHead: string): string {
   const head = JSON.stringify(runningHead.replace(/[\u0000-\u001f\\]/g, ' '));
   return [
     pageCss(paper),
-    `@page { @bottom-center { content: ${head} "  ·  " counter(page); font: 8px 'Source Serif 4', Georgia, serif; color: #6b5a4a; } }`,
+    `@page { @bottom-center { content: ${head} "  ·  " counter(page); font: 8px 'Astro Serif', 'Noto Serif', Georgia, serif; color: #6b5a4a; } }`,
     '.kundli { font-family: var(--as-font-sans); }',
     '.kundli .k-band { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; border-top: 2px solid #8a2c0d; border-bottom: 1px solid #8a2c0d; padding: 3px 2px; margin-bottom: 10px; font-size: 9px; letter-spacing: .08em; text-transform: uppercase; color: #6b2a10; }',
     '.kundli .k-band b { font-family: var(--as-font-serif); font-size: 11px; letter-spacing: .02em; text-transform: none; color: #2a1a10; }',
@@ -123,16 +123,33 @@ function bookletCss(paper: PaperSpec, runningHead: string): string {
     // first is too wide (the sāyana positions) — never overlapping.
     '.kundli .lg\\:grid-cols-2 { display: flex; flex-wrap: wrap; column-gap: 20px; }',
     '.kundli .lg\\:grid-cols-2 > * { flex: 1 1 auto; }',
-    '.kundli .k-dl dt { font-size: 8px; letter-spacing: .06em; text-transform: uppercase; color: #6b5a4a; }',
+    '.kundli .k-dl dt { font-size: 8.5px; font-weight: 600; color: #6b5a4a; }',
     '.kundli .k-dl dd { font-size: 11px; }',
     '.kundli .k-mini { font-size: 8.5px; line-height: 1.2; }',
     '.kundli .k-dense table { font-size: 8.5px; }',
     '.kundli .k-dense th, .kundli .k-dense td { padding: 1px 3px; }',
+    // A year-by-year table with a column per graha is wider than the sheet if
+    // "Mithuna 13°18′" may not break; Chrome would then shrink every page.
+    '.kundli .k-wrap td { white-space: normal; }',
     '.kundli .k-mini td { padding: 0 2px; }',
     '.kundli .k-mini h4 { font-size: 9px; font-weight: 600; border-bottom: 1px solid #e3cfb4; color: #5a2410; }',
     '@media screen { .kundli .report-page { background: #fffdf9; } }',
     // Letter-spacing pulls Devanagari and Gujarati conjuncts apart; tracking is for Latin small caps only.
     '.kundli-indic .k-band, .kundli-indic .k-band b, .kundli-indic .k-dl dt, .kundli-indic .k-sub { letter-spacing: 0 !important; }',
+    // Devanagari and Gujarati read small at a Latin size (their letters sit on
+    // a shorter body between tall vowel signs), and need line room for those
+    // signs above and below: a half-point up and a looser line.
+    '.kundli-indic thead th { font-size: 9.5px; }',
+    '.kundli-indic .k-dense table { font-size: 9px; }',
+    '.kundli-indic .k-dl dt { font-size: 9px; }',
+    '.kundli-indic .text-sm { line-height: 1.6; }',
+    // Tables carry the text-sm class too, but a row is one line between rules:
+    // a set line height keeps a page of rows on its sheet whatever the face's
+    // own ascent and descent (Noto's are taller than the system fonts').
+    '.kundli table.text-sm { line-height: 1.3; }',
+    '.kundli-indic table.text-sm { line-height: 1.42; }',
+    '.kundli-indic .as-fineprint { font-size: 9px; line-height: 1.55; }',
+    '.kundli-indic .k-mini { line-height: 1.35; }',
   ].join('\n');
 }
 
@@ -928,7 +945,7 @@ export function KundliBooklet({
             {provider ? <TablesSection vchart={vchart} chart={chart} provider={provider} print={{ views: ['tara', 'sahams'] }} /> : pending}
           </Page>
           <Page title={t('kundli.page.jaimini')} id="jaimini">
-            {provider ? <TablesSection vchart={vchart} chart={chart} provider={provider} print={{ views: ['lagnas', 'favourable'] }} /> : pending}
+            {provider ? <div className="k-dense"><TablesSection vchart={vchart} chart={chart} provider={provider} print={{ views: ['lagnas', 'favourable'] }} /></div> : pending}
           </Page>
         </>
       ) : null}
@@ -1118,7 +1135,7 @@ export function KundliBooklet({
       {include.annual && hasLagna ? (
         <Page title={t('vedic.section.varshaphal')} id="varshaphal">
           {yearSummary}
-          {provider ? <div className="k-dense"><VarshaphalSection chart={chart} provider={provider} print={{ age }} /></div> : pending}
+          {provider ? <div className="k-dense k-wrap"><VarshaphalSection chart={chart} provider={provider} print={{ age }} /></div> : pending}
         </Page>
       ) : null}
 
@@ -1194,7 +1211,7 @@ export function KundliBooklet({
           {hasLagna ? (
             <>
               <Page title={`${t('vedic.tr.gochar')} · ${now.getUTCFullYear()}`} id="gochar">
-                {provider ? <TransitSection vchart={vchart} chart={chart} provider={provider} print={{ view: 'gochar', year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 }} /> : pending}
+                {provider ? <div className="k-dense"><TransitSection vchart={vchart} chart={chart} provider={provider} print={{ view: 'gochar', year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 }} /></div> : pending}
               </Page>
               <Page title={`${t('vedic.tr.power')} · ${monthLabel(now)}`} id="power">
                 {provider ? <TransitSection vchart={vchart} chart={chart} provider={provider} print={{ view: 'power', year: now.getUTCFullYear(), month: now.getUTCMonth() + 1 }} /> : pending}

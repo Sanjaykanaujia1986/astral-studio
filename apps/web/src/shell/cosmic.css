@@ -9,9 +9,10 @@
  *
  * Three constraints shaped how this is built:
  *
- * 1. NO IMAGES, NO WEB FONTS. The app is verified to make zero external
- *    requests and to work offline, and the production smoke test checks it.
- *    A background JPEG or a Google Fonts link would break both. Every star
+ * 1. NO IMAGES, NO EXTERNAL FONTS. The app is verified to make zero
+ *    external requests and to work offline, and the production smoke test
+ *    checks it. A background JPEG or a Google Fonts link would break both;
+ *    the type (fonts.css) is bundled and served from the app itself. Every star
  *    below is a radial-gradient and every nebula a blurred one.
  *
  * 2. NO MOTION WITHOUT CONSENT. Everything that moves sits behind

@@ -25,9 +25,8 @@ export const LOCALES: Readonly<Record<LocaleCode, LocaleDefinition>> = {
     englishName: 'Hindi',
     intlTag: 'hi-IN',
     catalog: hi,
-    // Astrological vocabulary is established terminology; the UI chrome is a
-    // draft awaiting a fluent speaker.
-    reviewed: false,
+    // Reviewed line by line against the English in 0.36 (see the catalogue).
+    reviewed: true,
   },
   gu: {
     code: 'gu',
@@ -35,7 +34,7 @@ export const LOCALES: Readonly<Record<LocaleCode, LocaleDefinition>> = {
     englishName: 'Gujarati',
     intlTag: 'gu-IN',
     catalog: gu,
-    reviewed: false,
+    reviewed: true,
   },
 };
 

@@ -14,11 +14,12 @@ export function AshtakavargaSection({ vchart, print }: {
   readonly print?: 'summary' | 'contributors';
 }): JSX.Element {
   const { t } = useTranslator();
-  const { gn, rshort } = useJy();
+  // Column headers, so the readable names (not the four-letter cell abbreviations).
+  const { gn, rn } = useJy();
   const av = useMemo(() => ashtakavarga(grahaLongitudes(vchart)), [vchart]);
   const [stage, setStage] = useState<'totals' | 'trikona' | 'ekadhipatya'>('totals');
   const [owner, setOwner] = useState<AvOwner>('sun');
-  const signs = Array.from({ length: 12 }, (_, s) => rshort(s));
+  const signs = Array.from({ length: 12 }, (_, s) => rn(s));
   const stageName = { totals: t('vedic.av.bindus'), trikona: t('vedic.av.trikona'), ekadhipatya: t('vedic.av.ekadhipatya') } as const;
   const stageTable = (stage: 'totals' | 'trikona' | 'ekadhipatya'): JSX.Element => (
       <Table head={['', ...signs, t('vedic.av.total')]}>
