@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.34.0 — 2026-11-19
+- NEW: **Readings (phala) in the booklet**, three pages, composed by rule from the chart's facts in the app's own words:
+  - **The lagna and the Moon**: the sign's element and modality and what tradition reads in them, the lagna lord's house, the Moon's nakṣatra.
+  - **Each graha**: its themes, what its house class means for a natural benefic or malefic, the houses it rules carried into the house it occupies (the nodes through their dispositor), dignity, combustion, retrogression and functional nature.
+  - **The daśās**: the running mahādaśā, each of its antardaśās with its pairing to the mahādaśā lord, and every mahādaśā of the life in a line.
+  - **This year**: each mudda daśā period with its house in the varṣa chart.
+  - Every reading names the tradition as the reader and states no event as certain; the commercial prints' prose is not copied. Rules in docs/VEDIC_CONVENTIONS.md §15.
+
 ## 0.33.0 — 2026-11-19
 - NEW: **Ṣoḍaśavarga aṣṭakavarga charts.** A booklet page with all sixteen varga charts, each with its grahas and its own sarvāṣṭakavarga: the aṣṭakavarga rules applied to the signs the grahas and the lagna hold in that varga. Each chart totals 337, and the D2, D3, D9, D30 and D60 bindus match a commercial print exactly.
 

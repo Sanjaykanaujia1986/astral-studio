@@ -476,6 +476,33 @@ Code: `packages/vedic/src/bhava.ts`.
   running daśā lords and for debilitated or combust grahas. Printed as
   tradition, with the caution that they replace no professional advice.
 
+## 15. Readings (phala)
+
+Code: `packages/vedic/src/phala.ts` (facts) and
+`apps/web/src/components/vedic/Phala.tsx` (sentences).
+
+The readings are composed by rule, never copied: each sentence is one fact of
+this chart joined to the classical association it carries, and each names the
+tradition as the reader. No sentence states an event as certain.
+
+- **Lagna and Moon.** The sign's element (fire, earth, air, water from Meṣa)
+  and modality (cara, sthira, dvisvabhāva) with the traits tradition gives
+  them; the lagna lord's house; the Moon's nakṣatra and its lord.
+- **Each graha.** Its themes (kārakatva); the class of its house (kendra 1, 4,
+  7, 10; trikoṇa 5, 9; upacaya 3, 6, 11; dusthāna 8, 12; the 2nd) read
+  against its natural nature (benefics: Jupiter, Venus, Mercury, the Moon) —
+  benefics favour kendras and trikoṇas, malefics grow strong in upacayas; the
+  houses it rules carried into the house it occupies (the nodes act for their
+  dispositor); its dignity, combustion and retrogression; its functional nature
+  for the lagna (§14).
+- **Daśās.** The running mahādaśā lord's themes, house and lordships (a node's
+  dispositor's house). Each antardaśā: its house, its functional nature, and
+  its place counted from the mahādaśā lord — kendra or trikoṇa from it
+  supportive, the 6th, 8th or 12th asking for care, the rest mixed. Every
+  mahādaśā of the life in a line.
+- **The year.** Each mudda daśā lord's house in the varṣa chart, with its
+  natal functional nature.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:

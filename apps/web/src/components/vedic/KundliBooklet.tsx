@@ -45,6 +45,7 @@ import { TransitSection } from './TransitSection.js';
 import { MatchingSection } from './MatchingSection.js';
 import { ALL_KUNDLI_SECTIONS, type KundliSections } from './reportSections.js';
 import { BhavaReading, MahadashaAnalysis, Sarvatobhadra, Remedies } from './KundliExtras.js';
+import { GrahaReadings, DashaReadings } from './Phala.js';
 
 export interface KundliBookletProps {
   readonly chart: NatalChart;
@@ -911,6 +912,11 @@ export function KundliBooklet({
           <BhavaReading facts={facts.slice(from, from + 6)} />
         </Page>
       )) : null}
+      {include.tables && hasLagna ? ([0, 1] as const).map((part) => (
+        <Page key={`ph${part}`} title={`${t('kundli.page.phalaGrahas')} · ${part + 1}/2`} id={`phala-${part + 1}`}>
+          <GrahaReadings g={g} part={part} />
+        </Page>
+      )) : null}
 
       {/* ---- yogas ---- */}
       {include.yogas ? (
@@ -989,6 +995,11 @@ export function KundliBooklet({
           {sukshma}
           {fromEach('vimshottari')}
           {mdAnalysis}
+          {hasLagna ? (
+            <Page title={t('kundli.page.phalaDasha')} id="phala-dasha">
+              <DashaReadings g={g} vim={vim} nowJd={nowJd} birthJd={chart.jdUT} off={off} varsha={varshas?.[age]} />
+            </Page>
+          ) : null}
         </>
       ) : null}
       {include.otherDashas ? (
@@ -1166,6 +1177,7 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['tables', 'kundli.page.jaimini'],
   ['tables', 'kundli.page.jaiminiCharts'],
   ['tables', 'kundli.page.bhavaReading'],
+  ['tables', 'kundli.page.phalaGrahas'],
   ['yogas', 'vedic.section.yogas'],
   ['strength', 'vedic.section.ashtakavarga'],
   ['strength', 'kundli.page.binduCharts'],
@@ -1174,6 +1186,7 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['dasha', 'kundli.page.sukshma'],
   ['dasha', 'kundli.page.dashaFromEach'],
   ['dasha', 'kundli.page.mdAnalysis'],
+  ['dasha', 'kundli.page.phalaDasha'],
   ['otherDashas', 'kundli.toc.otherDashas'],
   ['otherDashas', 'kundli.page.ashtFromEach'],
   ['kp', 'vedic.section.kp'],

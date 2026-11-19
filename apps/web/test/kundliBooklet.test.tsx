@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, vargaSarva, GRAHAS } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, vargaSarva, grahaPhala, GRAHAS } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
 import { localDate, localDateTime } from '../src/components/vedic/shared.js';
@@ -226,6 +226,28 @@ describe('the booklet', () => {
       for (const v of new Set(all[d]!)) expect(text).toContain(String(v));
     }
   }, 60_000);
+
+  it('composes the readings from the engine’s facts: grahas, daśās and the year', async () => {
+    const { container } = booklet(only('tables', 'dasha', 'annual'));
+    await waitFor(() => expect(container.querySelectorAll('[data-phala-graha]').length).toBe(9));
+    const g = grahaLongitudes(vedicChart(sidereal));
+    const name = { sun: 'Sūrya', moon: 'Candra', mars: 'Maṅgala', mercury: 'Budha', jupiter: 'Guru', venus: 'Śukra', saturn: 'Śani', rahu: 'Rāhu', ketu: 'Ketu' };
+    for (const p of grahaPhala(g)) {
+      const text = container.querySelector(`[data-phala-graha="${p.body}"]`)!.textContent!;
+      expect(text).toContain(`House ${p.house}`);
+      expect(text).toContain(`For this lagna it ${p.functional === 'neutral' ? 'is functionally neutral' : `is a functional ${p.functional}`}`);
+      if (p.dispositor) expect(text).toContain(`acts for its dispositor ${name[p.dispositor.body]}, which stands in house ${p.dispositor.house}`);
+      else expect(text).toContain(`It rules house ${p.owns.join(', ')} (`);
+    }
+    expect(container.querySelector('[data-phala-lagna]')!.textContent).toContain('rises');
+    await waitFor(() => expect(container.querySelectorAll('[data-phala-ad]').length).toBe(9));
+    expect(container.querySelectorAll('[data-phala-ad].font-semibold').length).toBe(1);
+    expect(container.querySelectorAll('[data-phala-life]').length).toBeGreaterThanOrEqual(8);
+    await waitFor(() => expect(container.querySelectorAll('[data-phala-mudda]').length).toBeGreaterThanOrEqual(9), { timeout: 40_000 });
+    // No reading states an event as certain.
+    const all = container.querySelector('[data-phala-dasha]')!.textContent! + container.querySelector('[data-kundli-page="phala-1"]')!.textContent!;
+    expect(all).not.toMatch(/will/i);
+  }, 90_000);
 
   it('draws the Sarvatobhadra with the natal Moon in its nakṣatra', async () => {
     const { container } = booklet(only('transits'));

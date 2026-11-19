@@ -120,3 +120,7 @@ export {
   BHAVA_KARAKAS, GRAHA_DRISHTI, BENEFICS, MALEFICS, SARVATOBHADRA, ABHIJIT_INDEX,
   type BhavaFacts, type BhavaFactor, type SbcCell, type FunctionalNature,
 } from './bhava.js';
+export {
+  grahaPhala, houseClass, signElement, signModality, dashaPairing, HOUSE_CLASSES,
+  type GrahaPhala, type HouseClass, type Element, type Modality,
+} from './phala.js';
