@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28 } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
 import { localDate, localDateTime } from '../src/components/vedic/shared.js';
@@ -120,7 +120,7 @@ describe('the booklet', () => {
   it('prints every varṣa chart from the birth year, with the engine’s mudda dates', async () => {
     const { container } = booklet(only('annual'));
     await waitFor(() => expect(container.querySelectorAll('[data-kundli-page^="varsha-"] [data-varsha-age]').length).toBe(96), { timeout: 40_000 });
-    expect(container.querySelectorAll('[data-kundli-page^="varsha-"]').length).toBe(12);
+    expect([...container.querySelectorAll('[data-kundli-page^="varsha-"]')].filter((x) => /^varsha-\d+$/.test(x.getAttribute('data-kundli-page')!)).length).toBe(12);
     const v = varshaphal(provider, {
       birthJd: sidereal.jdUT, latitude: sidereal.place.latitude, longitude: sidereal.place.longitude,
       zodiac: sidereal.settings.zodiac, node: 'meanNode', utcOffsetMinutes: sidereal.offsetMinutes,
@@ -181,6 +181,42 @@ describe('the booklet', () => {
     expect(container.querySelectorAll('[data-dasha-from]').length).toBe(10);
     expect(container.querySelector('[data-kundli-page="sukshma"]')).not.toBeNull();
   }, 60_000);
+
+  it('reads each bhāva from the engine’s facts, and marks the running daśā lords’ remedies', async () => {
+    const { container } = booklet(only('tables'));
+    await waitFor(() => expect(container.querySelectorAll('[data-bhava]').length).toBe(12));
+    const facts = bhavaFacts(grahaLongitudes(vedicChart(sidereal)));
+    const lordName = { sun: 'Sūrya', moon: 'Candra', mars: 'Maṅgala', mercury: 'Budha', jupiter: 'Guru', venus: 'Śukra', saturn: 'Śani', rahu: 'Rāhu', ketu: 'Ketu' };
+    for (const f of facts) {
+      expect(container.querySelector(`[data-bhava="${f.house}"]`)!.textContent)
+        .toContain(`Its lord ${lordName[f.lord]} is in house ${f.lordHouse}`);
+    }
+    await waitFor(() => expect(container.querySelectorAll('[data-remedy]').length).toBe(9));
+    const g = grahaLongitudes(vedicChart(sidereal, { vimshottari: { yearLength: 'julian' } }));
+    const vim = dashas('vimshottari', g.lon.moon, sidereal.jdUT, {
+      yearDays: YEAR_LENGTHS.julian, anchor: 'civilDate', localMidnightJd: localMidnightJd(sidereal.jdUT, sidereal.offsetMinutes), spanYears: 120,
+    });
+    const now = Date.parse('2026-11-19T06:00:00Z') / 86_400_000 + 2440587.5;
+    const md = vim.mahadashas.find((m) => now >= m.startJd && now < m.endJd)!;
+    expect(container.querySelector(`[data-remedy="${md.lord}"]`)!.textContent).toContain('mahādaśā lord');
+  }, 60_000);
+
+  it('draws the Sarvatobhadra with the natal Moon in its nakṣatra', async () => {
+    const { container } = booklet(only('transits'));
+    await waitFor(() => expect(container.querySelectorAll('[data-sbc]').length).toBe(28));
+    const g = grahaLongitudes(vedicChart(sidereal));
+    const cell = container.querySelector(`[data-sbc="${nakshatra28(g.lon.moon)}"]`)!;
+    expect(cell.textContent).toContain('Mo');
+  }, 60_000);
+
+  it('tabulates every year’s varṣa and progression, and the running mahādaśā', async () => {
+    const { container } = booklet(only('annual', 'dasha', 'otherDashas'));
+    await waitFor(() => expect(container.querySelectorAll('[data-kundli-page^="varsha-all"] tbody tr').length).toBe(96), { timeout: 40_000 });
+    await waitFor(() => expect(container.querySelectorAll('[data-kundli-page^="progression-all"] tbody tr').length).toBe(96));
+    expect(container.querySelector('[data-year-summary]')).not.toBeNull();
+    expect(container.querySelector('[data-kundli-page="md-analysis"] tbody')!.querySelectorAll('tr').length).toBe(10);
+    expect(container.querySelectorAll('[data-kundli-page="ashtottari-from-each"] [data-dasha-from]').length).toBe(10);
+  }, 90_000);
 
   it('prints in Gujarati, without tracking the script apart', async () => {
     const { container } = booklet(only(), 'gu');

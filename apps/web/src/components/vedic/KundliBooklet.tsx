@@ -28,7 +28,7 @@ import {
   yogas, dignities, shodashavarga, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
   birthDay, limbSpans, hinduCalendar, baladi, charaKarakas, fortuna, gulikaMandi, LIMBS, MASA, RITU, SAMVATSARA,
   kpLords, sripati, chalit, arcHouse, arudhas, rasiDrishti, ashtakavarga, AV_OWNERS, SIGN_LORDS, WEEKDAYS,
-  tithiFrom, yogaFrom, karanaFrom,
+  tithiFrom, yogaFrom, karanaFrom, bhavaFacts, sadeSati, progression,
   type DashaNode, type DashaResult, type DashaSystemId, type Graha, type Limb, type Avastha,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
@@ -44,6 +44,7 @@ import { SadeSatiSection } from './SadeSatiSection.js';
 import { TransitSection } from './TransitSection.js';
 import { MatchingSection } from './MatchingSection.js';
 import { ALL_KUNDLI_SECTIONS, type KundliSections } from './reportSections.js';
+import { BhavaReading, MahadashaAnalysis, Sarvatobhadra, Remedies } from './KundliExtras.js';
 
 export interface KundliBookletProps {
   readonly chart: NatalChart;
@@ -170,7 +171,7 @@ export function KundliBooklet({
   chart, paper, sections, style = 'north', sex = 'male', theme, attribution, generatedIso,
 }: KundliBookletProps): JSX.Element {
   const { t, n, locale } = useTranslator();
-  const { gn, rn, sc, signDms, nak } = useJy();
+  const { gn, rn, rshort, sc, signDms, nak } = useJy();
   const reason = useYogaReason();
   const include: KundliSections = { ...ALL_KUNDLI_SECTIONS, ...sections };
   const off = chart.offsetMinutes;
@@ -402,6 +403,112 @@ export function KundliBooklet({
   });
 
   const av = useMemo(() => ashtakavarga(g), [g]);
+  const facts = useMemo(() => bhavaFacts(g), [g]);
+
+  /** Mahādaśā from each graha and the lagna, for one system. */
+  const fromEach = (system: DashaSystemId): JSX.Element => (
+      <Page title={t(system === 'vimshottari' ? 'kundli.page.dashaFromEach' : 'kundli.page.ashtFromEach')} id={`${system}-from-each`}>
+        <div className="k-mini grid grid-cols-5 gap-x-3 gap-y-3">
+          {[...(g.lagna !== undefined ? [['lagna', g.lagna] as const] : []), ...GRAHAS.map((b) => [b, g.lon[b]] as const)].map(([b, lon]) => {
+            const d = dashaFrom(system, lon);
+            const label = b === 'lagna' ? t('vedic.lagna') : gn(b);
+            return (
+              <div key={b} className="report-block" data-dasha-from={b}>
+                <h4>{t('kundli.fromBody', { body: label })} · {nak(Math.floor(norm360(lon) / (40 / 3)))}</h4>
+                <table className="w-full border-collapse" style={{ border: 0 }}>
+                  <tbody>
+                    {d.mahadashas.map((m) => (
+                      <tr key={m.path.join('/')}>
+                        <td className="whitespace-nowrap">{gn(m.lord)}</td>
+                        <td className="whitespace-nowrap text-right tabular-nums">{localDate(m.endJd, off)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            );
+          })}
+        </div>
+        <p className="as-fineprint mt-2">{t('kundli.dashaFromNote')}</p>
+      </Page>
+  );
+
+  /** The running mahādaśā and its antardaśās, at a glance. */
+  const mdAnalysis = (() => {
+    const md = runningPath(vim, nowJd, 1)[0];
+    if (!md || !vargas || !hasLagna) return null;
+    const running = new Set(runningPath(vim, nowJd, 2).map((r) => r.path.join('/')));
+    return (
+      <Page title={`${t('kundli.page.mdAnalysis')} · ${gn(md.lord)} · ${localDate(Math.max(md.startJd, vim.anchorJd), off)} – ${localDate(md.endJd, off)}`} id="md-analysis">
+        <MahadashaAnalysis g={g} md={md} running={running} d9={vargas[9]!} birthJd={chart.jdUT} off={off} />
+      </Page>
+    );
+  })();
+
+  /** Sidereal transit longitudes at the generation instant, for the Sarvatobhadra. */
+  const transitNow = useMemo(() => {
+    if (!provider) return undefined;
+    const out = {} as Record<Graha, number>;
+    for (const b of SEVEN) out[b] = provider.calc(nowJd, b, { zodiac }).longitude;
+    const node = provider.calc(nowJd, vchart.usesMeanNodes ? 'meanNode' : 'trueNode', { zodiac }).longitude;
+    out.rahu = norm360(node); out.ketu = norm360(node + 180);
+    return out;
+  }, [provider, nowJd, zodiac, vchart.usesMeanNodes]);
+
+  const sadeSatiNow = useMemo(() => {
+    if (!provider) return false;
+    return sadeSati(provider, g.lon.moon, chart.jdUT, { zodiac, years: 120 }).spells
+      .some((x) => x.kind === 'sadeSati' && nowJd >= x.startJd && nowJd < x.endJd);
+  }, [provider, g, chart.jdUT, zodiac, nowJd]);
+
+  /** Every year's progressed (sāyana) positions, a day for a year. */
+  const progressions = useMemo(() => {
+    if (!provider || !include.annual) return null;
+    const o = {
+      birthJd: chart.jdUT, latitude: chart.place.latitude, longitude: chart.place.longitude,
+      node: chart.settings.nodeType === 'true' ? 'trueNode' as const : 'meanNode' as const, utcOffsetMinutes: off,
+    };
+    return Array.from({ length: VARSHA_YEARS }, (_, a) => ({ age: a, p: progression(provider, o, a) }));
+  }, [provider, include.annual, chart, off]);
+
+  /** Sign and degree in the reader's script, short enough for twelve columns. */
+  const brief = (lon: number): string => {
+    const l = norm360(lon); const sg = Math.floor(l / 30); const m = Math.floor((l - sg * 30) * 60);
+    return `${rshort(sg)} ${Math.floor(m / 60)}°${pad2(m % 60)}′`;
+  };
+  const YEAR_COLS: readonly (Graha | 'lagna')[] = ['lagna', ...GRAHAS];
+  const yearTable = (rows: readonly { age: number; jd: number; lagna: number; lon: Readonly<Record<Graha, number>>; extra?: string }[], withExtra: boolean): JSX.Element => (
+    <div className="k-dense">
+      <Table head={[t('vedic.varsha.age'), t('vedic.varsha.date'), ...YEAR_COLS.map((b) => (b === 'lagna' ? t('vedic.lagna') : gn(b))), ...(withExtra ? [t('vedic.varsha.munthaHouse')] : [])]}>
+        {rows.map((r) => (
+          <tr key={r.age} style={ROW}>
+            <th scope="row" className={`${TD} text-left font-medium`}>{r.age}</th>
+            <td className={`${TD} tabular-nums`}>{localDate(r.jd, off)}</td>
+            {YEAR_COLS.map((b) => <td key={b} className={TD}>{brief(b === 'lagna' ? r.lagna : r.lon[b])}</td>)}
+            {withExtra ? <td className={TD}>{r.extra}</td> : null}
+          </tr>
+        ))}
+      </Table>
+    </div>
+  );
+
+  /** This year's varṣa in a sentence: facts, then what tradition reads the mudda lord's house for. */
+  const yearSummary = (() => {
+    const v = varshas?.[age];
+    if (!v) return null;
+    const m = v.mudda.find((x) => nowJd >= x.startJd && nowJd < x.endJd);
+    if (!m) return null;
+    const ls = Math.floor(v.positions.lagna / 30);
+    const h = ((Math.floor(v.positions.lon[m.lord] / 30) - ls + 12) % 12) + 1;
+    return (
+      <p className="report-block mb-3 text-[10.5px] leading-snug" data-year-summary>
+        {t('kundli.year.summary', {
+          age, at: localDateTime(v.startJd, off), lagna: rn(ls), mh: v.munthaHouse, today: localDate(nowJd, off),
+          lord: gn(m.lord), end: localDate(m.endJd, off), h, matters: t(`kundli.bh.m.${h}` as 'kundli.bh.m.1'),
+        })}
+      </p>
+    );
+  })();
 
   /** The running antardaśā's pratyantars, each to its sūkṣmas with their end dates and times. */
   const sukshma = (() => {
@@ -782,6 +889,13 @@ export function KundliBooklet({
         );
       })() : null}
 
+      {include.tables && facts.length ? [0, 6].map((from) => (
+        <Page key={from} title={`${t('kundli.page.bhavaReading')} · ${from / 6 + 1}/2`} id={`bhava-reading-${from / 6 + 1}`}>
+          {from === 0 ? <p className="as-fineprint mb-2">{t('kundli.bh.note')}</p> : null}
+          <BhavaReading facts={facts.slice(from, from + 6)} />
+        </Page>
+      )) : null}
+
       {/* ---- yogas ---- */}
       {include.yogas ? (
         <Page title={`${t('vedic.section.yogas')} (${n(yogaList.length)})`} id="yogas">
@@ -835,35 +949,14 @@ export function KundliBooklet({
         <>
           {dashaPages('vimshottari', vim, true)}
           {sukshma}
-          <Page title={t('kundli.page.dashaFromEach')} id="dasha-from-each">
-            <div className="k-mini grid grid-cols-5 gap-x-3 gap-y-3">
-              {[...(g.lagna !== undefined ? [['lagna', g.lagna] as const] : []), ...GRAHAS.map((b) => [b, g.lon[b]] as const)].map(([b, lon]) => {
-                const d = dashaFrom('vimshottari', lon);
-                const label = b === 'lagna' ? t('vedic.lagna') : gn(b);
-                return (
-                  <div key={b} className="report-block" data-dasha-from={b}>
-                    <h4>{t('kundli.fromBody', { body: label })} · {nak(Math.floor(norm360(lon) / (40 / 3)))}</h4>
-                    <table className="w-full border-collapse" style={{ border: 0 }}>
-                      <tbody>
-                        {d.mahadashas.map((m) => (
-                          <tr key={m.path.join('/')}>
-                            <td className="whitespace-nowrap">{gn(m.lord)}</td>
-                            <td className="whitespace-nowrap text-right tabular-nums">{localDate(m.endJd, off)}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                );
-              })}
-            </div>
-            <p className="as-fineprint mt-2">{t('kundli.dashaFromNote')}</p>
-          </Page>
+          {fromEach('vimshottari')}
+          {mdAnalysis}
         </>
       ) : null}
       {include.otherDashas ? (
         <>
           {dashaPages('ashtottari', asht, true)}
+          {fromEach('ashtottari')}
           {dashaPages('yogini', dashaOf('yogini'), false)}
         </>
       ) : null}
@@ -895,9 +988,23 @@ export function KundliBooklet({
 
       {include.annual && hasLagna ? (
         <Page title={t('vedic.section.varshaphal')} id="varshaphal">
+          {yearSummary}
           {provider ? <div className="k-dense"><VarshaphalSection chart={chart} provider={provider} print={{ age }} /></div> : pending}
         </Page>
       ) : null}
+
+      {include.annual && hasLagna && varshas ? [0, 1].map((half) => (
+        <Page key={`v${half}`} title={`${t('kundli.page.varshaAll')} · ${half + 1}/2`} id={`varsha-all-${half + 1}`}>
+          {yearTable(varshas.slice(half * 48, half * 48 + 48).map((v) => ({
+            age: v.age, jd: v.startJd, lagna: v.positions.lagna, lon: v.positions.lon, extra: String(v.munthaHouse),
+          })), true)}
+        </Page>
+      )) : null}
+      {include.annual && hasLagna && progressions ? [0, 1].map((half) => (
+        <Page key={`p${half}`} title={`${t('kundli.page.progressionAll')} · ${half + 1}/2`} id={`progression-all-${half + 1}`}>
+          {yearTable(progressions.slice(half * 48, half * 48 + 48).map(({ age: a, p }) => ({ age: a, jd: p.jd, lagna: p.lagna, lon: p.lon })), false)}
+        </Page>
+      )) : null}
 
       {/* ---- the yearly varṣa charts, eight to a sheet ---- */}
       {include.annual && hasLagna ? (varshas ? Array.from({ length: VARSHA_YEARS / 8 }, (_, sheet) => {
@@ -971,9 +1078,21 @@ export function KundliBooklet({
         </>
       ) : null}
 
+      {include.transits ? (
+        <Page title={t('kundli.page.sbc')} id="sarvatobhadra">
+          <Sarvatobhadra g={g} {...(transitNow ? { transit: transitNow } : {})} transitLabel={localDate(nowJd, off)} />
+        </Page>
+      ) : null}
+
       {include.matching ? (
         <Page title={t('vedic.section.matching')} id="matching">
           <MatchingSection vchart={vchart} chart={chart} print={{ sex }} />
+        </Page>
+      ) : null}
+
+      {include.tables ? (
+        <Page title={t('kundli.page.remedies')} id="remedies">
+          <Remedies g={g} dasha={vim} nowJd={nowJd} sadeSatiNow={sadeSatiNow} />
         </Page>
       ) : null}
 
@@ -1007,18 +1126,25 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['tables', 'kundli.page.taraSahams'],
   ['tables', 'kundli.page.jaimini'],
   ['tables', 'kundli.page.jaiminiCharts'],
+  ['tables', 'kundli.page.bhavaReading'],
   ['yogas', 'vedic.section.yogas'],
   ['strength', 'vedic.section.ashtakavarga'],
   ['strength', 'kundli.page.binduCharts'],
   ['dasha', 'kundli.toc.vimshottari'],
   ['dasha', 'kundli.page.sukshma'],
   ['dasha', 'kundli.page.dashaFromEach'],
+  ['dasha', 'kundli.page.mdAnalysis'],
   ['otherDashas', 'kundli.toc.otherDashas'],
+  ['otherDashas', 'kundli.page.ashtFromEach'],
   ['kp', 'vedic.section.kp'],
   ['western', 'vedic.section.western'],
   ['annual', 'vedic.section.varshaphal'],
+  ['annual', 'kundli.page.varshaAll'],
+  ['annual', 'kundli.page.progressionAll'],
   ['annual', 'kundli.varshaChartsTitle'],
   ['transits', 'vedic.section.transits'],
+  ['transits', 'kundli.page.sbc'],
   ['matching', 'vedic.section.matching'],
+  ['tables', 'kundli.page.remedies'],
 ];
 

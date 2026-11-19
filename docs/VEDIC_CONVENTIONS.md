@@ -430,6 +430,37 @@ fields exactly, avasthā and kārakas for every graha, Fortuna to 11″.
   this rule lay 1.1° from it; the cause (their sunrise is 2 minutes later than
   ours) is noted rather than copied.
 
+## 14. Bhāva readings, Sarvatobhadra and remedies
+
+Code: `packages/vedic/src/bhava.ts`.
+
+- **Bhāva by bhāva.** Whole-sign houses from the lagna. For each: its lord's
+  house, sign and dignity; the grahas in it; the grahas aspecting it
+  (Parāśara: all the 7th, Mars the 4th and 8th, Jupiter the 5th and 9th,
+  Saturn the 3rd and 10th, the nodes the 7th only); its sarvāṣṭakavarga.
+  The facts are sorted, never scored into a verdict:
+  - supporting: lord in a kendra (or else a trikoṇa); lord in its own,
+    mūlatrikoṇa or exaltation sign; natural benefics (Jupiter, Venus,
+    Mercury, the Moon) in it; Jupiter's aspect; more than 28 bindus; natural
+    malefics in an upacaya (3, 6, 10, 11).
+  - asking for care: lord in a dusthāna (6, 8, 12); lord debilitated or
+    combust; natural malefics (Sun, Mars, Saturn, Rāhu, Ketu) outside the
+    upacayas; fewer than 28 bindus.
+  The Moon is counted a benefic whatever its phase, and Mercury whatever its
+  company: simpler than the classical qualifications, and stated.
+  The text printed with them is the app's own: what the house is read for,
+  then these facts. No event is predicted.
+- **Sarvatobhadra.** The 9×9 cakra of the printed kuṇḍalīs: 28 nakṣatras
+  clockwise from Kṛttikā at the top left, Abhijit between Uttarāṣāḍhā and
+  Śravaṇa (276°40′ – 280°53′20″); vowels at the ring corners, consonants on
+  the second ring, signs on the third, the tithi groups at the centre. Natal
+  grahas are drawn in their nakṣatra's cell, with the transit positions on the
+  generation date. Vedha is described, not computed.
+- **Remedies.** The bīja mantras, customary japa counts, weekdays, deities and
+  charity of the nine grahas, as tradition records them; marked for the
+  running daśā lords and for debilitated or combust grahas. Printed as
+  tradition, with the caution that they replace no professional advice.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:
@@ -437,6 +468,5 @@ Stated so nobody mistakes absence for an oversight:
 - Vargas beyond the sixteen of the ṣoḍaśavarga
 - Muhūrta and praśna
 - Cara and Kālacakra daśā
-- The Sarvatobhadra cakra
 
 Each would need its own conventions documented first, exactly as these are.

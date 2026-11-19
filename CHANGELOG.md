@@ -2,6 +2,28 @@
 
 Newest first.
 
+## 0.31.0 — 2026-11-19
+- NEW: **The rest of a printed kuṇḍalī, in the booklet.** About 80 pages now.
+  - **Bhāva by bhāva** (2 pages): each house is shown with:
+    - What tradition reads it for, its kāraka and its Kālapuruṣa body part.
+    - This chart's facts: the lord's house, sign and dignity, the grahas in the house and aspecting it, and its bindus.
+    - How the classical rules weigh those facts: what supports the house, and what asks for care.
+    - The text is the app's own, written from the chart. It replaces the commercial prints' prose predictions and states no events.
+  - **Running mahādaśā at a glance**, for the mahādaśā lord and each of its antardaśās:
+    - Its house, the houses it owns, and its D9 house.
+    - Its dignity, and its five-fold relation to the mahādaśā lord.
+    - Its KP lords.
+    - The end date, and the age then.
+  - **Aṣṭottarī from each graha and the lagna**, beside the Viṁśottarī one.
+  - **Varṣaphal and progressions for every year**, 96 years each, plus a one-paragraph summary of this year's varṣa.
+  - **Sarvatobhadra cakra**: the 9×9 grid with 28 nakṣatras, the letters, signs and tithi groups. The natal grahas sit in their cells, with the transit positions on the print date.
+  - **Traditional remedies (upāya)**:
+    - For each graha: its bīja mantra and japa count, weekday, deity and charity.
+    - Marked for the running daśā lords and for any graha that is debilitated or combust.
+    - The traditional sāḍe-sātī observances.
+    - All printed as tradition, with a plain caution that they replace no professional advice.
+  - **Engine**: `@astro/vedic` gains `bhava.ts`, with the bhāva facts, Parāśari aspects, the Sarvatobhadra grid and the 28-nakṣatra count. Its conventions are in docs/VEDIC_CONVENTIONS.md §14, and it is tested.
+
 ## 0.30.0 — 2026-11-19
 - NEW: **Everything a traditional printed kuṇḍalī calculates, in the booklet.** Checked field by field against a commercial print:
   - **Birth particulars:** day of birth (vāra), sunrise and sunset, day duration, iṣṭa ghaṭī, local mean time and its correction, sidereal time, Western sun sign, ayana and gola, ṛtu, Śaka with the saṁvatsara, Vikrama saṁvat (Caitrādi and Kārttikādi), the Hindu month amānta and pūrṇimānta (marked adhika when it is), and the Aṣṭottarī balance.

@@ -159,6 +159,7 @@ if (bundle) {
     ['Complete kundli booklet (0.29)', 'kundli.pratyantarNote'],
     ['Yearly varsha charts (0.29.1)', 'kundli.varshaCharts'],
     ['Kundli particulars, Jaimini and bindu charts (0.30)', 'kundli.page.jaiminiCharts'],
+    ['Kundli readings, Sarvatobhadra, remedies (0.31)', 'kundli.page.sbc'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

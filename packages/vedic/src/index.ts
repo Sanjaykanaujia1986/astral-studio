@@ -114,3 +114,9 @@ export {
   LIMBS, MASA, RITU, SAMVATSARA, AVASTHA, CHARA_KARAKAS,
   type BirthDay, type Limb, type LimbSpan, type HinduCalendar, type Avastha, type CharaKaraka, type Upagraha,
 } from './particulars.js';
+
+export {
+  bhavaFacts, aspectedSigns, nakshatra28, sbcCellOf,
+  BHAVA_KARAKAS, GRAHA_DRISHTI, BENEFICS, MALEFICS, SARVATOBHADRA, ABHIJIT_INDEX,
+  type BhavaFacts, type BhavaFactor, type SbcCell,
+} from './bhava.js';
