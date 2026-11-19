@@ -460,6 +460,11 @@ Code: `packages/vedic/src/bhava.ts`.
   and the 12th are neutral. Rāhu and Ketu take their dispositor's nature.
   Commercial prints label these with their own unpublished weightings (one
   marks most grahas "average"), so their labels will not always agree.
+- **Ṣoḍaśavarga aṣṭakavarga.** For each of the sixteen vargas, the
+  aṣṭakavarga rules (§ aṣṭakavarga) applied to the signs the seven grahas and
+  the lagna occupy in that varga (`vargaSarva`); every varga's
+  sarvāṣṭakavarga totals 337. Checked against a commercial print's D2, D3,
+  D9, D30 and D60 charts: every bindu agrees.
 - **Sarvatobhadra.** The 9×9 cakra of the printed kuṇḍalīs: 28 nakṣatras
   clockwise from Kṛttikā at the top left, Abhijit between Uttarāṣāḍhā and
   Śravaṇa (276°40′ – 280°53′20″); vowels at the ring corners, consonants on

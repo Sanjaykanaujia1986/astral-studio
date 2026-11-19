@@ -71,7 +71,7 @@ export {
 } from './kp.js';
 
 export {
-  ashtakavarga, trikonaReduce, ekadhipatyaReduce, AV_OWNERS, AV_CONTRIBUTORS,
+  ashtakavarga, vargaSarva, trikonaReduce, ekadhipatyaReduce, AV_OWNERS, AV_CONTRIBUTORS,
   type Ashtakavarga, type Bhinna, type AvOwner,
 } from './ashtakavarga.js';
 

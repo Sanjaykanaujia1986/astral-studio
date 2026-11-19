@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, GRAHAS } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, vargaSarva, GRAHAS } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
 import { localDate, localDateTime } from '../src/components/vedic/shared.js';
@@ -214,6 +214,16 @@ describe('the booklet', () => {
         const want = GRAHAS.filter((b) => fn[b] === n).map((b) => short[b]).join(', ') || '—';
         expect(fig.querySelector(`[data-fn="${n}"] dd`)!.textContent).toBe(want);
       }
+    }
+  }, 60_000);
+
+  it('draws the sixteen vargas with their own sarvāṣṭakavarga', async () => {
+    const { container } = booklet(only('strength'));
+    await waitFor(() => expect(container.querySelectorAll('[data-varga-av]').length).toBe(16));
+    const all = vargaSarva(grahaLongitudes(vedicChart(sidereal)));
+    for (const d of [2, 9, 60]) {
+      const text = container.querySelector(`[data-varga-av="${d}"] svg`)!.textContent!;
+      for (const v of new Set(all[d]!)) expect(text).toContain(String(v));
     }
   }, 60_000);
 

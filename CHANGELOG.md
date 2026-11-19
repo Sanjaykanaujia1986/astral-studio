@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.33.0 — 2026-11-19
+- NEW: **Ṣoḍaśavarga aṣṭakavarga charts.** A booklet page with all sixteen varga charts, each with its grahas and its own sarvāṣṭakavarga: the aṣṭakavarga rules applied to the signs the grahas and the lagna hold in that varga. Each chart totals 337, and the D2, D3, D9, D30 and D60 bindus match a commercial print exactly.
+
 ## 0.32.0 — 2026-11-19
 - NEW: **Benefic, malefic and neutral labels on the bhāva kuṇḍalī.** The twelve house charts now have a page of their own, and under each one every graha is listed by its functional nature for that house taken as lagna (Laghu Pārāśarī lordship rules; the nodes take their dispositor's). The rules are stated on the page and in docs/VEDIC_CONVENTIONS.md §14.
 

@@ -3,7 +3,8 @@
  */
 import { describe, it, expect } from 'vitest';
 import { bhavaFacts, aspectedSigns, nakshatra28, sbcCellOf, functionalNature, SARVATOBHADRA, ABHIJIT_INDEX } from '../src/bhava.js';
-import { ashtakavarga } from '../src/ashtakavarga.js';
+import { ashtakavarga, vargaSarva } from '../src/ashtakavarga.js';
+import { shodashavarga, SHODASHA } from '../src/tables.js';
 import { GRAHAS, type Graha, type GrahaLongitudes } from '../src/grahas.js';
 
 const none = Object.fromEntries(GRAHAS.map((g) => [g, false])) as Record<Graha, boolean>;
@@ -94,5 +95,22 @@ describe('functional nature (Laghu Pārāśarī)', () => {
     expect(at(3).jupiter).toBe('benefic');
     expect(at(8).moon).toBe('neutral'); // Dhanu: Moon owns only the 8th
     expect(at(2).saturn).toBe('benefic'); // Mithuna: 8th and 9th
+  });
+});
+
+describe('ṣoḍaśavarga aṣṭakavarga', () => {
+  const all = vargaSarva(G);
+  it('gives every varga a sarvāṣṭakavarga totalling 337', () => {
+    expect(Object.keys(all).map(Number)).toEqual([...SHODASHA]);
+    for (const d of SHODASHA) expect(all[d]!.reduce((a, b) => a + b, 0)).toBe(337);
+  });
+  it('is the rāśi aṣṭakavarga for D1, and the same rules on the varga signs for the rest', () => {
+    expect(all[1]).toEqual(ashtakavarga(G).sarva);
+    const d9 = shodashavarga(G)[9]!;
+    const moved: GrahaLongitudes = {
+      lagna: d9.lagna * 30 + 3, retrograde: none,
+      lon: Object.fromEntries(GRAHAS.map((b) => [b, d9[b] * 30 + 27])) as unknown as GrahaLongitudes['lon'],
+    };
+    expect(all[9]).toEqual(ashtakavarga(moved).sarva);
   });
 });

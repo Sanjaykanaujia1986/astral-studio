@@ -161,6 +161,7 @@ if (bundle) {
     ['Kundli particulars, Jaimini and bindu charts (0.30)', 'kundli.page.jaiminiCharts'],
     ['Kundli readings, Sarvatobhadra, remedies (0.31)', 'kundli.page.sbc'],
     ['Bhāva kuṇḍalī functional labels (0.32)', 'kundli.fn.note'],
+    ['Ṣoḍaśavarga aṣṭakavarga charts (0.33)', 'kundli.vargaAvNote'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

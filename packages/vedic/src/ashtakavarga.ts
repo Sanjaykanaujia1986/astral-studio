@@ -7,7 +7,8 @@
  * Signs are 0-based (0 = Meṣa).
  */
 import { norm360 } from '@astro/engine';
-import { SEVEN, type GrahaLongitudes, type Planet } from './grahas.js';
+import { GRAHAS, SEVEN, type GrahaLongitudes, type Planet } from './grahas.js';
+import { shodashavarga, SHODASHA } from './tables.js';
 
 export type AvOwner = Planet | 'lagna';
 export const AV_OWNERS: readonly AvOwner[] = [...SEVEN, 'lagna'];
@@ -100,4 +101,20 @@ export function ashtakavarga(g: GrahaLongitudes): Ashtakavarga {
   }
   const sarva = Array.from({ length: 12 }, (_, s) => SEVEN.reduce((a, b) => a + bhinna[b].totals[s]!, 0));
   return { bhinna, sarva, rekha: sarva.map((v) => 56 - v) };
+}
+
+/**
+ * The sarvāṣṭakavarga of each of the sixteen vargas: the same rules applied to
+ * the signs the grahas and the lagna occupy in that varga. The commercial
+ * "ṣoḍaśavarga aṣṭakavarga" charts print exactly this (each totals 337).
+ */
+export function vargaSarva(g: GrahaLongitudes): Record<number, readonly number[]> {
+  const v = shodashavarga(g);
+  const out: Record<number, readonly number[]> = {};
+  for (const d of SHODASHA) {
+    const row = v[d]!;
+    const lon = Object.fromEntries(GRAHAS.map((b) => [b, row[b] * 30 + 15])) as unknown as GrahaLongitudes['lon'];
+    out[d] = ashtakavarga({ ...g, lagna: row.lagna * 30 + 15, lon }).sarva;
+  }
+  return out;
 }

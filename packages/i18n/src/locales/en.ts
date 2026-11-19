@@ -1562,6 +1562,8 @@ export const en = {
   'kundli.fn.malefic': 'Malefic',
   'kundli.fn.neutral': 'Neutral',
   'kundli.fn.note': 'Each small chart is the rāśi chart turned so that the named house is the lagna. Under it, each graha’s functional nature for that house as lagna, by the Laghu Pārāśarī lordship rules: the lagna lord and the lords of the 5th and 9th are benefic; the lords of the 3rd, 6th, 11th and 8th are malefic (the Sun and Moon are spared the 8th); the lords of kendras, the 2nd and the 12th are neutral; Rāhu and Ketu take the nature of the lord of the sign they occupy. Other software weighs these differently, so its labels can differ.',
+  'kundli.page.vargaAv': 'Ṣoḍaśavarga aṣṭakavarga charts',
+  'kundli.vargaAvNote': 'Each of the sixteen varga charts with its own sarvāṣṭakavarga: the aṣṭakavarga rules applied to the signs the grahas and the lagna occupy in that varga. The number in each sign is its bindus; every chart totals 337, like the rāśi chart’s.',
   'vedic.conventions': 'Every convention this module applies — ayanāṁśa, node variety, varga rules, daśā year length and the sunrise definition — is documented, because Jyotiṣa is several systems and results are not comparable across them.',
   'varga.sig.D1': 'Rāśi — the body itself',
   'varga.sig.D2': 'Horā — wealth',

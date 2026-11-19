@@ -25,7 +25,7 @@ import {
 import { norm360, SIGNS, type Body } from '@astro/engine';
 import {
   vedicChart, dashas, subPeriods, runningPath, yearsToYmd, localMidnightJd, grahaLongitudes, YEAR_LENGTHS,
-  yogas, dignities, shodashavarga, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
+  yogas, dignities, shodashavarga, vargaSarva, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
   birthDay, limbSpans, hinduCalendar, baladi, charaKarakas, fortuna, gulikaMandi, LIMBS, MASA, RITU, SAMVATSARA,
   kpLords, sripati, chalit, arcHouse, arudhas, rasiDrishti, ashtakavarga, AV_OWNERS, SIGN_LORDS, WEEKDAYS,
   tithiFrom, yogaFrom, karanaFrom, bhavaFacts, sadeSati, progression, functionalNature, FUNCTIONAL_NATURES,
@@ -205,6 +205,7 @@ export function KundliBooklet({
 
   const yogaList = useMemo(() => yogas(g).filter((y) => y.holds || y.holdsWithNodes), [g]);
   const vargas = useMemo(() => (hasLagna ? shodashavarga(g) : null), [g, hasLagna]);
+  const vargaAv = useMemo(() => (hasLagna ? vargaSarva(g) : null), [g, hasLagna]);
   const dig = useMemo(() => new Map(dignities(g).map((d) => [d.body, d])), [g]);
   const zodiac = chart.settings.zodiac;
 
@@ -957,6 +958,28 @@ export function KundliBooklet({
             </div>
             <p className="as-fineprint mt-2">{t('kundli.binduNote')}</p>
           </Page>
+          {vargas && vargaAv ? (
+            <Page title={t('kundli.page.vargaAv')} id="varga-ashtakavarga">
+              <div className="grid grid-cols-4 gap-x-3 gap-y-2">
+                {SHODASHA.map((d) => (
+                  <figure key={d} className="report-block" data-varga-av={d}>
+                    <figcaption className="text-center text-[9.5px] font-semibold">D{d} · {sc(VARGA_NAME[d]!)}</figcaption>
+                    <VedicChartFigure
+                      chart={vchart} style={style} size={500} tinted label={`D${d} · ${t('vedic.av.sarva')}`} {...themeProp}
+                      placements={{
+                        lagnaSignIndex: vargas[d]!.lagna,
+                        bodies: [
+                          ...GRAHAS.map((b) => ({ body: b, signIndex: vargas[d]![b] })),
+                          ...vargaAv[d]!.map((v, s) => ({ body: 'point' as const, signIndex: s, text: String(v) })),
+                        ],
+                      }}
+                    />
+                  </figure>
+                ))}
+              </div>
+              <p className="as-fineprint mt-2">{t('kundli.vargaAvNote')}</p>
+            </Page>
+          ) : null}
         </>
       ) : null}
 
@@ -1146,6 +1169,7 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['yogas', 'vedic.section.yogas'],
   ['strength', 'vedic.section.ashtakavarga'],
   ['strength', 'kundli.page.binduCharts'],
+  ['strength', 'kundli.page.vargaAv'],
   ['dasha', 'kundli.toc.vimshottari'],
   ['dasha', 'kundli.page.sukshma'],
   ['dasha', 'kundli.page.dashaFromEach'],
