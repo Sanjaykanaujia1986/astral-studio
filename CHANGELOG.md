@@ -2,6 +2,12 @@
 
 Newest first.
 
+## 0.35.0 — 2026-11-19
+- NEW: **The last sections of a printed kuṇḍalī**, each derived by a stated rule:
+  - **The chart at a glance**: rāśi, navāṁśa and sarvāṣṭakavarga charts, functional benefics and malefics, the yogakāraka, Maṅgala doṣa, today's sāḍe-sātī, and the Viṁśottarī mahādaśās and running antardaśās.
+  - **Gemstones (ratna)**: stone, metal, finger, day and wearing nakṣatras for each graha. The stones suggested for the chart follow from its lordships (lagna, 5th and 9th lords); functional malefics' stones are advised against; stones of natural enemies are kept apart. No weights, and the tradition's own caution is printed.
+  - **KP favourable aspect points**: where a transit makes each favourable angle (18° series, 30°, 60°, 120°) to the lagna and each graha, separating and applying.
+
 ## 0.34.0 — 2026-11-19
 - NEW: **Readings (phala) in the booklet**, three pages, composed by rule from the chart's facts in the app's own words:
   - **The lagna and the Moon**: the sign's element and modality and what tradition reads in them, the lagna lord's house, the Moon's nakṣatra.

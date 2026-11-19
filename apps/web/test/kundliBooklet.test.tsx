@@ -14,7 +14,7 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { VedicChartFigure, LIGHT_THEME, paperSpec } from '@astro/ui';
 import { SwissEphWasmProvider, calculateNatalChart, type BirthData, type NatalChart } from '@astro/engine';
-import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, vargaSarva, grahaPhala, GRAHAS } from '@astro/vedic';
+import { vedicChart, grahaLongitudes, shodashavarga, dashas, localMidnightJd, YEAR_LENGTHS, varshaphal, limbSpans, hinduCalendar, charaKarakas, bhavaFacts, nakshatra28, functionalNature, vargaSarva, grahaPhala, ratnaAdvice, kpAspectPoints, mangalaDosha, GRAHAS } from '@astro/vedic';
 import { ReportPanel } from '../src/components/ReportPanel.js';
 import { KundliBooklet } from '../src/components/vedic/KundliBooklet.js';
 import { localDate, localDateTime } from '../src/components/vedic/shared.js';
@@ -247,6 +247,28 @@ describe('the booklet', () => {
     // No reading states an event as certain.
     const all = container.querySelector('[data-phala-dasha]')!.textContent! + container.querySelector('[data-kundli-page="phala-1"]')!.textContent!;
     expect(all).not.toMatch(/will/i);
+  }, 90_000);
+
+  it('adds the glance page, the gemstones by the chart’s lordships and the KP favourable points', async () => {
+    const { container } = booklet(only('charts', 'tables', 'kp'));
+    await waitFor(() => expect(container.querySelector('[data-kundli-page="glance"]')).not.toBeNull());
+    const g = grahaLongitudes(vedicChart(sidereal));
+    const glance = container.querySelector('[data-glance-facts]')!.textContent!;
+    expect(glance).toContain(mangalaDosha(g).present ? 'Yes' : 'No');
+    expect(container.querySelectorAll('[data-glance-ad] tbody tr').length).toBe(9);
+    expect(container.querySelectorAll('[data-glance-ad] tbody tr.font-semibold').length).toBe(1);
+
+    await waitFor(() => expect(container.querySelectorAll('[data-ratna]').length).toBe(9));
+    for (const a of ratnaAdvice(g)) {
+      const want = a.reasons.length ? 'suggested' : a.avoid ? 'avoid' : 'neutral';
+      expect(container.querySelector(`[data-ratna="${a.body}"]`)!.getAttribute('data-ratna-verdict')).toBe(want);
+    }
+    expect(ratnaAdvice(g).filter((a) => a.reasons.length).length).toBeGreaterThanOrEqual(2);
+
+    await waitFor(() => expect(container.querySelectorAll('[data-fav]').length).toBe(20));
+    const row = container.querySelector('[data-fav="separating-moon"]')!;
+    const p = kpAspectPoints(g.lon.moon, 'separating')[7]!; // +120°
+    expect(row.querySelectorAll('td')[8]!.textContent).toContain(`${Math.floor(p % 30)}°`);
   }, 90_000);
 
   it('draws the Sarvatobhadra with the natal Moon in its nakṣatra', async () => {

@@ -163,6 +163,7 @@ if (bundle) {
     ['Bhāva kuṇḍalī functional labels (0.32)', 'kundli.fn.note'],
     ['Ṣoḍaśavarga aṣṭakavarga charts (0.33)', 'kundli.vargaAvNote'],
     ['Kundli readings (phala) (0.34)', 'kundli.ph.note'],
+    ['Kundli glance, gemstones, KP favourable points (0.35)', 'kundli.ratna.intro'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

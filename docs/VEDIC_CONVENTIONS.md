@@ -503,6 +503,31 @@ tradition as the reader. No sentence states an event as certain.
 - **The year.** Each mudda daśā lord's house in the varṣa chart, with its
   natal functional nature.
 
+## 16. Gemstones and KP favourable points
+
+Code: `packages/vedic/src/ratna.ts`, `kpAspectPoints` in `kp.ts`.
+
+- **Ratna.** The stone, metal, finger and weekday of each graha are the
+  common printed correspondences; the wearing nakṣatras are the three the
+  graha rules in the Viṁśottarī order. What the chart points to is derived,
+  not looked up: a stone is said to strengthen its graha, so tradition
+  suggests only those of the lagna lord, the 5th lord and the 9th lord, and
+  advises against those of functional malefics (§14) that rule no trikoṇa.
+  Two stones are kept apart when their grahas are natural enemies in either
+  direction; Rāhu and Ketu, the eclipsers, count as enemies of the Sun and
+  Moon. Weights in ratti differ between books and follow no rule, so none are
+  printed. The page repeats the tradition's own caution against wearing a
+  stone on a horoscope alone.
+- **Favourable aspect points (KP).** For the lagna and each graha, the
+  longitudes at 18°, 30°, 36°, 54°, 60°, 72°, 108°, 120°, 126° and 144° ahead
+  (separating) and behind (applying): the 18° series with the semi-sextile,
+  sextile and trine, never the square or opposition. The same arithmetic as
+  the commercial print's table (checked on its lagna row).
+- **At a glance.** A summary page of facts computed elsewhere: rāśi and
+  navāṁśa charts, the sarvāṣṭakavarga, functional benefics and malefics, the
+  yogakāraka (a graha ruling both a kendra and a trikoṇa), Maṅgala doṣa (§
+  matching), today's sāḍe-sātī, and the Viṁśottarī periods.
+
 ## 8. What this module does not do
 
 Stated so nobody mistakes absence for an oversight:

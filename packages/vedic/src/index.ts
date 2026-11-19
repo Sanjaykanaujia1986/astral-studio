@@ -66,7 +66,7 @@ export {
 export { yogas, type YogaResult, type YogaDetail } from './yogas.js';
 
 export {
-  kpChart, kpLords, fourStep, cuspsSubbedBy, arcHouse, KP_LORDS,
+  kpChart, kpLords, fourStep, cuspsSubbedBy, arcHouse, KP_LORDS, FAVOURABLE_ANGLES, kpAspectPoints,
   type KpChart, type KpBody, type KpCusp, type KpLords, type KpOptions, type KpStep,
 } from './kp.js';
 
@@ -124,3 +124,7 @@ export {
   grahaPhala, houseClass, signElement, signModality, dashaPairing, HOUSE_CLASSES,
   type GrahaPhala, type HouseClass, type Element, type Modality,
 } from './phala.js';
+export {
+  RATNA, ratnaNakshatras, stonesContradict, ratnaAdvice,
+  type Stone, type Metal, type Finger, type RatnaAdvice, type RatnaReason,
+} from './ratna.js';

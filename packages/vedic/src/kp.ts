@@ -153,3 +153,18 @@ export function fourStep(k: KpChart, planet: Graha): readonly [KpStep, KpStep, K
 
 /** Cusps (1-12) whose sub lord is `planet`. */
 export const cuspsSubbedBy = (k: KpChart, planet: Graha): number[] => k.cusps.filter((c) => c.lords.sub === planet).map((c) => c.house);
+
+/**
+ * The favourable aspect angles KP practice watches: the 18° series (18, 36,
+ * 54, 72, 108, 126, 144) with the semi-sextile, sextile and trine; never the
+ * square or the opposition.
+ */
+export const FAVOURABLE_ANGLES = [18, 30, 36, 54, 60, 72, 108, 120, 126, 144] as const;
+
+/**
+ * Where a transiting body makes each favourable aspect to a natal point:
+ * ahead of it in the zodiac (separating) or behind it (applying).
+ */
+export function kpAspectPoints(lon: Degrees, dir: 'separating' | 'applying'): number[] {
+  return FAVOURABLE_ANGLES.map((a) => norm360(lon + (dir === 'separating' ? a : -a)));
+}

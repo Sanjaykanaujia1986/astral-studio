@@ -28,7 +28,7 @@ import {
   yogas, dignities, shodashavarga, vargaSarva, SHODASHA, GRAHAS, SEVEN, varshaphal, type Varsha,
   birthDay, limbSpans, hinduCalendar, baladi, charaKarakas, fortuna, gulikaMandi, LIMBS, MASA, RITU, SAMVATSARA,
   kpLords, sripati, chalit, arcHouse, arudhas, rasiDrishti, ashtakavarga, AV_OWNERS, SIGN_LORDS, WEEKDAYS,
-  tithiFrom, yogaFrom, karanaFrom, bhavaFacts, sadeSati, progression, functionalNature, FUNCTIONAL_NATURES,
+  tithiFrom, yogaFrom, karanaFrom, bhavaFacts, sadeSati, progression, functionalNature, FUNCTIONAL_NATURES, mangalaDosha,
   type DashaNode, type DashaResult, type DashaSystemId, type Graha, type Limb, type Avastha,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
@@ -46,6 +46,7 @@ import { MatchingSection } from './MatchingSection.js';
 import { ALL_KUNDLI_SECTIONS, type KundliSections } from './reportSections.js';
 import { BhavaReading, MahadashaAnalysis, Sarvatobhadra, Remedies } from './KundliExtras.js';
 import { GrahaReadings, DashaReadings } from './Phala.js';
+import { Ratna, AspectPoints } from './KundliMore.js';
 
 export interface KundliBookletProps {
   readonly chart: NatalChart;
@@ -623,6 +624,82 @@ export function KundliBooklet({
         <p className="as-fineprint mt-4">{t('kundli.abbreviations')}: {GRAHAS.map((x) => `${t(`jy.short.${x}` as 'jy.short.sun')} = ${gn(x)}`).join(' · ')} · {t('kundli.short.mandi')} = {t('kundli.mandi')} · {t('kundli.short.fortuna')} = {t('kundli.fortuna')} · ℞ = {t('kundli.retrograde')}</p>
       </Page>
 
+      {/* ---- the chart at a glance ---- */}
+      {include.charts && hasLagna && vargas ? (() => {
+        const fn = functionalNature(lagnaSign, g);
+        const owned = (b: Graha): number[] => Array.from({ length: 12 }, (_, h) => h + 1).filter((h) => SIGN_LORDS[(lagnaSign + h - 1) % 12] === b);
+        const yk = SEVEN.filter((b) => owned(b).some((h) => h === 4 || h === 7 || h === 10) && owned(b).some((h) => h === 5 || h === 9));
+        const mang = mangalaDosha(g);
+        const md = runningPath(vim, nowJd, 1)[0];
+        const run = new Set(runningPath(vim, nowJd, 2).map((r) => r.path.join('/')));
+        const list = (xs: readonly Graha[]): string => xs.map(gn).join(', ') || t('kundli.glance.none');
+        const facts: readonly (readonly [string, string])[] = [
+          [t('vedic.lagna'), `${rn(lagnaSign)} · ${gn(SIGN_LORDS[lagnaSign]!)}`],
+          [t('vedic.column.sign'), moon ? `${rn(moon.signIndex)} · ${nak(moon.nakshatra.index)} ${moon.nakshatra.pada}` : '—'],
+          [t('kundli.runningDasha'), runningPath(vim, nowJd, 2).map((r) => gn(r.lord)).join(' / ') || '—'],
+          [t('kundli.glance.benefics'), list(GRAHAS.filter((b) => fn[b] === 'benefic'))],
+          [t('kundli.glance.malefics'), list(GRAHAS.filter((b) => fn[b] === 'malefic'))],
+          [t('kundli.glance.yogakaraka'), list(yk)],
+          [t('kundli.glance.manglik'), `${mang.present ? t('kundli.glance.yes') : t('kundli.glance.no')} (${t('kundli.glance.mangHouses', { lagna: mang.fromLagna ?? '—', moon: mang.fromMoon, venus: mang.fromVenus })})`],
+          [t('kundli.glance.sadeSati'), sadeSatiNow ? t('kundli.glance.yes') : t('kundli.glance.no')],
+        ];
+        const small = Math.min(56, (W - 12) / 3);
+        const periodRows = (nodes: readonly DashaNode[]): JSX.Element[] => nodes.map((m) => (
+          <tr key={m.path.join('/')} style={ROW} className={run.has(m.path.join('/')) ? 'font-semibold' : ''}>
+            <th scope="row" className={`${TD} text-left`}>{gn(m.lord)}</th>
+            <td className={`${TD} tabular-nums`}>{localDate(Math.max(m.startJd, vim.anchorJd), off)}</td>
+            <td className={`${TD} tabular-nums`}>{localDate(m.endJd, off)}</td>
+          </tr>
+        ));
+        return (
+          <Page title={t('kundli.page.glance')} id="glance">
+            <p className="as-fineprint mb-2">{t('kundli.glance.note')}</p>
+            <div className="report-block flex justify-center gap-4">
+              <figure style={figure(small)}>
+                <figcaption className="mb-1 text-center text-[10.5px] font-semibold">{t('report.vedic.lagnaChart')}</figcaption>
+                <VedicChartFigure chart={vchart} style={style} size={800} tinted label={t('report.vedic.lagnaChart')} placements={placementsFor(lagnaSign)} {...themeProp} />
+              </figure>
+              <figure style={figure(small)}>
+                <figcaption className="mb-1 text-center text-[10.5px] font-semibold">D9 · {sc(VARGA_NAME[9]!)}</figcaption>
+                <VedicChartFigure chart={vchart} style={style} size={800} tinted label="D9" {...themeProp}
+                  placements={{ lagnaSignIndex: vargas[9]!.lagna, bodies: GRAHAS.map((b) => ({ body: b, signIndex: vargas[9]![b] })) }} />
+              </figure>
+              <figure style={figure(small)}>
+                <figcaption className="mb-1 text-center text-[10.5px] font-semibold">{t('vedic.av.sarva')}</figcaption>
+                <VedicChartFigure chart={vchart} style={style} size={800} tinted label={t('vedic.av.sarva')} {...themeProp}
+                  placements={{ lagnaSignIndex: lagnaSign, bodies: av.sarva.map((v, s) => ({ body: 'point' as const, signIndex: s, text: String(v) })) }} />
+              </figure>
+            </div>
+            <div className="report-block mt-3" data-glance-facts>
+              <Table head={[t('kundli.page.particulars'), '']}>
+                {facts.map(([a, b]) => (
+                  <tr key={a} style={ROW}>
+                    <th scope="row" className={`${TD} text-left font-medium`}>{a}</th>
+                    <td className="px-1.5 py-0.5" style={{ whiteSpace: 'normal' }}>{b}</td>
+                  </tr>
+                ))}
+              </Table>
+            </div>
+            <div className="mt-3 grid grid-cols-2 gap-4">
+              <section className="report-block" data-glance-md>
+                <h3 className="mb-1 text-[11px] font-semibold">{t('kundli.glance.mds')}</h3>
+                <Table head={[t('vedic.column.body'), t('kundli.glance.from'), t('vedic.column.end')]}>
+                  {periodRows(vim.mahadashas.filter((m) => m.endJd > vim.anchorJd && m.startJd - chart.jdUT < 100 * 365.25))}
+                </Table>
+              </section>
+              {md ? (
+                <section className="report-block" data-glance-ad>
+                  <h3 className="mb-1 text-[11px] font-semibold">{t('kundli.glance.ads', { lord: gn(md.lord) })}</h3>
+                  <Table head={[t('vedic.column.body'), t('kundli.glance.from'), t('vedic.column.end')]}>
+                    {periodRows(subPeriods(md))}
+                  </Table>
+                </section>
+              ) : null}
+            </div>
+          </Page>
+        );
+      })() : null}
+
       {/* ---- pañcāṅga spans, avakahaḍā, conventions ---- */}
       <Page title={t('kundli.page.panchang')} id="panchang">
         <h3 className="as-h3 report-heading mb-1">{t('kundli.spans')}</h3>
@@ -1021,6 +1098,9 @@ export function KundliBooklet({
           <Page title={t('vedic.kp.events')} id="kp-events">
             {provider ? <KpSection chart={chart} provider={provider} print={{ parts: ['events'] }} /> : pending}
           </Page>
+          <Page title={t('kundli.page.kpFavourable')} id="kp-favourable">
+            <AspectPoints g={g} />
+          </Page>
         </>
       ) : null}
 
@@ -1144,6 +1224,11 @@ export function KundliBooklet({
           <Remedies g={g} dasha={vim} nowJd={nowJd} sadeSatiNow={sadeSatiNow} />
         </Page>
       ) : null}
+      {include.tables && hasLagna ? (
+        <Page title={t('kundli.page.ratna')} id="ratna">
+          <Ratna g={g} />
+        </Page>
+      ) : null}
 
       {/* ---- closing note ---- */}
       <Page title={t('kundli.page.notes')} id="notes">
@@ -1163,6 +1248,7 @@ function monthLabel(d: Date): string {
 /** The contents list, in page order: [the switch that prints it, its title]. */
 const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey])[] = [
   ['always', 'kundli.page.particulars'],
+  ['charts', 'kundli.page.glance'],
   ['always', 'kundli.page.panchang'],
   ['always', 'kundli.page.grahas'],
   ['always', 'kundli.page.motion'],
@@ -1190,6 +1276,7 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['otherDashas', 'kundli.toc.otherDashas'],
   ['otherDashas', 'kundli.page.ashtFromEach'],
   ['kp', 'vedic.section.kp'],
+  ['kp', 'kundli.page.kpFavourable'],
   ['western', 'vedic.section.western'],
   ['annual', 'vedic.section.varshaphal'],
   ['annual', 'kundli.page.varshaAll'],
@@ -1199,5 +1286,6 @@ const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey]
   ['transits', 'kundli.page.sbc'],
   ['matching', 'vedic.section.matching'],
   ['tables', 'kundli.page.remedies'],
+  ['tables', 'kundli.page.ratna'],
 ];
 
