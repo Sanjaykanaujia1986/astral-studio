@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.37.0 — 2026-11-19
+- NEW: **Your day, on the dashboard.** For the open chart, a plain-language reading of today and the next six days in English, Hindi or Gujarati. Each day is called supportive, steady or go gently from three traditional checks, each scoring −1, 0 or +1: the Moon's tārā counted from the birth star, its house from the birth Moon (candra bala, with candrāṣṭama as the caution day), and the planets' natal aṣṭakavarga points against the average of 28. Underneath: the Moon's star and what it is traditionally good for, the time it changes star that day, the area of life the Moon lights up from the lagna, the running daśā, and the score itself so the verdict can be checked. Days are midnight to midnight on the reader's device. A tropical chart is recast in Lahiri for this card; a chart without a birth time says why it cannot be read. The rule lives in `dayReading` (packages/vedic) and is tested against the tārā table and the power chart.
+
 ## 0.36.0 — 2026-11-19
 - NEW: **Type for English, Hindi and Gujarati.** The app now bundles its own fonts: Noto Sans and Noto Serif for Latin with every IAST mark (ā ṣ ṛ ṁ), and the matching Noto Devanagari and Gujarati faces, stitched into one "Astro Sans" and one "Astro Serif" family. They are served from the app (no CDN, still offline), and a browser fetches a script's file only when the page uses that script. Before this, nothing was loaded and every device fell back to whatever it had. Hindi and Gujarati get a looser line height and no Latin letter-spacing; in the booklet their table text is set half a point larger. Printing waits for the fonts.
 - FIX: **The report preview no longer cuts pages off.** An A4 page is 210 mm wide; in a narrower window the right-hand column of the varga grid sat behind a sideways scroll. On screen the pages now shrink to fit (print is untouched).

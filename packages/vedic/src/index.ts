@@ -101,7 +101,8 @@ export {
 
 export {
   dailyPower, moonTaraSchedule, gochar, vimshottariAt, localJd, TARA_CYCLE,
-  type PowerDay, type MoonSegment, type GocharEvent, type TransitContext, type Tara,
+  dayReading, taraPoints, candraPoints, binduPoints, toneOf, TARA_FAVOURABLE, TARA_HARD,
+  type PowerDay, type MoonSegment, type GocharEvent, type TransitContext, type Tara, type DayReading, type DayTone,
 } from './daily.js';
 
 export {

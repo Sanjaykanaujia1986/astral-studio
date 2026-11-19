@@ -9,7 +9,9 @@ import {
   avakahada, ghataka, favourablePoints, taraChakra, sudarshana, chalit, SHODASHA,
 } from '../src/tables.js';
 import { separationInt, aspectOf, aspectGrid, western } from '../src/western.js';
-import { dailyPower, moonTaraSchedule, gochar, localJd } from '../src/daily.js';
+import {
+  dailyPower, moonTaraSchedule, gochar, localJd, dayReading, taraPoints, candraPoints, binduPoints, toneOf, type Tara,
+} from '../src/daily.js';
 import { kpChart } from '../src/kp.js';
 import { kpEvents, KP_EVENTS } from '../src/kpEvents.js';
 import { ashtakavarga } from '../src/ashtakavarga.js';
@@ -219,5 +221,62 @@ describe('ephemeris-backed pages', () => {
     expect(ra.latitude).toBe(0);
     expect(norm360(ke.longitude - ra.longitude)).toBeCloseTo(180, 9);
     expect(w.cusps).toHaveLength(12);
+  });
+});
+
+describe('day reading', () => {
+  it('scores each check by its stated rule', () => {
+    expect(['sampat', 'kshema', 'sadhaka', 'mitra', 'atimitra'].map((t) => taraPoints(t as Tara))).toEqual([1, 1, 1, 1, 1]);
+    expect(['vipat', 'pratyari', 'vadha'].map((t) => taraPoints(t as Tara))).toEqual([-1, -1, -1]);
+    expect(taraPoints('janma')).toBe(0);
+    expect([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(candraPoints)).toEqual([1, 0, 1, 0, 0, 1, 1, -1, 0, 1, 1, 0]);
+    expect([24, 25, 26, 28, 30, 31, 40].map(binduPoints)).toEqual([-1, -1, 0, 0, 0, 1, 1]);
+    expect([3, 2, 1, 0, -1, -2, -3].map(toneOf)).toEqual(['supportive', 'supportive', 'steady', 'steady', 'steady', 'gentle', 'gentle']);
+  });
+
+  describe('against the ephemeris', () => {
+    let provider: SwissEphWasmProvider;
+    beforeAll(async () => { provider = new SwissEphWasmProvider(); await provider.init(); });
+    afterAll(() => provider.close());
+    const birthJd = julianDay({ year: 1990, month: 1, day: 15 }, 9);
+    const ctx = { birthJd, utcOffsetMinutes: 330, zodiac };
+    const natal = (lagna: boolean): GrahaLongitudes => {
+      const lon = {} as Record<Graha, number>;
+      for (const b of ['sun', 'moon', 'mars', 'mercury', 'jupiter', 'venus', 'saturn'] as const) lon[b] = provider.calc(birthJd, b, { zodiac }).longitude;
+      lon.rahu = provider.calc(birthJd, 'meanNode', { zodiac }).longitude; lon.ketu = norm360(lon.rahu + 180);
+      return { lon, ...(lagna ? { lagna: provider.houses(birthJd, 19, 73, 'placidus', { zodiac }).ascendant } : {}), retrograde: none };
+    };
+
+    it('reads the Moon at midday and agrees with the power chart and tārā table', () => {
+      const g = natal(true);
+      for (let day = 1; day <= 29; day += 1) {
+        const from = localJd(2024, 2, day, 0, 330); const to = localJd(2024, 2, day + 1, 0, 330);
+        const r = dayReading(provider, g, ctx, from, to);
+        expect(r.jd).toBeCloseTo(localJd(2024, 2, day, 12, 330), 9);
+        const seg = moonTaraSchedule(provider, g, zodiac, r.jd - 1e-6, r.jd + 1e-6)[0]!;
+        expect(r.nakshatra).toBe(seg.nakshatra); expect(r.tara).toBe(seg.tara);
+        expect(r.fromLagna).toBe(seg.houseFromLagna);
+        expect(r.fromMoon).toBe(((r.moonSign - Math.floor(g.lon.moon / 30) + 12) % 12) + 1);
+        expect(r.tone).toBe(toneOf(r.points.tara + r.points.candra + r.points.bindus));
+        expect(r.points.bindus).toBe(binduPoints(r.bindus!));
+        expect(r.dasha).toHaveLength(3);
+        for (const c of r.changes) {
+          expect(c.jd).toBeGreaterThan(from); expect(c.jd).toBeLessThan(to);
+          expect(c.nakshatra).toBe((c.before.nakshatra + 1) % 27);
+        }
+        // The star read at midday is the one after the last morning change.
+        const morning = r.changes.filter((c) => c.jd <= r.jd);
+        if (morning.length > 0) expect(morning[morning.length - 1]!.nakshatra).toBe(r.nakshatra);
+      }
+      // The Moon crosses a nakṣatra about every day, so most days report one change.
+      const total = Array.from({ length: 29 }, (_, i) => dayReading(provider, g, ctx, localJd(2024, 2, i + 1, 0, 330), localJd(2024, 2, i + 2, 0, 330)).changes.length)
+        .reduce((a, b) => a + b, 0);
+      expect(total).toBeGreaterThan(22); expect(total).toBeLessThan(32);
+    });
+
+    it('drops the lagna checks without a lagna', () => {
+      const r = dayReading(provider, natal(false), ctx, localJd(2024, 2, 10, 0, 330), localJd(2024, 2, 11, 0, 330));
+      expect(r.fromLagna).toBeUndefined(); expect(r.bindus).toBeUndefined(); expect(r.points.bindus).toBe(0);
+    });
   });
 });

@@ -166,6 +166,7 @@ if (bundle) {
     ['Kundli glance, gemstones, KP favourable points (0.35)', 'kundli.ratna.intro'],
     ['Report preview fits the window (0.36)', 'data-report-zoom'],
     ['Reviewed Hindi catalogue (0.36)', 'निरयन भोगांश पर ज्योतिष'],
+    ['Your day on the dashboard (0.37)', 'data-day-panel'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

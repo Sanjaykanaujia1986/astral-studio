@@ -37,6 +37,7 @@ import { useChartStore } from '../state/chart.js';
 import { useSettings } from '../lib/settings.js';
 import { AlertsPanel } from './AlertsPanel.js';
 import { HeroPanel } from './HeroPanel.js';
+import { DayPanel, DayPanelEmpty } from './DayPanel.js';
 
 const TH = 'px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wide';
 const TD = 'px-2 py-1.5 whitespace-nowrap tabular-nums';
@@ -208,6 +209,9 @@ export function DashboardPanel(): JSX.Element {
         your first chart" every time they refresh.
       */}
       {!natal && !hydrating ? <HeroPanel /> : null}
+
+      {/* Your day: first, because it is the one pane written for this reader. */}
+      {natal ? <DayPanel natal={natal} /> : !hydrating ? <DayPanelEmpty /> : null}
 
       {/* ----------------------------------------------- today's sky */}
       <section className="as-card">
