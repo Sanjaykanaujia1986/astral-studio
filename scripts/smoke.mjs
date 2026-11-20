@@ -169,6 +169,7 @@ if (bundle) {
     ['Your day on the dashboard (0.37)', 'data-day-panel'],
     ['Sign-in, customer details and the admin list (0.38)', 'data-admin-users'],
     ['Day charts: natal wheel, North and South Indian (0.38)', 'data-day-chart'],
+    ['Day chart kept to a readable size (0.38.1)', 'max-w-[440px]'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

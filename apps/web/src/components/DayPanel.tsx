@@ -210,16 +210,19 @@ export function DayPanel({ natal }: { readonly natal: NatalChart }): JSX.Element
               ))}
             </div>
           </div>
+          {/* The figures set an inline max-width of 100%, which beats a class on the SVG, so the cap sits on a wrapper. */}
+          <div className="mx-auto w-full max-w-[440px]">
           {view === 'wheel' ? (
             <ChartWheel chart={natal} outerChart={day.sky.wheel} outerLabel={d(day.start.toISOString(), { day: 'numeric', month: 'short' })}
               size={520} theme={chartTheme} glyphStyle={settings.glyphStyle} showAspects={false}
               title={t('dashboard.day.chart.wheelTitle', { date: d(day.start.toISOString(), { day: 'numeric', month: 'long' }) })}
-              className="mx-auto w-full max-w-[460px]" />
+              className="w-full" />
           ) : vchart?.lagna ? (
-            <VedicChartFigure chart={vchart} style={view} size={420} theme={chartTheme} tinted className="mx-auto w-full max-w-[420px]"
+            <VedicChartFigure chart={vchart} style={view} size={420} theme={chartTheme} tinted className="w-full"
               label={t('dashboard.day.chart.vedicTitle', { date: d(day.start.toISOString(), { day: 'numeric', month: 'long' }) })}
               placements={{ lagnaSignIndex: vchart.lagna.signIndex, bodies: day.sky.grahas }} />
           ) : null}
+          </div>
           <p className="as-fineprint mt-2">
             {t(view === 'wheel' ? 'dashboard.day.chart.wheelNote' : 'dashboard.day.chart.vedicNote', { date: d(day.start.toISOString(), { day: 'numeric', month: 'long' }) })}
           </p>

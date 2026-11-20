@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.38.1 — 2026-11-20
+- FIX: **The day's chart on the dashboard is a sensible size.** On a wide screen the natal wheel under *Your day* filled the whole card, well over a thousand pixels across. The figure sets its own inline width, which beat the size limit on it; the limit now sits on a wrapper, so the wheel and the Indian charts stay about 440 px wide and centred, and still shrink on a phone.
+
 ## 0.38.0 — 2026-11-20
 - NEW: **Two kinds of account: admin and customer.** Everything is now behind a sign-in (email and password); a signed-out visitor sees only Sign in and Register.
   - **Customers** register with their own name, birth date, time and place, and from then on see only their own chart: the dashboard, Chart Studio (the chart, without a form to cast anyone else's), Event Explorer, Calendar, Vedic, Reports and a new *My details* page. They cannot change their details themselves. They write a request there; the admin either corrects the details or unlocks one edit, which locks again when it is saved, and the answer shows on the same page.
