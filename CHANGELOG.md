@@ -2,6 +2,11 @@
 
 Newest first.
 
+## 0.39.0 — 2026-11-20
+- NEW: **A contents page for the kuṇḍalī booklet.** Straight after the cover, one page lists every section in six parts (birth data and charts; strength, special points and readings; daśās; KP and Western; the years ahead; matching, remedies and notes), each with a dotted leader to its page number. Every entry is a link, and the title at the top right of every page links back to the contents, in the browser and in a PDF saved with **Save as PDF** (a PDF printer such as Adobe PDF throws links away, and the page says so). Chrome also turns the headings into PDF bookmarks.
+- The page numbers are worked out from the preview by laying each sheet's rows, tables and paragraphs onto pages the way Chrome does: a row or block that does not fit goes over whole, a table's head repeats on the next page, and paper sets running text a shade tighter than the screen. Checked against Chrome's own PDF output for two charts in English, Hindi and Gujarati, in a narrow and a wide window: every number matched its page.
+- CHANGED: the contents list is no longer squeezed under the birth particulars.
+
 ## 0.38.1 — 2026-11-20
 - FIX: **The day's chart on the dashboard is a sensible size.** On a wide screen the natal wheel under *Your day* filled the whole card, well over a thousand pixels across. The figure sets its own inline width, which beat the size limit on it; the limit now sits on a wrapper, so the wheel and the Indian charts stay about 440 px wide and centred, and still shrink on a phone.
 

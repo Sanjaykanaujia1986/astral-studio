@@ -143,6 +143,30 @@ describe('the booklet', () => {
     expect(screen.queryByText('Krishnamurti Paddhati (KP)')).toBeNull();
   }, 60_000);
 
+  it('opens with a one-page contents whose every entry links to a sheet it printed', async () => {
+    const { container } = booklet(only('strength', 'dasha', 'kp'));
+    await waitFor(() => expect(screen.queryByText('Calculating…')).toBeNull());
+    const sheets = [...container.querySelectorAll('.kundli > .report-page')];
+    // Cover first, the contents straight after it.
+    expect(sheets[1]?.id).toBe('k-contents');
+    const links = [...container.querySelectorAll<HTMLAnchorElement>('#k-contents nav a')];
+    expect(links.length).toBeGreaterThan(10);
+    for (const a of links) {
+      const target = container.querySelector(a.getAttribute('href')!);
+      expect(target, a.textContent ?? '').not.toBeNull();
+      expect(target!.classList.contains('report-page')).toBe(true);
+      // A page number beside every entry, rising through the booklet.
+      expect(a.querySelector('.k-pg')!.textContent).toMatch(/^\d+$/);
+    }
+    const pages = links.map((a) => Number(a.querySelector('.k-pg')!.textContent));
+    expect(pages).toEqual([...pages].sort((x, y) => x - y));
+    // The parts follow the switches: KP is on, the years ahead are off.
+    expect(within(container.querySelector('#k-contents') as HTMLElement).getByText('KP and Western')).toBeTruthy();
+    expect(within(container.querySelector('#k-contents') as HTMLElement).queryByText('The years ahead')).toBeNull();
+    // Every other sheet's running head leads back to the contents.
+    expect(container.querySelectorAll('.k-band a[href="#k-contents"]').length).toBe(sheets.length - 1);
+  }, 60_000);
+
   it('fills in the ephemeris sheets once the provider resolves', async () => {
     const { container } = booklet(only('strength', 'kp'));
     await waitFor(() => expect(screen.queryByText('Calculating…')).toBeNull());

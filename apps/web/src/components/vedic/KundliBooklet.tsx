@@ -15,7 +15,7 @@
  * ("you will…"). The app separates what is calculated from what is
  * traditionally read into it, and does not print fatalistic predictions.
  */
-import { useEffect, useMemo, useState, type JSX, type ReactNode } from 'react';
+import { useEffect, useMemo, useRef, useState, type JSX, type ReactNode } from 'react';
 import type { EphemerisProvider, NatalChart } from '@astro/engine';
 import { useTranslator, type MessageKey } from '@astro/i18n';
 import {
@@ -134,6 +134,17 @@ function bookletCss(paper: PaperSpec, runningHead: string): string {
     '.kundli .k-mini td { padding: 0 2px; }',
     '.kundli .k-mini h4 { font-size: 9px; font-weight: 600; border-bottom: 1px solid #e3cfb4; color: #5a2410; }',
     '@media screen { .kundli .report-page { background: #fffdf9; } }',
+    // Contents: two columns of parts, each entry a link with a dotted leader to its page number.
+    '.kundli .k-band a { color: inherit; text-decoration: none; }',
+    '.kundli .k-toc { display: grid; grid-template-columns: 1fr 1fr; column-gap: 9mm; margin-top: 2mm; }',
+    '.kundli .k-toc-part { break-inside: avoid; margin-bottom: 7mm; }',
+    '.kundli .k-toc-part h3 { display: flex; align-items: baseline; gap: 7px; font-family: var(--as-font-serif); font-size: 13px; font-weight: 600; color: #8a2c0d; border-bottom: 1px solid #e3cfb4; padding-bottom: 3px; margin: 0 0 4px; }',
+    '.kundli .k-toc-part h3 span { font-size: 9px; letter-spacing: .14em; color: #a8754c; min-width: 1.6em; }',
+    '.kundli .k-toc a { display: flex; align-items: baseline; gap: 5px; padding: 2.5px 0; font-size: 11px; line-height: 1.4; color: #2a1a10; text-decoration: none; }',
+    '.kundli .k-toc .k-lead { flex: 1 1 auto; min-width: 10px; border-bottom: 1px dotted #c9a27a; position: relative; top: -3px; }',
+    '.kundli .k-toc .k-pg { flex: none; min-width: 1.8em; text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; color: #6b2a10; }',
+    '@media screen { .kundli .k-toc a:hover { color: #8a2c0d; } .kundli .k-toc a:hover .k-lead { border-bottom-color: #8a2c0d; } }',
+    '.kundli-indic .k-toc a { font-size: 11.5px; line-height: 1.5; }',
     // Letter-spacing pulls Devanagari and Gujarati conjuncts apart; tracking is for Latin small caps only.
     '.kundli-indic .k-band, .kundli-indic .k-band b, .kundli-indic .k-dl dt, .kundli-indic .k-sub { letter-spacing: 0 !important; }',
     // Devanagari and Gujarati read small at a Latin size (their letters sit on
@@ -151,6 +162,77 @@ function bookletCss(paper: PaperSpec, runningHead: string): string {
     '.kundli-indic .as-fineprint { font-size: 9px; line-height: 1.55; }',
     '.kundli-indic .k-mini { line-height: 1.35; }',
   ].join('\n');
+}
+
+/** What Chrome will not split across pages: the print CSS's `break-inside: avoid` items, and lines of text. */
+const UNBREAKABLE = 'tr, svg, img, figure, .report-block, .k-band, h2, h3, h4, p, li, dt, dd';
+const HEADING = /^H[2-4]$/;
+/** Rows and figures keep their height on paper; running text does not. */
+const FIXED = 'table, tr, svg, img, figure';
+
+/**
+ * How many printed pages a sheet runs to.
+ *
+ * Its height divided by the page height is not enough: Chrome moves a row or
+ * a block that does not fit to the next page whole, leaving the gap, and
+ * repeats a table's head at the top of each new page, so a sheet of long
+ * tables prints longer than it measures. This lays the sheet's unbreakable
+ * pieces onto pages the same way, in the preview's own layout, which is set
+ * at the printed width. Units come from the sheet's width, so the preview's
+ * zoom cancels out.
+ *
+ * One allowance: paper sets running text a shade tighter than the screen (a
+ * page of readings that measured 3.5% over printed on one), so a paragraph
+ * or a block of them, may run 4% past the foot of a page before it counts as
+ * pushed over. Anything holding a table or a figure keeps its height on paper
+ * and gets no allowance: a table that measured 1.4% too long went over.
+ */
+function printedPages(sheet: HTMLElement, contentWidthMm: number, contentHeightMm: number): number {
+  const cs = getComputedStyle(sheet);
+  const width = sheet.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
+  if (!(width > 0)) return 1;
+  const box = sheet.getBoundingClientRect();
+  const zoom = box.width / sheet.offsetWidth || 1;
+  const pageHeight = (contentHeightMm * width) / contentWidthMm;
+  const origin = box.top / zoom + parseFloat(cs.paddingTop);
+  const rect = (el: Element) => {
+    const r = el.getBoundingClientRect();
+    return { top: r.top / zoom - origin, bottom: r.bottom / zoom - origin };
+  };
+
+  // The pieces, in reading order: the outermost unbreakable element, or its
+  // pieces when it is itself taller than a page (Chrome splits those anyway).
+  const pieces: Element[] = [];
+  const walk = (node: Element): void => {
+    for (const child of Array.from(node.children)) {
+      if (child.matches('style, script')) continue;
+      const r = rect(child);
+      if (r.bottom - r.top <= 0) continue;
+      if (child.matches(UNBREAKABLE) && (r.bottom - r.top <= pageHeight || child.children.length === 0)) pieces.push(child);
+      else if (child.children.length > 0) walk(child);
+      else pieces.push(child);
+    }
+  };
+  walk(sheet);
+
+  let pages = 1;
+  let pageTop = 0;
+  let previous: Element | null = null;
+  for (const piece of pieces) {
+    const r = rect(piece);
+    const allowance = piece.matches(FIXED) || piece.querySelector(FIXED) ? 0.5 : pageHeight * 0.04;
+    if (r.bottom - pageTop > pageHeight + allowance && r.top > pageTop + 1) {
+      pages += 1;
+      // A heading goes over with what it heads (`break-after: avoid`).
+      let top = previous && HEADING.test(previous.tagName) ? rect(previous).top : r.top;
+      // A table row carried over gets the table's head again above it.
+      const head = piece.tagName === 'TR' ? piece.closest('table')?.querySelector('thead') : null;
+      if (head && !head.contains(piece)) top -= rect(head).bottom - rect(head).top;
+      pageTop = top;
+    }
+    previous = piece;
+  }
+  return pages;
 }
 
 function Facts({ rows, cols = 3 }: { readonly rows: readonly (readonly [string, ReactNode])[]; readonly cols?: 2 | 3 | 4 }): JSX.Element {
@@ -283,8 +365,9 @@ export function KundliBooklet({
   const pending = <p className="text-[11px] as-text-muted">{t('report.vedic.pending')}</p>;
 
   const Page = ({ title, children, id }: { readonly title: string; readonly children: ReactNode; readonly id?: string }): JSX.Element => (
-    <article className="report-page" data-kundli-page={id}>
-      <div className="k-band"><b>{name}</b><span>{t('report.vedic.title')}</span></div>
+    <article className="report-page" data-kundli-page={id} id={id ? `k-${id}` : undefined}>
+      {/* The band's right half leads back to the contents, in the browser and in a saved PDF. */}
+      <div className="k-band"><b>{name}</b><a href="#k-contents" title={t('kundli.contents')}>{t('report.vedic.title')}</a></div>
       <h2 className="k-title report-heading">{title}</h2>
       {children}
     </article>
@@ -562,8 +645,83 @@ export function KundliBooklet({
     );
   })();
 
+  /*
+   * Where each sheet starts, for the page numbers in the contents.
+   *
+   * Every sheet begins a new printed page, so a sheet's first page is one
+   * more than the pages before it; `printedPages` says how many pages each
+   * sheet runs to. Measured again whenever a sheet changes size (tables that
+   * fill in once the ephemeris has loaded, a change of language).
+   */
+  const rootRef = useRef<HTMLDivElement>(null);
+  const [pageOf, setPageOf] = useState<Readonly<Record<string, number>>>({});
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+    const measure = (): void => {
+      /*
+       * Measured at the printed scale. On a narrow window the preview is
+       * zoomed down to fit (ReportPanel), and Chrome wraps zoomed text at the
+       * zoomed size, so lines break differently from paper. The zoom is lifted
+       * for the measurement and put back before the frame is painted.
+       */
+      const zoom = root.style.zoom;
+      root.style.zoom = '1';
+      const next: Record<string, number> = {};
+      let page = 1;
+      try {
+        for (const el of Array.from(root.querySelectorAll<HTMLElement>(':scope > .report-page'))) {
+          const id = el.dataset.kundliPage;
+          if (id) next[id] = page;
+          page += printedPages(el, paper.contentWidthMm, paper.contentHeightMm);
+        }
+      } finally {
+        root.style.zoom = zoom;
+      }
+      setPageOf((prev) => (JSON.stringify(prev) === JSON.stringify(next) ? prev : next));
+    };
+    // Without ResizeObserver (a test DOM, which has no layout either) the sheets are measured once.
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure);
+    observer?.observe(root);
+    for (const el of Array.from(root.children)) observer?.observe(el);
+    const children = new MutationObserver(() => {
+      for (const el of Array.from(root.children)) observer?.observe(el);
+      measure();
+    });
+    children.observe(root, { childList: true });
+    void document.fonts?.ready.then(measure);
+    measure();
+    return () => { observer?.disconnect(); children.disconnect(); };
+  }, [paper]);
+
+  /*
+   * The contents: the parts in page order, each entry pointing at the first
+   * sheet it names. Before the sheets are measured an entry shows when its
+   * switch is on; after, only when its sheet exists, so a chart without a
+   * birth time does not list pages it never prints.
+   */
+  const measured = Object.keys(pageOf).length > 0;
+  const tocParts = TOC_PARTS.map((part, index) => ({
+    key: part.key, index,
+    entries: part.entries.flatMap(([on, key, targets]) => {
+      if (on !== 'always' && !include[on]) return [];
+      const target = measured ? targets.find((x) => pageOf[x] !== undefined) : targets[0];
+      return target ? [{ key, target }] : [];
+    }),
+  })).filter((part) => part.entries.length > 0);
+  // Two columns of about equal length; a part is never split between them.
+  const weight = (p: (typeof tocParts)[number]): number => p.entries.length + 2;
+  const half = tocParts.reduce((a, p) => a + weight(p), 0) / 2;
+  const tocColumns: (typeof tocParts)[] = [[], []];
+  let run = 0;
+  for (const p of tocParts) {
+    const left = tocColumns[0]!.length === 0 || run + weight(p) / 2 <= half;
+    (left && tocColumns[1]!.length === 0 ? tocColumns[0]! : tocColumns[1]!).push(p);
+    run += weight(p);
+  }
+
   return (
-    <div className={`report-root kundli as-paper as-text${locale.code === 'en' ? '' : ' kundli-indic'}`}>
+    <div ref={rootRef} className={`report-root kundli as-paper as-text${locale.code === 'en' ? '' : ' kundli-indic'}`}>
       <style>{bookletCss(paper, name)}</style>
 
       {/* ---- cover ---- */}
@@ -599,6 +757,29 @@ export function KundliBooklet({
         <p className="as-fineprint mt-5 text-center">{attribution}</p>
       </article>
 
+      {/* ---- contents ---- */}
+      <Page title={t('kundli.contents')} id="contents">
+        <nav className="k-toc" aria-label={t('kundli.contents')}>
+          {tocColumns.map((column, c) => (
+            <div key={c}>
+              {column.map((part) => (
+                <section key={part.key} className="k-toc-part">
+                  <h3><span>{ROMAN[part.index]}</span>{t(part.key)}</h3>
+                  {part.entries.map((e) => (
+                    <a key={e.key} href={`#k-${e.target}`}>
+                      <span>{t(e.key)}</span>
+                      <span className="k-lead" aria-hidden="true" />
+                      <span className="k-pg">{pageOf[e.target] !== undefined ? n(pageOf[e.target]!) : ''}</span>
+                    </a>
+                  ))}
+                </section>
+              ))}
+            </div>
+          ))}
+        </nav>
+        <p className="as-fineprint mt-2">{t('kundli.contents.note')}</p>
+      </Page>
+
       {/* ---- particulars ---- */}
       <Page title={t('kundli.page.particulars')} id="particulars">
         <h3 className="as-h3 report-heading mb-2">{t('report.vedic.birthDetails')}</h3>
@@ -632,12 +813,6 @@ export function KundliBooklet({
           [t('kundli.f.ashtottariBalance'), balance(asht)],
           [t('report.generated'), localDate(nowJd, off)],
         ]} />
-        <section className="report-block mt-5">
-          <h3 className="as-h3 report-heading mb-2">{t('kundli.contents')}</h3>
-          <ol className="grid grid-cols-3 gap-x-6 gap-y-0.5 text-[10.5px]" style={{ listStyle: 'decimal inside' }}>
-            {CONTENTS.filter(([k]) => k === 'always' || include[k]).map(([, key]) => <li key={key}>{t(key)}</li>)}
-          </ol>
-        </section>
         <p className="as-fineprint mt-4">{t('kundli.abbreviations')}: {GRAHAS.map((x) => `${t(`jy.short.${x}` as 'jy.short.sun')} = ${gn(x)}`).join(' · ')} · {t('kundli.short.mandi')} = {t('kundli.mandi')} · {t('kundli.short.fortuna')} = {t('kundli.fortuna')} · ℞ = {t('kundli.retrograde')}</p>
       </Page>
 
@@ -1262,47 +1437,68 @@ function monthLabel(d: Date): string {
   return `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
 }
 
-/** The contents list, in page order: [the switch that prints it, its title]. */
-const CONTENTS: readonly (readonly [keyof KundliSections | 'always', MessageKey])[] = [
-  ['always', 'kundli.page.particulars'],
-  ['charts', 'kundli.page.glance'],
-  ['always', 'kundli.page.panchang'],
-  ['always', 'kundli.page.grahas'],
-  ['always', 'kundli.page.motion'],
-  ['tables', 'kundli.page.bhava'],
-  ['charts', 'kundli.page.bhavaCharts'],
-  ['charts', 'kundli.bhavaKundli'],
-  ['vargas', 'kundli.page.vargas'],
-  ['tables', 'vedic.tb.view.vargas'],
-  ['tables', 'vedic.tb.view.friendship'],
-  ['strength', 'vedic.section.shadbala'],
-  ['tables', 'kundli.page.taraSahams'],
-  ['tables', 'kundli.page.jaimini'],
-  ['tables', 'kundli.page.jaiminiCharts'],
-  ['tables', 'kundli.page.bhavaReading'],
-  ['tables', 'kundli.page.phalaGrahas'],
-  ['yogas', 'vedic.section.yogas'],
-  ['strength', 'vedic.section.ashtakavarga'],
-  ['strength', 'kundli.page.binduCharts'],
-  ['strength', 'kundli.page.vargaAv'],
-  ['dasha', 'kundli.toc.vimshottari'],
-  ['dasha', 'kundli.page.sukshma'],
-  ['dasha', 'kundli.page.dashaFromEach'],
-  ['dasha', 'kundli.page.mdAnalysis'],
-  ['dasha', 'kundli.page.phalaDasha'],
-  ['otherDashas', 'kundli.toc.otherDashas'],
-  ['otherDashas', 'kundli.page.ashtFromEach'],
-  ['kp', 'vedic.section.kp'],
-  ['kp', 'kundli.page.kpFavourable'],
-  ['western', 'vedic.section.western'],
-  ['annual', 'vedic.section.varshaphal'],
-  ['annual', 'kundli.page.varshaAll'],
-  ['annual', 'kundli.page.progressionAll'],
-  ['annual', 'kundli.varshaChartsTitle'],
-  ['transits', 'vedic.section.transits'],
-  ['transits', 'kundli.page.sbc'],
-  ['matching', 'vedic.section.matching'],
-  ['tables', 'kundli.page.remedies'],
-  ['tables', 'kundli.page.ratna'],
+const ROMAN = ['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII'] as const;
+
+type TocEntry = readonly [keyof KundliSections | 'always', MessageKey, readonly string[]];
+
+/**
+ * The contents, in page order: parts of entries, each entry being [the switch
+ * that prints it, its title, the sheet ids it may start on]. The first id that
+ * was printed is the link target and gives the page number.
+ */
+const TOC_PARTS: readonly { readonly key: MessageKey; readonly entries: readonly TocEntry[] }[] = [
+  { key: 'kundli.part.birth', entries: [
+    ['always', 'kundli.page.particulars', ['particulars']],
+    ['charts', 'kundli.page.glance', ['glance']],
+    ['always', 'kundli.page.panchang', ['panchang']],
+    ['always', 'kundli.page.grahas', ['grahas']],
+    ['always', 'kundli.page.motion', ['motion']],
+    ['tables', 'kundli.page.bhava', ['bhava']],
+    ['charts', 'kundli.page.bhavaCharts', ['bhava-charts']],
+    ['charts', 'kundli.bhavaKundli', ['bhava-kundli']],
+    ['vargas', 'kundli.page.vargas', ['vargas-1']],
+    ['tables', 'vedic.tb.view.vargas', ['varga-tables']],
+    ['tables', 'vedic.tb.view.friendship', ['friendship']],
+  ] },
+  { key: 'kundli.part.strength', entries: [
+    ['strength', 'vedic.section.shadbala', ['shadbala']],
+    ['tables', 'kundli.page.taraSahams', ['tara']],
+    ['tables', 'kundli.page.jaimini', ['jaimini']],
+    ['tables', 'kundli.page.jaiminiCharts', ['jaimini-charts']],
+    ['tables', 'kundli.page.bhavaReading', ['bhava-reading-1']],
+    ['tables', 'kundli.page.phalaGrahas', ['phala-1']],
+    ['yogas', 'vedic.section.yogas', ['yogas']],
+    ['strength', 'vedic.section.ashtakavarga', ['ashtakavarga']],
+    ['strength', 'kundli.page.binduCharts', ['bindu-charts']],
+    ['strength', 'kundli.page.vargaAv', ['varga-ashtakavarga']],
+  ] },
+  { key: 'kundli.part.dasha', entries: [
+    ['dasha', 'kundli.toc.vimshottari', ['dasha-vimshottari']],
+    ['dasha', 'kundli.page.sukshma', ['sukshma']],
+    ['dasha', 'kundli.page.dashaFromEach', ['vimshottari-from-each']],
+    ['dasha', 'kundli.page.mdAnalysis', ['md-analysis']],
+    ['dasha', 'kundli.page.phalaDasha', ['phala-dasha']],
+    ['otherDashas', 'kundli.toc.otherDashas', ['dasha-ashtottari']],
+    ['otherDashas', 'kundli.page.ashtFromEach', ['ashtottari-from-each']],
+  ] },
+  { key: 'kundli.part.systems', entries: [
+    ['kp', 'vedic.section.kp', ['kp']],
+    ['kp', 'kundli.page.kpFavourable', ['kp-favourable']],
+    ['western', 'vedic.section.western', ['western']],
+  ] },
+  { key: 'kundli.part.ahead', entries: [
+    ['annual', 'vedic.section.varshaphal', ['varshaphal']],
+    ['annual', 'kundli.page.varshaAll', ['varsha-all-1']],
+    ['annual', 'kundli.page.progressionAll', ['progression-all-1']],
+    ['annual', 'kundli.varshaChartsTitle', ['varsha-1', 'varsha-pending']],
+    ['transits', 'vedic.section.transits', ['sadesati']],
+    ['transits', 'kundli.page.sbc', ['sarvatobhadra']],
+  ] },
+  { key: 'kundli.part.guidance', entries: [
+    ['matching', 'vedic.section.matching', ['matching']],
+    ['tables', 'kundli.page.remedies', ['remedies']],
+    ['tables', 'kundli.page.ratna', ['ratna']],
+    ['always', 'kundli.page.notes', ['notes']],
+  ] },
 ];
 
