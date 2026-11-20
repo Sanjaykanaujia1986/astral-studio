@@ -1,14 +1,18 @@
-import { StrictMode } from 'react';
+import { StrictMode, useEffect, type JSX, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { I18nProvider } from '@astro/i18n';
+import { I18nProvider, useTranslator } from '@astro/i18n';
 import { themeCss } from '@astro/ui';
 import { AppShell } from './shell/AppShell.js';
 import {
   DashboardRoute, ChartStudioRoute, RelationshipsRoute, EventExplorerRoute,
   CalendarRoute, VedicRoute, GannLabRoute, ResearchRoute, ClientsRoute, ReportsRoute,
-  SettingsRoute,
+  SettingsRoute, ProfileRoute,
 } from './shell/routes.js';
+import { AuthScreen } from './components/AuthScreen.js';
+import { useSession } from './state/session.js';
+import { useChartStore } from './state/chart.js';
+import { workspacesFor } from './shell/workspaces.js';
 import { SelfTestPanel } from './components/SelfTestPanel.js';
 import './fonts.css';
 import './index.css';
@@ -39,6 +43,57 @@ function ThemeStyle() {
   return <style>{themeCss()}</style>;
 }
 
+/**
+ * Everything is behind sign-in.
+ *
+ * Until the server has answered, a quiet placeholder; signed out, the sign-in
+ * and registration screen; signed in, the app with the workspaces the person's
+ * role allows. A customer's chart is cast here from their registered details,
+ * so no workspace ever shows them anyone else's.
+ */
+function SignInGate({ children }: { readonly children: (role: 'admin' | 'customer') => ReactNode }): JSX.Element {
+  const { t } = useTranslator();
+  const { status, user, load, signOut } = useSession();
+  useEffect(() => { void load(); }, [load]);
+
+  const customerBirth = user?.role === 'customer' ? user.birth : null;
+  useEffect(() => {
+    if (!user || user.role !== 'customer' || !customerBirth) return;
+    useChartStore.setState({ hydrating: true });
+    void useChartStore.getState().cast(customerBirth, user.settings, 'standard')
+      .finally(() => useChartStore.setState({ hydrating: false }));
+    // Recast only when the person or their details change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id, customerBirth]);
+
+  if (status === 'loading') {
+    return <div className="grid min-h-dvh place-items-center"><p className="as-body as-text-muted">{t('account.checking')}</p></div>;
+  }
+  if (status === 'unavailable') {
+    return (
+      <main className="mx-auto grid min-h-dvh max-w-md place-items-center px-4">
+        <section className="as-card">
+          <h1 className="as-h2">{t('account.unavailable.title')}</h1>
+          <p className="as-body mb-3">{t('account.unavailable.body')}</p>
+          <button type="button" className="as-button-primary min-h-[44px]" onClick={() => void load()}>{t('account.retry')}</button>
+        </section>
+      </main>
+    );
+  }
+  if (status === 'signedOut' || !user) return <AuthScreen />;
+  return (
+    <AppShell role={user.role} account={{ name: user.name, onSignOut: () => void signOut() }}>
+      {children(user.role)}
+    </AppShell>
+  );
+}
+
+const ROUTES: Readonly<Record<string, () => JSX.Element>> = {
+  dashboard: DashboardRoute, chart: ChartStudioRoute, relationships: RelationshipsRoute, events: EventExplorerRoute,
+  calendar: CalendarRoute, vedic: VedicRoute, gann: GannLabRoute, research: ResearchRoute, clients: ClientsRoute,
+  reports: ReportsRoute, profile: ProfileRoute, settings: SettingsRoute,
+};
+
 createRoot(container).render(
   <StrictMode>
     <ThemeStyle />
@@ -47,24 +102,18 @@ createRoot(container).render(
         <SelfTestPanel />
       ) : (
         <BrowserRouter>
-          <AppShell>
-            <Routes>
-              <Route path="/" element={<DashboardRoute />} />
-              <Route path="/chart" element={<ChartStudioRoute />} />
-              <Route path="/relationships" element={<RelationshipsRoute />} />
-              <Route path="/events" element={<EventExplorerRoute />} />
-              <Route path="/calendar" element={<CalendarRoute />} />
-              <Route path="/vedic" element={<VedicRoute />} />
-              <Route path="/gann" element={<GannLabRoute />} />
-              <Route path="/research" element={<ResearchRoute />} />
-              <Route path="/clients" element={<ClientsRoute />} />
-              <Route path="/reports" element={<ReportsRoute />} />
-              <Route path="/settings" element={<SettingsRoute />} />
-              {/* An unknown path is a typo, not a feature. Send it home
-                  rather than rendering a dead end. */}
-              <Route path="*" element={<Navigate to="/" replace />} />
-            </Routes>
-          </AppShell>
+          <SignInGate>
+            {(role) => (
+              <Routes>
+                {workspacesFor(role).map((w) => {
+                  const Route_ = ROUTES[w.id]!;
+                  return <Route key={w.id} path={w.path} element={<Route_ />} />;
+                })}
+                {/* An unknown path, or one this role cannot use, goes home. */}
+                <Route path="*" element={<Navigate to="/" replace />} />
+              </Routes>
+            )}
+          </SignInGate>
         </BrowserRouter>
       )}
     </I18nProvider>

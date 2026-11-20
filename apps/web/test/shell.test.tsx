@@ -15,9 +15,9 @@ import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { I18nProvider } from '@astro/i18n';
 import { AppShell } from '../src/shell/AppShell.js';
-import { WORKSPACES, PRIMARY_WORKSPACES, workspaceByPath } from '../src/shell/workspaces.js';
+import { WORKSPACES, PRIMARY_WORKSPACES, workspaceByPath, workspacesFor, primaryFor, type Workspace } from '../src/shell/workspaces.js';
 import {
-  DashboardRoute, GannLabRoute, ClientsRoute, RelationshipsRoute, ReportsRoute,
+  DashboardRoute, GannLabRoute, RelationshipsRoute, ReportsRoute,
   SettingsRoute,
 } from '../src/shell/routes.js';
 import { PlannedWorkspace } from '../src/shell/PlannedWorkspace.js';
@@ -45,7 +45,6 @@ function renderShell(initialPath = '/', locale: 'en' | 'hi' | 'gu' = 'en') {
           <Routes>
             <Route path="/" element={<DashboardRoute />} />
             <Route path="/gann" element={<GannLabRoute />} />
-            <Route path="/clients" element={<ClientsRoute />} />
             <Route path="/relationships" element={<RelationshipsRoute />} />
             <Route path="/reports" element={<ReportsRoute />} />
             <Route path="*" element={<div>other workspace</div>} />
@@ -69,12 +68,25 @@ beforeEach(() => {
 afterEach(cleanup);
 
 describe('the workspace list', () => {
-  it('has the workspaces the brief specifies, plus the Vedic module', () => {
-    expect(WORKSPACES).toHaveLength(11);
+  it('has the workspaces the brief specifies, plus the Vedic module and My details', () => {
+    expect(WORKSPACES).toHaveLength(12);
     expect(WORKSPACES.map((w) => w.id)).toEqual([
       'dashboard', 'chart', 'relationships', 'events', 'calendar',
-      'vedic', 'gann', 'research', 'clients', 'reports', 'settings',
+      'vedic', 'gann', 'research', 'clients', 'reports', 'profile', 'settings',
     ]);
+  });
+
+  it('gives each role its own set', () => {
+    // The admin has everything except a customer's own "My details".
+    expect(workspacesFor('admin').map((w) => w.id)).not.toContain('profile');
+    expect(workspacesFor('admin')).toHaveLength(11);
+    // A customer sees their own chart's workspaces, never other people's.
+    const customer = workspacesFor('customer').map((w) => w.id);
+    expect(customer).toContain('profile');
+    for (const id of ['relationships', 'gann', 'research', 'clients']) expect(customer, id).not.toContain(id);
+    for (const role of ['admin', 'customer'] as const) {
+      expect(primaryFor(role).length, role).toBeLessThanOrEqual(5);
+    }
   });
 
   it('gives every workspace a unique id and path', () => {
@@ -111,8 +123,8 @@ describe('the navigation rail', () => {
     renderShell();
     const rail = screen.getByRole('navigation', { name: 'Workspaces' });
     const links = within(rail).getAllByRole('link');
-    expect(links).toHaveLength(WORKSPACES.length);
-    for (const w of WORKSPACES) {
+    expect(links).toHaveLength(workspacesFor('admin').length);
+    for (const w of workspacesFor('admin')) {
       expect(links.some((a) => a.getAttribute('href') === w.path), w.id).toBe(true);
     }
   });
@@ -144,9 +156,8 @@ describe('the navigation rail', () => {
   it('labels unfinished workspaces in the navigation itself', () => {
     renderShell();
     const rail = screen.getByRole('navigation', { name: 'Workspaces' });
-    // Clients alone, and it is blocked on the accounts decision rather than
-    // on code. Nothing is partial any more.
-    expect(within(rail).getAllByText('Planned')).toHaveLength(1);
+    // Clients was the last one; it shipped with accounts in 0.38.
+    expect(within(rail).queryAllByText('Planned')).toHaveLength(0);
     expect(within(rail).queryAllByText('Partial')).toHaveLength(0);
   });
 
@@ -202,17 +213,35 @@ describe('the mobile bottom bar', () => {
   });
 });
 
+/*
+ * Every workspace is built now, so the planned page is tested on a stand-in.
+ * The component stays: the next unfinished workspace uses it, and its rule
+ * (say what is missing, show nothing calculated) must still hold then.
+ */
+const FUTURE: Workspace = {
+  ...WORKSPACES.find((w) => w.id === 'clients')!, status: 'planned', milestone: 4,
+};
+function renderPlanned(locale: 'en' | 'hi' = 'en', availableNow?: { path: string; labelKey: string }) {
+  return render(
+    <I18nProvider initialLocale={locale}>
+      <MemoryRouter>
+        <PlannedWorkspace workspace={FUTURE} scopeKeys={['clients.scope.records']} availableNow={availableNow} />
+      </MemoryRouter>
+    </I18nProvider>,
+  );
+}
+
 describe('a planned workspace', () => {
   it('states that it is not built, and when it is due', () => {
-    renderShell('/clients');
+    renderPlanned();
     expect(screen.getByRole('heading', { level: 1, name: 'Clients' })).toBeInTheDocument();
     expect(screen.getByText(/not built yet/i)).toBeInTheDocument();
     expect(screen.getByText(/milestone 4/i)).toBeInTheDocument();
   });
 
   it('lists its intended scope', () => {
-    renderShell('/clients');
-    expect(screen.getByText(/Consent tracking/)).toBeInTheDocument();
+    renderPlanned();
+    expect(screen.getAllByRole('listitem').length).toBeGreaterThan(0);
   });
 
   it('says plainly that nothing on the page is calculated', () => {
@@ -222,39 +251,22 @@ describe('a planned workspace', () => {
      * empty state is the same misrepresentation with better manners: someone
      * screenshots it and believes the feature ships.
      */
-    renderShell('/clients');
+    renderPlanned();
     expect(screen.getByText(/Nothing on this page is calculated/i)).toBeInTheDocument();
   });
 
   it('shows no chart, table or numeric figure', () => {
-    const { container } = renderShell('/clients');
+    const { container } = renderPlanned();
     expect(container.querySelector('svg.chart, table')).toBeNull();
   });
 
   it('points at what genuinely works today, where something does', () => {
-    /*
-     * Rendered directly rather than through a route: every workspace that
-     * still carries an "available now" link has since been built, and a test
-     * that follows whichever one happens to be unfinished this week stops
-     * testing the component and starts testing the backlog.
-     */
-    render(
-      <I18nProvider initialLocale="en">
-        <MemoryRouter>
-          <PlannedWorkspace
-            workspace={WORKSPACES.find((w) => w.id === 'clients')!}
-            scopeKeys={['clients.scope.records']}
-            availableNow={{ path: '/research', labelKey: 'nav.research' }}
-          />
-        </MemoryRouter>
-      </I18nProvider>,
-    );
-    expect(screen.getByRole('link', { name: 'Research' }))
-      .toHaveAttribute('href', '/research');
+    renderPlanned('en', { path: '/research', labelKey: 'nav.research' });
+    expect(screen.getByRole('link', { name: 'Research' })).toHaveAttribute('href', '/research');
   });
 
   it('offers no such link when nothing related exists', () => {
-    renderShell('/clients');
+    renderPlanned();
     expect(screen.queryByText(/Available now/i)).not.toBeInTheDocument();
   });
 });
@@ -305,11 +317,11 @@ describe('translation', () => {
     renderShell('/', 'gu');
     const rail = screen.getByRole('navigation', { name: 'કાર્યક્ષેત્રો' });
     expect(within(rail).getByRole('link', { name: /કુંડળી સ્ટુડિયો/ })).toBeInTheDocument();
-    expect(within(rail).getAllByText('નિયોજિત').length).toBe(1);
+    expect(within(rail).queryAllByText('નિયોજિત')).toHaveLength(0);
   });
 
   it('translates the planned-workspace explanation into Hindi', () => {
-    renderShell('/clients', 'hi');
+    renderPlanned('hi');
     expect(screen.getByText(/माइलस्टोन 4/)).toBeInTheDocument();
   });
 

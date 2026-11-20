@@ -7,13 +7,25 @@
 import { createHash } from 'node:crypto';
 import { neon } from '@neondatabase/serverless';
 
-let client: ReturnType<typeof neon> | undefined;
+/** The one database call the API makes: parameterised SQL in, rows out. */
+export interface Sql {
+  query(text: string, params?: readonly unknown[]): Promise<Record<string, unknown>[]>;
+}
 
-export function db(): ReturnType<typeof neon> {
+let client: Sql | undefined;
+
+export function db(): Sql {
+  if (client) return client;
   const url = process.env.DATABASE_URL;
   if (!url) throw new HttpError(503, 'DATABASE_NOT_CONFIGURED');
-  client ??= neon(url);
+  const neonSql = neon(url);
+  client = { query: async (text, params) => (await neonSql.query(text, params ? [...params] : [])) as Record<string, unknown>[] };
   return client;
+}
+
+/** Tests run the handlers against an in-process Postgres (PGlite) through this. */
+export function useDatabaseForTests(sql: Sql | undefined): void {
+  client = sql;
 }
 
 export class HttpError extends Error {

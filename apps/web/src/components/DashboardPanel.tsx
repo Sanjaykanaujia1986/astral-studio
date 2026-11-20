@@ -38,6 +38,7 @@ import { useSettings } from '../lib/settings.js';
 import { AlertsPanel } from './AlertsPanel.js';
 import { HeroPanel } from './HeroPanel.js';
 import { DayPanel, DayPanelEmpty } from './DayPanel.js';
+import { useSession } from '../state/session.js';
 
 const TH = 'px-2 py-1.5 text-left text-xs font-medium uppercase tracking-wide';
 const TD = 'px-2 py-1.5 whitespace-nowrap tabular-nums';
@@ -91,6 +92,12 @@ export function DashboardPanel(): JSX.Element {
   const natal = useChartStore((s) => s.chart);
   const hydrating = useChartStore((s) => s.hydrating);
   const cast = useChartStore((s) => s.cast);
+  /*
+   * A customer sees their own chart only: no welcome that invites casting a
+   * new one, and no saved-charts list, which is the admin's register of
+   * other people. No session at all (tests, the print route) reads as admin.
+   */
+  const isAdmin = useSession((s) => s.user?.role ?? 'admin') === 'admin';
 
   const [sky, setSky] = useState<Sky | null>(null);
   const [skyFailed, setSkyFailed] = useState(false);
@@ -164,6 +171,7 @@ export function DashboardPanel(): JSX.Element {
   }, [natal, jd]);
 
   useEffect(() => {
+    if (!isAdmin) return undefined;
     let live = true;
     void (async () => {
       try {
@@ -179,7 +187,7 @@ export function DashboardPanel(): JSX.Element {
       }
     })();
     return () => { live = false; };
-  }, []);
+  }, [isAdmin]);
 
   const open = useCallback(async (entry: SavedChartSummary) => {
     setOpening(true);
@@ -208,7 +216,7 @@ export function DashboardPanel(): JSX.Element {
         recast, and without this gate a returning reader is greeted by "cast
         your first chart" every time they refresh.
       */}
-      {!natal && !hydrating ? <HeroPanel /> : null}
+      {isAdmin && !natal && !hydrating ? <HeroPanel /> : null}
 
       {/* Your day: first, because it is the one pane written for this reader. */}
       {natal ? <DayPanel natal={natal} /> : !hydrating ? <DayPanelEmpty /> : null}
@@ -304,7 +312,7 @@ export function DashboardPanel(): JSX.Element {
       </section>
 
       {/* --------------------------------------------- saved charts */}
-      <section className="as-card">
+      {isAdmin ? <section className="as-card">
         <h2 className="as-h2">{t('dashboard.saved.heading')}</h2>
 
         {savedError ? (
@@ -345,7 +353,7 @@ export function DashboardPanel(): JSX.Element {
         )}
 
         <p className="as-fineprint mt-3">{t('dashboard.saved.scope')}</p>
-      </section>
+      </section> : null}
 
       {/* ------------------------------------------------------ alerts */}
       <section className="as-card">

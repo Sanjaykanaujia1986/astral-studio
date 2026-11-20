@@ -216,3 +216,41 @@ gets 404 fetching the first key's chart by id.
 device key; the server stores only its SHA-256. This is not authentication —
 anyone with the key reads those charts, and clearing browser storage loses
 access unless the key was copied. The app states this beside the Save button.
+
+## Accounts (added 0.38.0)
+
+Everything is behind a sign-in now; a signed-out visitor sees only Sign in and
+Register. The note above about device keys describes 0.2–0.37.
+
+- **Admin.** Every workspace, any number of charts for anyone, and the Clients
+  list: each person's details, their change requests (unlock one edit, or
+  decline with a note), a direct correction, a temporary password for a
+  forgotten one, and deleting an account.
+- **Customer.** Registers with name, email, password, birth date, time and
+  place. Sees only their own chart in the workspaces that read one chart (no
+  Relationships, Gann Lab, Research or Clients), and cannot change their own
+  details: they send a request from *My details*, and an edit the admin
+  unlocks locks again when saved.
+
+Who is an admin comes from one Vercel setting, read on every sign-in and every
+session check, so adding or removing an address takes effect on that person's
+next request:
+
+    ADMIN_EMAILS=first@example.com,second@example.com   # comma separated
+
+Set it for Production (and Preview if previews should have an admin), then
+redeploy. The admin registers through the ordinary Register form with that
+email; until the setting exists, everyone who registers is a customer.
+
+Charts saved under a device key before 0.38 are not lost: the first time an
+admin lists charts from that device, they are moved to the admin's account.
+
+Database: migration 2 (see the end of `db/schema.sql`) runs itself on the
+first API request after the deploy. Passwords are scrypt hashes; sessions are
+an HttpOnly cookie whose SHA-256 is all the database keeps; eight wrong
+passwords lock an account for 15 minutes. There is no email sending, so a
+forgotten password goes through the admin.
+
+Locally, `npm run dev` serves the same `/api/auth`, `/api/admin` and
+`/api/charts` handlers against an in-memory database that starts empty each
+time; register as `admin@localhost.test` to be the admin there.

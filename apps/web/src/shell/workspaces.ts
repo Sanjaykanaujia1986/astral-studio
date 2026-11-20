@@ -37,7 +37,12 @@ export interface Workspace {
    * so they follow the theme without a second palette.
    */
   readonly icon: string;
+  /** Who sees it. Omitted means both admins and customers. */
+  readonly roles?: readonly Role[];
 }
+
+/** An admin sees everything; a customer sees the workspaces about their own chart. */
+export type Role = 'admin' | 'customer';
 
 export const WORKSPACES: readonly Workspace[] = [
   {
@@ -62,6 +67,7 @@ export const WORKSPACES: readonly Workspace[] = [
     labelKey: 'nav.relationships',
     status: 'ready',
     primary: true,
+    roles: ['admin'],
     icon: 'M9 12a4 4 0 1 1 0-8 4 4 0 0 1 0 8Zm6 0a4 4 0 1 1 0-8 4 4 0 0 1 0 8ZM3 20v-1c0-2.2 2.7-4 6-4s6 1.8 6 4v1H3Zm12.5-5.2c2 .7 3.5 2.1 3.5 4.2v1h2v-1c0-2-1.9-3.6-5.5-4.2Z',
   },
   {
@@ -95,6 +101,7 @@ export const WORKSPACES: readonly Workspace[] = [
     labelKey: 'nav.gannLab',
     status: 'ready',
     primary: false,
+    roles: ['admin'],
     icon: 'M3 3h18v18H3V3Zm2 2v14h14V5H5Zm2 2h10v10H7V7Zm2 2v6h6V9H9Z',
   },
   {
@@ -103,15 +110,16 @@ export const WORKSPACES: readonly Workspace[] = [
     labelKey: 'nav.research',
     status: 'ready',
     primary: false,
+    roles: ['admin'],
     icon: 'M3 20h18v2H3v-2Zm2-7h3v6H5v-6Zm5-5h3v11h-3V8Zm5-4h3v15h-3V4Z',
   },
   {
     id: 'clients',
     path: '/clients',
     labelKey: 'nav.clients',
-    status: 'planned',
+    status: 'ready',
     primary: false,
-    milestone: 4,
+    roles: ['admin'],
     icon: 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm0 2c-4 0-7 2-7 4.5V21h14v-2.5C19 16 16 14 12 14Z',
   },
   {
@@ -123,6 +131,15 @@ export const WORKSPACES: readonly Workspace[] = [
     icon: 'M6 2h8l4 4v16H6V2Zm7 1.5V7h3.5L13 3.5ZM8 11h8v2H8v-2Zm0 4h8v2H8v-2Z',
   },
   {
+    id: 'profile',
+    path: '/profile',
+    labelKey: 'nav.profile',
+    status: 'ready',
+    primary: true,
+    roles: ['customer'],
+    icon: 'M12 2a5 5 0 1 0 0 10 5 5 0 0 0 0-10Zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6Zm0 10c-4.4 0-8 2.2-8 5v3h16v-3c0-2.8-3.6-5-8-5Zm-6 6v-1c0-1.3 2.5-3 6-3s6 1.7 6 3v1H6Z',
+  },
+  {
     id: 'settings',
     path: '/settings',
     labelKey: 'nav.settings',
@@ -132,8 +149,17 @@ export const WORKSPACES: readonly Workspace[] = [
   },
 ];
 
+/** The workspaces a role sees, in rail order. */
+export function workspacesFor(role: Role): readonly Workspace[] {
+  return WORKSPACES.filter((w) => !w.roles || w.roles.includes(role));
+}
+
 /** Bottom-bar items. Five is the most a phone fits without crowding. */
-export const PRIMARY_WORKSPACES: readonly Workspace[] = WORKSPACES.filter((w) => w.primary);
+export function primaryFor(role: Role): readonly Workspace[] {
+  return workspacesFor(role).filter((w) => w.primary);
+}
+
+export const PRIMARY_WORKSPACES: readonly Workspace[] = primaryFor('admin');
 
 export function workspaceByPath(path: string): Workspace | undefined {
   // Longest match first, so `/chart` does not shadow a future `/chart/x`.

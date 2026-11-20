@@ -89,3 +89,26 @@ CREATE TABLE IF NOT EXISTS dataset_meta (
 );
 
 INSERT INTO schema_migrations (version) VALUES (1) ON CONFLICT DO NOTHING;
+
+-- ---------------------------------------------------------------------------
+-- Migration 2 (0.38.0): accounts
+--
+-- Not run from this file. The API applies it itself, once, on the first
+-- request after a deploy (ensureSchema in api/_auth.ts, recorded as version 2
+-- above), so a deploy never waits on a manual step. The statements there are
+-- the source of truth; in short:
+--
+--   app_users        email (lowercase, unique), scrypt password hash, role
+--                    (admin | customer), name, birth jsonb, settings jsonb,
+--                    edit_unlocked (one admin-granted edit), failed_logins and
+--                    locked_until (8 misses lock the account for 15 minutes)
+--   app_sessions     sha256 of the session token only, user, expiry (30 days)
+--   change_requests  a customer's request to change their details:
+--                    open -> granted (one edit) -> done, or declined with a note
+--   charts.user_id   saved charts belong to an admin account; owner_hash (the
+--                    old device key) becomes nullable and is adopted on an
+--                    admin's first list from that device
+--
+-- Who is an admin is not stored as a decision: it is re-read from the
+-- ADMIN_EMAILS setting on every sign-in and session check.
+-- ---------------------------------------------------------------------------

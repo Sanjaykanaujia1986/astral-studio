@@ -1,5 +1,5 @@
 /**
- * The eleven workspace routes.
+ * The workspace routes.
  *
  * Each one composes panels that already exist and are already tested; this file
  * is arrangement, not new calculation. Workspaces that are genuinely not built
@@ -22,6 +22,9 @@ import { CyclesPanel } from '../components/CyclesPanel.js';
 import { SkyEventsPanel } from '../components/SkyEventsPanel.js';
 import { DashboardPanel } from '../components/DashboardPanel.js';
 import { SavedChartsPanel } from '../components/SavedChartsPanel.js';
+import { AdminPanel } from '../components/AdminPanel.js';
+import { ProfilePanel } from '../components/ProfilePanel.js';
+import { useSession } from '../state/session.js';
 /*
  * Split at the route.
  *
@@ -46,11 +49,8 @@ const ReportPanel = lazy(() =>
 import { useChartStore } from '../state/chart.js';
 import { useSettings, WHEEL_SIZES, type WheelSize } from '../lib/settings.js';
 import { useChartTheme } from '../lib/chart-theme.js';
-import { WORKSPACES } from './workspaces.js';
-import { PlannedWorkspace } from './PlannedWorkspace.js';
 import { BRAND } from '../brand.js';
 
-const byId = (id: string) => WORKSPACES.find((w) => w.id === id)!;
 
 /**
  * Fallback for a split route.
@@ -224,8 +224,9 @@ function ChartSummary(): JSX.Element | null {
 // ---------------------------------------------------------------- workspaces
 
 export function DashboardRoute(): JSX.Element {
+  const customer = useSession((s) => s.user?.role === 'customer');
   return (
-    <Page titleKey="nav.dashboard" ledeKey="dashboard.lede">
+    <Page titleKey="nav.dashboard" ledeKey={customer ? 'account.dashboard.lede' : 'dashboard.lede'}>
       <DashboardPanel />
     </Page>
   );
@@ -236,11 +237,16 @@ export function ChartStudioRoute(): JSX.Element {
   const settings = useSettings();
   const chartTheme = useChartTheme();
   const { chart, busy, errorCode, cast } = useChartStore();
+  /*
+   * A customer's chart is their registered one. They get the chart itself and
+   * every table, but not the form that would cast someone else's.
+   */
+  const customer = useSession((s) => s.user?.role === 'customer');
 
   return (
-    <Page titleKey="nav.chartStudio" ledeKey="chartStudio.lede">
-      <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
-        <div className="no-print flex flex-col gap-5">
+    <Page titleKey="nav.chartStudio" ledeKey={customer ? 'account.chartStudio.lede' : 'chartStudio.lede'}>
+      <div className={customer ? 'grid gap-5' : 'grid gap-5 lg:grid-cols-[22rem_1fr]'}>
+        {customer ? null : <div className="no-print flex flex-col gap-5">
           <section className="as-card">
             <h2 className="as-h2">{t('form.section.birthData')}</h2>
             <BirthForm
@@ -256,7 +262,7 @@ export function ChartStudioRoute(): JSX.Element {
               onOpen={(birth, saved) => void cast(birth, saved, settings.orbProfile)}
             />
           </section>
-        </div>
+        </div>}
 
         <div className="flex min-w-0 flex-col gap-5">
           {errorCode ? (
@@ -395,13 +401,17 @@ export function ResearchRoute(): JSX.Element {
 
 export function ClientsRoute(): JSX.Element {
   return (
-    <PlannedWorkspace
-      workspace={byId('clients')}
-      scopeKeys={[
-        'clients.scope.records', 'clients.scope.consent',
-        'clients.scope.sharing', 'clients.scope.templates', 'clients.scope.auth',
-      ]}
-    />
+    <Page titleKey="nav.clients" ledeKey="admin.lede">
+      <AdminPanel />
+    </Page>
+  );
+}
+
+export function ProfileRoute(): JSX.Element {
+  return (
+    <Page titleKey="nav.profile" ledeKey="account.profile.lede" narrow>
+      <ProfilePanel />
+    </Page>
   );
 }
 

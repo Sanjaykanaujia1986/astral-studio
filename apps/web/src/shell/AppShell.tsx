@@ -21,7 +21,7 @@ import { useCallback, useEffect, useState, type JSX, type ReactNode } from 'reac
 import { NavLink, useLocation } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
 import { BRAND } from '../brand.js';
-import { PRIMARY_WORKSPACES, WORKSPACES, workspaceByPath, type Workspace } from './workspaces.js';
+import { primaryFor, workspacesFor, workspaceByPath, type Role, type Workspace } from './workspaces.js';
 import { WorkspaceBoundary } from './WorkspaceBoundary.js';
 import { useChartStore } from '../state/chart.js';
 import { useSeriesStore } from '../state/series.js';
@@ -83,10 +83,16 @@ function RailItem({ workspace, collapsed }: { workspace: Workspace; collapsed: b
 
 export interface AppShellProps {
   readonly children: ReactNode;
+  /** Which workspaces to offer. The server enforces access; this only hides what a role cannot use. */
+  readonly role?: Role;
+  /** The signed-in person, with a way out. Omitted in tests that render the shell alone. */
+  readonly account?: { readonly name: string; readonly onSignOut: () => void };
 }
 
-export function AppShell({ children }: AppShellProps): JSX.Element {
+export function AppShell({ children, role = 'admin', account }: AppShellProps): JSX.Element {
   const { t, locale } = useTranslator();
+  const visible = workspacesFor(role);
+  const primary = primaryFor(role);
 
   /*
    * Bring back the chart the reader last cast.
@@ -97,11 +103,13 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
    * like a dead end. Idempotent, so StrictMode's double-invoke is harmless.
    */
   useEffect(() => {
-    void useChartStore.getState().restore();
+    // A customer's chart is their own registered one, cast by the sign-in gate,
+    // never whatever this device showed last.
+    if (role === 'admin') void useChartStore.getState().restore();
     // The series only comes back if the reader asked for it to; the call is
     // what reads that choice and settles the hydrating flag either way.
     useSeriesStore.getState().restore();
-  }, []);
+  }, [role]);
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(() => {
     try {
@@ -137,7 +145,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
     document.title = label ? `${label} · ${BRAND.name}` : BRAND.name;
   }, [active, t]);
 
-  const secondary = WORKSPACES.filter((w) => !w.primary);
+  const secondary = visible.filter((w) => !w.primary);
 
   return (
     <>
@@ -186,10 +194,21 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
         </div>
 
         <ul className="as-rail-list">
-          {WORKSPACES.map((workspace) => (
+          {visible.map((workspace) => (
             <RailItem key={workspace.id} workspace={workspace} collapsed={collapsed} />
           ))}
         </ul>
+
+        {account ? (
+          <div className="as-rail-account">
+            {!collapsed ? <span className="as-rail-account-name" title={account.name}>{account.name}</span> : null}
+            <button type="button" onClick={account.onSignOut} className="as-rail-signout"
+              aria-label={t('account.signOut')} title={t('account.signOut')}>
+              <Icon path="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm5.6 4.6L14.2 9l2 2H8v2h8.2l-2 2 1.4 1.4L20 12l-4.4-4.4Z" />
+              {!collapsed ? <span>{t('account.signOut')}</span> : null}
+            </button>
+          </div>
+        ) : null}
       </nav>
 
       {/* ---------------- workspace ---------------- */}
@@ -204,7 +223,7 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
 
       {/* ---------------- mobile bottom bar ---------------- */}
       <nav aria-label={t('nav.primaryMobile')} className="as-bottom no-print">
-        {PRIMARY_WORKSPACES.map((workspace) => (
+        {primary.map((workspace) => (
           <NavLink
             key={workspace.id}
             to={workspace.path}
@@ -238,6 +257,14 @@ export function AppShell({ children }: AppShellProps): JSX.Element {
                 </NavLink>
               </li>
             ))}
+            {account ? (
+              <li>
+                <button type="button" onClick={account.onSignOut} className="as-sheet-item w-full">
+                  <Icon path="M10 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h5v-2H5V5h5V3Zm5.6 4.6L14.2 9l2 2H8v2h8.2l-2 2 1.4 1.4L20 12l-4.4-4.4Z" />
+                  <span>{t('account.signOutAs', { name: account.name })}</span>
+                </button>
+              </li>
+            ) : null}
           </ul>
         </div>
       ) : null}

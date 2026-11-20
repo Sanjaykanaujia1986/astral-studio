@@ -23,9 +23,9 @@
  * So this talks to the real deployment over HTTP and checks what is true of it
  * right now.
  *
- * It creates and then DELETES one chart under a throwaway owner key, and
- * verifies the deletion. It never touches anyone else's data: the owner key is
- * random per run, and the isolation check relies on that.
+ * It writes nothing. The private endpoints are checked from outside, as an
+ * anonymous visitor, a forged session and a stale device key; the account
+ * rules behind them are tested end to end in packages/api-tests.
  */
 import { randomBytes } from 'node:crypto';
 
@@ -167,6 +167,8 @@ if (bundle) {
     ['Report preview fits the window (0.36)', 'data-report-zoom'],
     ['Reviewed Hindi catalogue (0.36)', 'निरयन भोगांश पर ज्योतिष'],
     ['Your day on the dashboard (0.37)', 'data-day-panel'],
+    ['Sign-in, customer details and the admin list (0.38)', 'data-admin-users'],
+    ['Day charts: natal wheel, North and South Indian (0.38)', 'data-day-chart'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {
@@ -217,7 +219,7 @@ const health = await json('/api/health');
 check('health responds', health.status === 200 && health.body?.ok === true);
 check('cities loaded', health.body?.cities === 69_641, String(health.body?.cities));
 check('ephemeris loaded', health.body?.ephemeris_days === 73_414, String(health.body?.ephemeris_days));
-check('schema at version 1', health.body?.schema_version === 1);
+check('schema migrated', health.body?.schema_version >= 1, String(health.body?.schema_version));
 
 // ---------------------------------------------------------------- city search
 section('City search');
@@ -245,69 +247,37 @@ check('Swiss ephemeris, not Moshier', equinox.body?.days?.[0]?.source === 'swiss
 check('range cap enforced',
   (await json('/api/ephemeris?from=2020-01-01&to=2024-01-01')).status === 400);
 
-// ------------------------------------------------------- charts & isolation
-section('Saved charts and access isolation');
-const keyA = randomBytes(32).toString('hex');
-const keyB = randomBytes(32).toString('hex');
-const owner = (key) => ({ 'x-astro-owner': key, 'content-type': 'application/json' });
+// ------------------------------------------------------- accounts & access
+/*
+ * Since 0.38 everything sits behind a sign-in: saved charts are the admin's,
+ * and a customer reaches only their own details. The smoke test holds no
+ * account, so it checks the doors from outside: every private endpoint
+ * refuses an anonymous caller, the old device key no longer opens anything,
+ * and a forged session cookie is nobody. It creates nothing in the database.
+ */
+section('Accounts and access');
+const me = await json('/api/auth?action=me');
+check('signed-out visitor is nobody', me.status === 200 && me.body?.user === null, JSON.stringify(me.body));
+const forged = await json('/api/auth?action=me', { headers: { cookie: `astro_session=${randomBytes(32).toString('hex')}` } });
+check('a forged session cookie is nobody', forged.status === 200 && forged.body?.user === null);
 
-check('no owner key is rejected', (await json('/api/charts')).status === 401);
-check('a malformed owner key is rejected',
-  (await json('/api/charts', { headers: { 'x-astro-owner': 'short' } })).status === 401);
-
-const created = await json('/api/charts', {
-  method: 'POST',
-  headers: owner(keyA),
-  body: JSON.stringify({
-    name: 'smoke-test (deleted automatically)',
-    birth: {
-      date: { year: 1990, month: 1, day: 15 },
-      time: { hour: 14, minute: 30 },
-      zone: { kind: 'iana', zone: 'Asia/Kolkata' },
-      place: { latitude: 18.9667, longitude: 72.8333, label: 'Mumbai' },
-    },
-    settings: { houseSystem: 'placidus', nodeType: 'mean' },
-    summary: { sun: 'capricorn' },
-    engineFingerprint: '855fec9b',
-  }),
+const deviceKey = { 'x-astro-owner': randomBytes(32).toString('hex') };
+check('saved charts need a sign-in', (await json('/api/charts')).status === 401);
+check('the old device key no longer opens charts',
+  (await json('/api/charts', { headers: deviceKey })).status === 401);
+check('the admin list needs a sign-in', (await json('/api/admin?action=users')).status === 401);
+check('a customer request list needs a sign-in', (await json('/api/auth?action=requests')).status === 401);
+check('writes must be JSON (no form posts from other sites)',
+  (await json('/api/auth?action=login', { method: 'POST', headers: { 'content-type': 'text/plain' }, body: '{}' })).status === 415);
+const wrong = await json('/api/auth?action=login', {
+  method: 'POST', headers: { 'content-type': 'application/json' },
+  body: JSON.stringify({ email: `nobody-${randomBytes(6).toString('hex')}@smoke.invalid`, password: 'not-a-real-password' }),
 });
-const chartId = created.body?.chart?.id;
-check('chart saves', created.status === 201 && Boolean(chartId));
-
-const listA = await json('/api/charts', { headers: owner(keyA) });
-check('owner sees their chart',
-  listA.body?.charts?.some((c) => c.id === chartId));
-
-const listB = await json('/api/charts', { headers: owner(keyB) });
-check('a different key sees nothing',
-  Array.isArray(listB.body?.charts) && listB.body.charts.length === 0,
-  `${listB.body?.charts?.length ?? '?'} charts`);
-
-if (chartId) {
-  // The decisive isolation test: knowing the id must not be enough.
-  const stolen = await json(`/api/charts?id=${chartId}`, { headers: owner(keyB) });
-  check('a different key cannot fetch it by id', stolen.status === 404, String(stolen.status));
-
-  const settings = await json(`/api/charts?id=${chartId}`, { headers: owner(keyA) });
-  check('settings round-trip intact',
-    settings.body?.chart?.settings?.nodeType === 'mean');
-}
-
-check('invalid chart rejected',
-  (await json('/api/charts', {
-    method: 'POST', headers: owner(keyA), body: JSON.stringify({ name: '' }),
-  })).status === 422);
-check('invalid id rejected',
-  (await json('/api/charts?id=not-a-uuid', { headers: owner(keyA) })).status === 400);
-
-if (chartId) {
-  const deleted = await json(`/api/charts?id=${chartId}`, { method: 'DELETE', headers: owner(keyA) });
-  check('chart deletes', deleted.status === 200 && deleted.body?.deleted === chartId);
-  check('deleting twice is a 404, not a silent success',
-    (await json(`/api/charts?id=${chartId}`, { method: 'DELETE', headers: owner(keyA) })).status === 404);
-  const after = await json('/api/charts', { headers: owner(keyA) });
-  check('cleaned up after itself', after.body?.charts?.length === 0);
-}
+check('an unknown email is refused without saying which half was wrong',
+  wrong.status === 401 && wrong.body?.error === 'WRONG_EMAIL_OR_PASSWORD', `${wrong.status} ${wrong.body?.error}`);
+check('a half-filled registration is refused',
+  (await json('/api/auth?action=register', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ email: 'x@smoke.invalid' }) })).status === 422);
+check('accounts schema migrated', (await json('/api/health')).body?.schema_version === 2);
 
 // ---------------------------------------------------------------- summary
 console.log(`\n${passed} passed, ${failed} failed`);

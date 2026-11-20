@@ -1,0 +1,17 @@
+{
+  "name": "@astro/api-tests",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Runs the /api functions against an in-process Postgres (PGlite), so accounts and access rules are tested before they reach Neon.",
+  "scripts": {
+    "test": "tsc --noEmit && vitest run",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.3.14",
+    "@types/node": "^24.13.2",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.11"
+  }
+}

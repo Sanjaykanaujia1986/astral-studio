@@ -19,10 +19,13 @@
  */
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
-import { calculateNatalChart, type NatalChart } from '@astro/engine';
+import { calculateChartForInstant, calculateNatalChart, norm360, type InstantChart, type NatalChart } from '@astro/engine';
 import { useTranslator, type MessageKey } from '@astro/i18n';
-import { dayReading, grahaLongitudes, vedicChart, type DayReading, type DayTone } from '@astro/vedic';
+import { ChartWheel, VedicChartFigure } from '@astro/ui';
+import { dayReading, grahaLongitudes, vedicChart, SEVEN, type DayReading, type DayTone, type VedicChart } from '@astro/vedic';
 import { getProvider } from '../lib/engine.js';
+import { useChartTheme } from '../lib/chart-theme.js';
+import { useSettings } from '../lib/settings.js';
 import { useJy } from './vedic/shared.js';
 
 const DAYS = 7;
@@ -37,7 +40,26 @@ const TONE_COLOUR: Readonly<Record<DayTone, string>> = {
   gentle: 'var(--as-warning-ink)',
 };
 
-interface Day { readonly start: Date; readonly reading: DayReading }
+/**
+ * The sky of one day, at the same midday instant the reading is taken at:
+ * the Western ring in the chart's own zodiac, and the grahas' sidereal signs
+ * for the two Indian squares.
+ */
+interface Sky {
+  readonly wheel: InstantChart;
+  readonly grahas: readonly { readonly body: string; readonly signIndex: number; readonly retrograde: boolean }[];
+}
+interface Day { readonly start: Date; readonly reading: DayReading; readonly sky: Sky }
+
+type View = 'wheel' | 'north' | 'south';
+const VIEWS: readonly View[] = ['wheel', 'north', 'south'];
+const VIEW_KEY = 'astro.day.view';
+function storedView(): View {
+  try {
+    const v = globalThis.localStorage?.getItem(VIEW_KEY);
+    return VIEWS.includes(v as View) ? (v as View) : 'north';
+  } catch { return 'north'; }
+}
 
 export function DayPanel({ natal }: { readonly natal: NatalChart }): JSX.Element {
   const { t, d } = useTranslator();
@@ -45,6 +67,14 @@ export function DayPanel({ natal }: { readonly natal: NatalChart }): JSX.Element
   const [days, setDays] = useState<readonly Day[] | null>(null);
   const [failed, setFailed] = useState(false);
   const [pick, setPick] = useState(0);
+  const [view, setView] = useState<View>(storedView);
+  const [vchart, setVchart] = useState<VedicChart | null>(null);
+  const chartTheme = useChartTheme();
+  const settings = useSettings();
+  const choose = (v: View): void => {
+    setView(v);
+    try { globalThis.localStorage?.setItem(VIEW_KEY, v); } catch { /* private window: the choice lasts this visit */ }
+  };
 
   /* Local midnights of today and the six days after, read once per mount. */
   const starts = useMemo(() => {
@@ -64,15 +94,29 @@ export function DayPanel({ natal }: { readonly natal: NatalChart }): JSX.Element
           : calculateNatalChart(provider, natal.input, {
             settings: { ...natal.settings, zodiac: { kind: 'sidereal', ayanamsha: 'lahiri' } },
           });
-        const g = grahaLongitudes(vedicChart(sidereal));
+        const vc = vedicChart(sidereal);
+        const g = grahaLongitudes(vc);
         const ctx = {
           birthJd: sidereal.jdUT, utcOffsetMinutes: sidereal.offsetMinutes, zodiac: sidereal.settings.zodiac,
           node: sidereal.settings.nodeType === 'true' ? 'trueNode' as const : 'meanNode' as const,
         };
-        const out = starts.slice(0, DAYS).map((start, k) => ({
-          start, reading: dayReading(provider, g, ctx, jdOf(start.getTime()), jdOf(starts[k + 1]!.getTime())),
-        }));
-        if (live) setDays(out);
+        const skyAt = (jd: number): Sky => {
+          const grahas = SEVEN.map((b) => {
+            const p = provider.calc(jd, b, { zodiac: ctx.zodiac });
+            return { body: b as string, signIndex: Math.floor(norm360(p.longitude) / 30), retrograde: b !== 'sun' && b !== 'moon' && p.retrograde };
+          });
+          const rahu = norm360(provider.calc(jd, ctx.node, { zodiac: ctx.zodiac }).longitude);
+          grahas.push({ body: 'rahu', signIndex: Math.floor(rahu / 30), retrograde: false });
+          grahas.push({ body: 'ketu', signIndex: Math.floor(norm360(rahu + 180) / 30), retrograde: false });
+          // Planets only in the outer ring: transiting houses would be the houses of wherever the chart was cast, not of today.
+          const wheel = calculateChartForInstant(provider, jd, natal.place, { settings: natal.settings, withHouses: false });
+          return { wheel, grahas };
+        };
+        const out = starts.slice(0, DAYS).map((start, k) => {
+          const reading = dayReading(provider, g, ctx, jdOf(start.getTime()), jdOf(starts[k + 1]!.getTime()));
+          return { start, reading, sky: skyAt(reading.jd) };
+        });
+        if (live) { setDays(out); setVchart(vc); }
       } catch (cause) {
         console.error('day reading failed', cause);
         if (live) setFailed(true);
@@ -150,6 +194,34 @@ export function DayPanel({ natal }: { readonly natal: NatalChart }): JSX.Element
 
           <p className="as-fineprint mt-3">
             {t('dashboard.day.score', { tara: signed(r.points.tara), candra: signed(r.points.candra), bindus: signed(r.points.bindus) })}
+          </p>
+        </div>
+
+        <div className="mt-5 border-t pt-4" style={{ borderColor: 'var(--as-border)' }} data-day-chart={view}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+            <h3 className="text-sm font-semibold as-text">{t('dashboard.day.chart.heading')}</h3>
+            <div className="inline-flex rounded-lg border p-0.5" style={{ borderColor: 'var(--as-border)' }} role="group" aria-label={t('dashboard.day.chart.pick')}>
+              {VIEWS.map((v) => (
+                <button key={v} type="button" aria-pressed={view === v} onClick={() => choose(v)}
+                  className="min-h-[44px] cursor-pointer rounded-md px-3 text-xs font-medium transition-colors"
+                  style={{ background: view === v ? 'var(--as-raised)' : 'transparent', color: view === v ? 'var(--as-ink)' : 'var(--as-ink-muted)', boxShadow: view === v ? 'inset 0 0 0 1px var(--as-accent)' : 'none' }}>
+                  {t(`dashboard.day.chart.${v}` as MessageKey)}
+                </button>
+              ))}
+            </div>
+          </div>
+          {view === 'wheel' ? (
+            <ChartWheel chart={natal} outerChart={day.sky.wheel} outerLabel={d(day.start.toISOString(), { day: 'numeric', month: 'short' })}
+              size={520} theme={chartTheme} glyphStyle={settings.glyphStyle} showAspects={false}
+              title={t('dashboard.day.chart.wheelTitle', { date: d(day.start.toISOString(), { day: 'numeric', month: 'long' }) })}
+              className="mx-auto w-full max-w-[460px]" />
+          ) : vchart?.lagna ? (
+            <VedicChartFigure chart={vchart} style={view} size={420} theme={chartTheme} tinted className="mx-auto w-full max-w-[420px]"
+              label={t('dashboard.day.chart.vedicTitle', { date: d(day.start.toISOString(), { day: 'numeric', month: 'long' }) })}
+              placements={{ lagnaSignIndex: vchart.lagna.signIndex, bodies: day.sky.grahas }} />
+          ) : null}
+          <p className="as-fineprint mt-2">
+            {t(view === 'wheel' ? 'dashboard.day.chart.wheelNote' : 'dashboard.day.chart.vedicNote', { date: d(day.start.toISOString(), { day: 'numeric', month: 'long' }) })}
           </p>
         </div>
       </>
