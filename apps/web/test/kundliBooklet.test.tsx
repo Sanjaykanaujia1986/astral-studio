@@ -167,6 +167,24 @@ describe('the booklet', () => {
     expect(container.querySelectorAll('.k-band a[href="#k-contents"]').length).toBe(sheets.length - 1);
   }, 60_000);
 
+  it('frames the cover and lays out the birth details as labelled cells', async () => {
+    const { container } = booklet(only('kp'));
+    await waitFor(() => expect(screen.queryByText('Calculating…')).toBeNull());
+    const cover = container.querySelector('[data-kundli-page="cover"]') as HTMLElement;
+    expect(cover.querySelector('.k-cover .k-cover-in')).not.toBeNull();
+    const labels = [...cover.querySelectorAll('.k-cover-birth dt')].map((d) => d.textContent);
+    expect(labels).toEqual(['Date and time of birth', 'Time zone', 'Birthplace', 'Native']);
+    expect(cover.querySelector('.k-cover-facts dl')).not.toBeNull();
+    expect(cover.querySelector('.k-cover-foot')!.textContent).toMatch(/Generated/);
+  }, 60_000);
+
+  it('lets a table’s cells wrap rather than run past the sheet', () => {
+    const { container } = booklet(only('kp'));
+    const css = container.querySelector('.kundli > style')!.textContent!;
+    expect(css).toContain('.kundli .report-page td, .kundli .report-page th { white-space: normal; }');
+    expect(css).toContain('.kundli .report-page table { max-width: 100%; }');
+  });
+
   it('fills in the ephemeris sheets once the provider resolves', async () => {
     const { container } = booklet(only('strength', 'kp'));
     await waitFor(() => expect(screen.queryByText('Calculating…')).toBeNull());

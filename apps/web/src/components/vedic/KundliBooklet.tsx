@@ -32,6 +32,7 @@ import {
   type DashaNode, type DashaResult, type DashaSystemId, type Graha, type Limb, type Avastha,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
+import { BRAND } from '../../brand.js';
 import { ROW, Table, TD, localDate, localDateTime, utcOffsetLabel, useJy } from './shared.js';
 import { useYogaReason } from './YogaSection.js';
 import { TablesSection } from './TablesSection.js';
@@ -131,9 +132,33 @@ function bookletCss(paper: PaperSpec, runningHead: string): string {
     // A year-by-year table with a column per graha is wider than the sheet if
     // "Mithuna 13°18′" may not break; Chrome would then shrink every page.
     '.kundli .k-wrap td { white-space: normal; }',
+    // No table may run past the sheet's edge, whatever the chart: a column of
+    // long lists (KP significators, friendships) wraps at its spaces instead.
+    // A table that fits keeps every cell on one line, as on screen.
+    '.kundli .report-page td, .kundli .report-page th { white-space: normal; }',
+    '.kundli .report-page table { max-width: 100%; }',
     '.kundli .k-mini td { padding: 0 2px; }',
     '.kundli .k-mini h4 { font-size: 9px; font-weight: 600; border-bottom: 1px solid #e3cfb4; color: #5a2410; }',
     '@media screen { .kundli .report-page { background: #fffdf9; } }',
+    // The cover: a double rule round the whole page (maroon outside, gold
+    // inside) with a small lozenge in each inner corner, as a printed
+    // janmapatri is framed; the birth details in a ruled strip of labelled
+    // cells, the key facts on a parchment card, and a foot line.
+    '.kundli .k-cover { box-sizing: border-box; border: 1.6px solid #8a2c0d; padding: 2mm; }',
+    '.kundli .k-cover-in { position: relative; box-sizing: border-box; height: 100%; border: 0.8px solid #c9a27a; padding: 8mm 9mm 5mm; display: flex; flex-direction: column; align-items: center; justify-content: space-between; text-align: center; }',
+    '.kundli .k-corner { position: absolute; width: 9px; height: 9px; }',
+    '.kundli .k-cover-title { font-family: var(--as-font-serif); font-size: 32px; font-weight: 600; line-height: 1.15; color: #2a1a10; margin: 3px 0 0; }',
+    '.kundli .k-cover-name { font-family: var(--as-font-serif); font-size: 22px; font-weight: 600; line-height: 1.25; color: #8a2c0d; margin: 0; }',
+    '.kundli .k-cover-birth { display: grid; grid-template-columns: 1.15fr .85fr 1.6fr .7fr; width: 100%; margin: 0; border-top: 1px solid #c9a27a; border-bottom: 1px solid #c9a27a; }',
+    '.kundli .k-cover-birth > div { padding: 2.2mm 2.5mm; }',
+    '.kundli .k-cover-birth > div + div { border-left: 1px solid #efe2cf; }',
+    '.kundli .k-cover-birth dt { font-size: 8px; font-weight: 600; letter-spacing: .12em; text-transform: uppercase; color: #8a5a3a; }',
+    '.kundli .k-cover-birth dd { margin: 2px 0 0; font-family: var(--as-font-serif); font-size: 11.5px; color: #2a1a10; }',
+    '.kundli .k-cover-facts { width: 100%; box-sizing: border-box; text-align: left; background: #fbf6ee; border: 1px solid #e3cfb4; border-radius: 3px; padding: 3mm 4mm; }',
+    '.kundli .k-cover-foot { width: 100%; }',
+    '.kundli .k-cover-foot > div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #e3cfb4; padding-top: 2mm; font-size: 9px; color: #6b5a4a; }',
+    '.kundli .k-cover-foot b { font-family: var(--as-font-serif); font-weight: 600; color: #8a2c0d; }',
+    '.kundli-indic .k-cover-birth dt { font-size: 9px; letter-spacing: 0; }',
     // Contents: two columns of parts, each entry a link with a dotted leader to its page number.
     '.kundli .k-band a { color: inherit; text-decoration: none; }',
     '.kundli .k-toc { display: grid; grid-template-columns: 1fr 1fr; column-gap: 9mm; margin-top: 2mm; }',
@@ -182,10 +207,12 @@ const FIXED = 'table, tr, svg, img, figure';
  * zoom cancels out.
  *
  * One allowance: paper sets running text a shade tighter than the screen (a
- * page of readings that measured 3.5% over printed on one), so a paragraph
- * or a block of them, may run 4% past the foot of a page before it counts as
- * pushed over. Anything holding a table or a figure keeps its height on paper
- * and gets no allowance: a table that measured 1.4% too long went over.
+ * page of readings that measured 3.5% over printed on one), and only text:
+ * rows and figures keep their height (a table that measured 1.4% too long
+ * went over, and so did a line of fine print that measured 2.7% over below a
+ * page of charts; a page of text 4% over went over too). So a page may run
+ * past its foot by 3.75% of the text on it, and a piece holding a table or a
+ * figure may not run past at all.
  */
 function printedPages(sheet: HTMLElement, contentWidthMm: number, contentHeightMm: number): number {
   const cs = getComputedStyle(sheet);
@@ -217,12 +244,16 @@ function printedPages(sheet: HTMLElement, contentWidthMm: number, contentHeightM
 
   let pages = 1;
   let pageTop = 0;
+  let textOnPage = 0;
   let previous: Element | null = null;
   for (const piece of pieces) {
     const r = rect(piece);
-    const allowance = piece.matches(FIXED) || piece.querySelector(FIXED) ? 0.5 : pageHeight * 0.04;
+    const fixed = piece.matches(FIXED) || piece.querySelector(FIXED) !== null;
+    if (!fixed) textOnPage += r.bottom - r.top;
+    const allowance = fixed ? 0.5 : 0.5 + textOnPage * 0.0375;
     if (r.bottom - pageTop > pageHeight + allowance && r.top > pageTop + 1) {
       pages += 1;
+      textOnPage = fixed ? 0 : r.bottom - r.top;
       // A heading goes over with what it heads (`break-after: avoid`).
       let top = previous && HEADING.test(previous.tagName) ? rect(previous).top : r.top;
       // A table row carried over gets the table's head again above it.
@@ -264,6 +295,21 @@ function Mandala({ size = 120 }: { readonly size?: number }): JSX.Element {
       ))}
       <circle r={14} fill="#fffdf9" stroke="#8a2c0d" strokeWidth={1.2} />
       <circle r={5} fill="#8a2c0d" />
+    </svg>
+  );
+}
+
+/** The rule under the cover's title: two lines meeting a lozenge, with a dot either side. Decoration only. */
+function Flourish(): JSX.Element {
+  return (
+    <svg width={168} height={12} viewBox="0 0 168 12" aria-hidden="true" style={{ margin: '5px 0 7px' }}>
+      <line x1={4} y1={6} x2={72} y2={6} stroke="#c9a27a" strokeWidth={0.9} />
+      <line x1={96} y1={6} x2={164} y2={6} stroke="#c9a27a" strokeWidth={0.9} />
+      <circle cx={2} cy={6} r={1.4} fill="#c9a27a" />
+      <circle cx={166} cy={6} r={1.4} fill="#c9a27a" />
+      <circle cx={77} cy={6} r={1.3} fill="#8a2c0d" />
+      <circle cx={91} cy={6} r={1.3} fill="#8a2c0d" />
+      <path d="M84 1 L89 6 L84 11 L79 6 Z" fill="#f7efe2" stroke="#8a2c0d" strokeWidth={0.9} />
     </svg>
   );
 }
@@ -726,35 +772,61 @@ export function KundliBooklet({
 
       {/* ---- cover ---- */}
       <article className="report-page" data-kundli-page="cover">
-        <div className="flex flex-col items-center text-center" style={{ paddingTop: '6mm' }}>
-          <Mandala size={96} />
-          <p className="k-sub mt-3 text-[10px] uppercase tracking-[0.3em]" style={{ color: '#8a2c0d' }}>{t('kundli.subtitle')}</p>
-          <h1 className="mt-1 text-[28px] font-semibold" style={{ fontFamily: 'var(--as-font-serif)', color: '#2a1a10' }}>{t('report.vedic.title')}</h1>
-          <p className="mt-2 text-[17px]" style={{ fontFamily: 'var(--as-font-serif)' }}>{name}</p>
-          <p className="mt-1 text-[11px] as-text-muted">
-            {t(sex === 'male' ? 'kundli.male' : 'kundli.female')} · {localDateTime(chart.jdUT, off)} ({utcOffsetLabel(off)})
-            {chart.place.label ? ` · ${chart.place.label}` : ''}
-          </p>
+        {/* One page exactly: the frame fills the page box less a hair, so it never spills onto a second. */}
+        <div className="k-cover" style={{ height: `${paper.contentHeightMm - 1}mm` }}>
+          <div className="k-cover-in">
+            {(['tl', 'tr', 'bl', 'br'] as const).map((c) => (
+              <svg key={c} className="k-corner" viewBox="-5 -5 10 10" aria-hidden="true"
+                style={{ [c[0] === 't' ? 'top' : 'bottom']: '2mm', [c[1] === 'l' ? 'left' : 'right']: '2mm' }}>
+                <path d="M0 -4.5 L4.5 0 L0 4.5 L-4.5 0 Z" fill="#f7efe2" stroke="#8a2c0d" strokeWidth={0.9} />
+                <circle r={1.2} fill="#8a2c0d" />
+              </svg>
+            ))}
+
+            <div className="flex flex-col items-center">
+              <Mandala size={78} />
+              <p className="k-sub mt-3 text-[10px] uppercase tracking-[0.3em]" style={{ color: '#8a2c0d' }}>{t('kundli.subtitle')}</p>
+              <h1 className="k-cover-title">{t('report.vedic.title')}</h1>
+              <Flourish />
+              <p className="k-cover-name">{name}</p>
+            </div>
+
+            <dl className="k-cover-birth">
+              <div><dt>{t('report.vedic.dateTime')}</dt><dd>{localDateTime(chart.jdUT, off)}</dd></div>
+              <div><dt>{t('report.vedic.timeZone')}</dt><dd>{utcOffsetLabel(off)}</dd></div>
+              <div><dt>{t('summary.birthplace')}</dt><dd>{chart.place.label || '—'}</dd></div>
+              <div><dt>{t('kundli.native')}</dt><dd>{t(sex === 'male' ? 'kundli.male' : 'kundli.female')}</dd></div>
+            </dl>
+
+            {hasLagna && include.charts ? (
+              <figure className="report-block" style={figure(Math.min(W * 0.55, paper.contentHeightMm - 168))}>
+                <VedicChartFigure chart={vchart} style={style} size={1000} tinted {...themeProp} />
+                <figcaption className="mt-1 text-center text-[10px] as-text-muted">{t('report.vedic.lagnaChart')}</figcaption>
+              </figure>
+            ) : null}
+
+            <div className="k-cover-facts">
+              <Facts cols={4} rows={[
+                [t('vedic.lagna'), vchart.lagna ? rn(vchart.lagna.signIndex) : '—'],
+                [t('kundli.rashi'), moon ? rn(moon.signIndex) : '—'],
+                [t('vedic.column.nakshatra'), moon ? `${nak(moon.nakshatra.index)} ${n(moon.nakshatra.pada)}` : '—'],
+                [t('vedic.panchang.tithi'), pc ? `${t(pc.tithi.nameKey as 'tithi.purnima')} · ${t(`vedic.paksha.${pc.tithi.paksha}` as 'vedic.paksha.shukla')}` : '—'],
+                [t('vedic.panchang.vara'), pc?.vara ? t(`weekday.${pc.vara}` as 'weekday.ravivara') : '—'],
+                [t('vedic.panchang.yoga'), pc ? t(pc.yoga.nameKey as 'yoga.vishkambha') : '—'],
+                [t('vedic.panchang.karana'), pc ? t(pc.karana.nameKey as 'karana.bava') : '—'],
+                [t('kundli.runningDasha'), runningPath(vim, nowJd, 2).map((r) => gn(r.lord)).join(' / ') || '—'],
+              ]} />
+            </div>
+
+            <footer className="k-cover-foot">
+              <div>
+                <span>{t('report.generated')}: {localDate(nowJd, off)}</span>
+                <b>{BRAND.name}</b>
+              </div>
+              <p className="as-fineprint mt-1.5 text-center">{attribution}</p>
+            </footer>
+          </div>
         </div>
-        {hasLagna && include.charts ? (
-          <figure className="report-block mx-auto mt-5" style={figure(Math.min(W * 0.62, paper.contentHeightMm - 150))}>
-            <VedicChartFigure chart={vchart} style={style} size={1000} tinted {...themeProp} />
-            <figcaption className="mt-1 text-center text-[10px] as-text-muted">{t('report.vedic.lagnaChart')}</figcaption>
-          </figure>
-        ) : null}
-        <div className="mt-5 border-t pt-3" style={{ borderColor: '#e3cfb4' }}>
-          <Facts cols={4} rows={[
-            [t('vedic.lagna'), vchart.lagna ? rn(vchart.lagna.signIndex) : '—'],
-            [t('kundli.rashi'), moon ? rn(moon.signIndex) : '—'],
-            [t('vedic.column.nakshatra'), moon ? `${nak(moon.nakshatra.index)} ${n(moon.nakshatra.pada)}` : '—'],
-            [t('vedic.panchang.tithi'), pc ? `${t(pc.tithi.nameKey as 'tithi.purnima')} · ${t(`vedic.paksha.${pc.tithi.paksha}` as 'vedic.paksha.shukla')}` : '—'],
-            [t('vedic.panchang.vara'), pc?.vara ? t(`weekday.${pc.vara}` as 'weekday.ravivara') : '—'],
-            [t('vedic.panchang.yoga'), pc ? t(pc.yoga.nameKey as 'yoga.vishkambha') : '—'],
-            [t('vedic.panchang.karana'), pc ? t(pc.karana.nameKey as 'karana.bava') : '—'],
-            [t('kundli.runningDasha'), runningPath(vim, nowJd, 2).map((r) => gn(r.lord)).join(' / ') || '—'],
-          ]} />
-        </div>
-        <p className="as-fineprint mt-5 text-center">{attribution}</p>
       </article>
 
       {/* ---- contents ---- */}
