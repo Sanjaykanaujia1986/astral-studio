@@ -24,7 +24,7 @@ import {
 } from '@astro/ui';
 import {
   vedicChart, dashas, subPeriods, runningPath, yearsToYmd, localMidnightJd, grahaLongitudes, YEAR_LENGTHS,
-  yogas, ashtakavarga, AV_OWNERS, shadbala, SEVEN, sadeSati, avakahada, NAKSHATRAS,
+  yogas, ashtakavarga, AV_OWNERS, shadbala, SEVEN, sadeSati, avakahada, englishSpelling, NAKSHATRAS,
 } from '@astro/vedic';
 import { getProvider } from '../../lib/engine.js';
 import { ROW, Table, TD, localDate, localDateTime, utcOffsetLabel, fix, useJy } from './shared.js';
@@ -243,7 +243,7 @@ export function VedicReport({
                 <h2 className={H2}>{t('vedic.tb.avakahada')}</h2>
                 <Facts rows={[
                   [t('vedic.tb.av.nakshatra'), `${nakName(a.nakshatra)} ${a.pada}`],
-                  [t('vedic.tb.av.syllable'), sc(a.syllable)],
+                  [t('vedic.tb.av.syllable'), sc(a.syllable) === englishSpelling(a.syllable) ? sc(a.syllable) : `${sc(a.syllable)} (${englishSpelling(a.syllable)})`],
                   [t('vedic.tb.av.varna'), sc(a.varna)],
                   [t('vedic.tb.av.vashya'), sc(a.vashya)],
                   [t('vedic.tb.av.yoni'), sc(a.yoni)],

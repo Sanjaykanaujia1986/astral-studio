@@ -6,7 +6,7 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SwissEphWasmProvider, julianDay, norm360 } from '@astro/engine';
 import {
   permanentRelation, fiveFold, dignities, shodashavarga, vimshopaka, sahams, specialLagnas, rasiDrishti, arudhas,
-  avakahada, ghataka, favourablePoints, taraChakra, sudarshana, chalit, SHODASHA,
+  avakahada, nameLetters, englishSpelling, englishInitials, ghataka, favourablePoints, taraChakra, sudarshana, chalit, SHODASHA,
 } from '../src/tables.js';
 import { separationInt, aspectOf, aspectGrid, western } from '../src/western.js';
 import {
@@ -90,6 +90,36 @@ describe('sahams, lagnas and Jaimini', () => {
     expect(a).toHaveLength(12);
     const asc = 0;
     a.forEach((s, h) => { const house = (asc + h) % 12; expect(s === house || s === (house + 6) % 12).toBe(false); });
+  });
+});
+
+describe('name letters (nāmākṣara)', () => {
+  it('suggests the Moon pāda’s syllable, with its nakṣatra’s and its sign’s', () => {
+    const a = nameLetters(0.5); // Aśvinī 1, Meṣa
+    expect([a.nakshatra, a.pada, a.sign, a.syllable]).toEqual([0, 1, 0, 'Cu']);
+    expect(a.nakshatraSyllables).toEqual(['Cu', 'Ce', 'Co', 'La']);
+    // Meṣa holds Aśvinī, Bharaṇī and the first pāda of Kṛttikā.
+    expect(a.signSyllables).toEqual(['Cu', 'Ce', 'Co', 'La', 'Li', 'Lu', 'Le', 'Lo', 'A']);
+    // Rohiṇī 2 (40° + 3°20′ + a little), in Vṛṣabha: Kṛttikā 2–4, Rohiṇī, Mṛgaśirā 1–2.
+    const r = nameLetters(40 + 10 / 3 + 0.5);
+    expect([r.nakshatra, r.pada, r.syllable]).toEqual([3, 2, 'Va']);
+    expect(r.signSyllables).toEqual(['I', 'U', 'E', 'O', 'Va', 'Vi', 'Vu', 'Ve', 'Vo']);
+    // Mīna ends the zodiac with Revatī 4.
+    expect(nameLetters(359.9).signSyllables.at(-1)).toBe('Ci');
+  });
+
+  it('agrees with the avakahaḍa table at every pāda', () => {
+    for (let i = 0; i < 108; i += 1) {
+      const lon = i * (40 / 12) + 1;
+      expect(nameLetters(lon).syllable).toBe(avakahada(lon).syllable);
+      expect(nameLetters(lon).signSyllables).toContain(nameLetters(lon).syllable);
+    }
+  });
+
+  it('spells the syllables as names are written in English', () => {
+    expect(['Cu', 'Cha', 'Ṣa', 'Ṅa', 'Ña', 'Ḍe', 'Ṭha', 'Bhu', 'A'].map(englishSpelling))
+      .toEqual(['Chu', 'Chha', 'Sha', 'Nga', 'Nya', 'De', 'Tha', 'Bhu', 'A']);
+    expect(englishInitials(['Cu', 'Ce', 'Co', 'La', 'Li', 'Lu', 'Le', 'Lo', 'A'])).toEqual(['Ch', 'L', 'A']);
   });
 });
 

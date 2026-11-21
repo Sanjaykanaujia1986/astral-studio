@@ -88,9 +88,9 @@ export {
 export {
   permanentRelation, temporaryFriend, fiveFold, dignities, COMBUSTION,
   shodashavarga, vimshopaka, SHODASHA, sahams, specialLagnas, rasiDrishti, arudhas,
-  avakahada, ghataka, GEM, WEEKDAY_OF, CORRESPONDENCE, favourablePoints,
+  avakahada, nameLetters, englishSpelling, englishInitials, ghataka, GEM, WEEKDAY_OF, CORRESPONDENCE, favourablePoints,
   taraChakra, sudarshana, chalit, TARA_NAMES,
-  type Relation, type FiveFold, type Dignity, type VimshopakaScheme, type Saham, type Avakahada,
+  type Relation, type FiveFold, type Dignity, type VimshopakaScheme, type Saham, type Avakahada, type NameLetters,
   type Ghataka, type FavourablePoints, type TaraRow,
 } from './tables.js';
 

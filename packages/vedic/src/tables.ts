@@ -248,6 +248,66 @@ export function avakahada(moon: Degrees): Avakahada {
   };
 }
 
+/**
+ * The name letters (nāmākṣara) a chart suggests.
+ *
+ * By custom the name begins with the syllable of the Moon's nakṣatra pāda at
+ * birth (the avakahaḍa table's own syllable). The usual alternatives, where
+ * that sound is awkward, are the other three syllables of the same nakṣatra,
+ * then the syllables of the Moon sign: a sign holds nine pādas (108 / 12), the
+ * ninth part of the zodiac from 30° × sign, so its syllables are those of the
+ * nine pādas from 9 × sign.
+ */
+export interface NameLetters {
+  readonly nakshatra: number;
+  readonly pada: number;
+  readonly sign: number;
+  /** The birth pāda's syllable, in IAST. */
+  readonly syllable: string;
+  /** The nakṣatra's four syllables, pāda 1 first. */
+  readonly nakshatraSyllables: readonly string[];
+  /** The Moon sign's nine syllables, in zodiac order. */
+  readonly signSyllables: readonly string[];
+}
+export function nameLetters(moon: Degrees): NameLetters {
+  const n = nakIdx(moon); const pada = Math.floor((norm360(moon) % SPAN) / (SPAN / 4)) + 1; const s = sgn(moon);
+  const all = AKSHARA.flat();
+  return {
+    nakshatra: n, pada, sign: s,
+    syllable: AKSHARA[n]![pada - 1]!,
+    nakshatraSyllables: AKSHARA[n]!,
+    signSyllables: all.slice(s * 9, s * 9 + 9),
+  };
+}
+
+/**
+ * A syllable as names are commonly spelt in English: IAST c is "ch" and ch
+ * "chh", ś and ṣ are "sh", ṅ "ng", ñ "ny", and the other marks drop (ṭ t, ḍ d,
+ * ṇ n). "Cu" is "Chu", "Ṣa" "Sha", "Ḍe" "De".
+ */
+export function englishSpelling(iast: string): string {
+  const out = iast
+    .replace(/ch/gi, (m) => (m[0] === 'C' ? 'Chh' : 'chh'))
+    .replace(/c(?!hh)/gi, (m) => (m === 'C' ? 'Ch' : 'ch'))
+    .replace(/[śṣ]/g, 'sh').replace(/[ŚṢ]/g, 'Sh')
+    .replace(/ṅ/g, 'ng').replace(/Ṅ/g, 'Ng')
+    .replace(/ñ/g, 'ny').replace(/Ñ/g, 'Ny')
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '').normalize('NFC');
+  return out;
+}
+
+/** The English letters names start with, for a list of syllables: each one's consonants before its vowel, once each, in order. */
+export function englishInitials(syllables: readonly string[]): string[] {
+  const seen: string[] = [];
+  for (const x of syllables) {
+    const sp = englishSpelling(x);
+    const m = /^[^aeiou]*/i.exec(sp)![0];
+    const head = m === '' ? sp[0]!.toUpperCase() : m;
+    if (!seen.includes(head)) seen.push(head);
+  }
+  return seen;
+}
+
 export interface Ghataka {
   readonly month: string; readonly tithis: string; readonly day: Planet; readonly nakshatra: number;
   readonly yoga: string; readonly karana: string; readonly prahara: number; readonly chandraSign: number;

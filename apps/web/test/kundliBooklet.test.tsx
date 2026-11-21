@@ -185,6 +185,17 @@ describe('the booklet', () => {
     expect(css).toContain('.kundli .report-page table { max-width: 100%; }');
   });
 
+  it('suggests the name letters from the Moon’s pāda on the pañcāṅga page', async () => {
+    const { container } = booklet(only('kp'));
+    await waitFor(() => expect(container.querySelector('[data-kundli-page="panchang"] [data-name-letters]')).not.toBeNull());
+    const block = container.querySelector('[data-kundli-page="panchang"] [data-name-letters]') as HTMLElement;
+    const pada = [...block.querySelectorAll('[data-syllable]')];
+    // Four of the nakṣatra and nine of the sign, the birth pāda's marked in both.
+    expect(pada).toHaveLength(13);
+    expect(block.querySelectorAll('.font-semibold[data-syllable]').length).toBeGreaterThanOrEqual(2);
+    expect(block.textContent).toMatch(/Starting letters in English/);
+  }, 60_000);
+
   it('fills in the ephemeris sheets once the provider resolves', async () => {
     const { container } = booklet(only('strength', 'kp'));
     await waitFor(() => expect(screen.queryByText('Calculating…')).toBeNull());

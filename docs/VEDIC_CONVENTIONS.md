@@ -430,6 +430,26 @@ fields exactly, avasthā and kārakas for every graha, Fortuna to 11″.
   this rule lay 1.1° from it; the cause (their sunrise is 2 minutes later than
   ours) is noted rather than copied.
 
+## 13a. Name letters (nāmākṣara)
+
+Code: `nameLetters`, `englishSpelling` and `englishInitials` in
+`packages/vedic/src/tables.ts`; shown with the avakahaḍa table in the Vedic
+workspace and on the booklet's pañcāṅga page.
+
+- **The syllable.** Each of the 108 nakṣatra pādas carries one syllable (the
+  avakahaḍa table's own list, Aśvinī 1 = Cu). The suggestion is the syllable
+  of the pāda the sidereal Moon occupies at birth.
+- **Alternatives.** The other three syllables of the same nakṣatra, then the
+  Moon sign's. A sign is nine pādas (108 / 12), so its syllables are those of
+  pādas 9 × sign to 9 × sign + 8: Meṣa is Aśvinī, Bharaṇī and Kṛttikā 1
+  (Cu Ce Co La Li Lu Le Lo A).
+- **English spelling.** IAST c is written "ch" and ch "chh", ś and ṣ "sh", ṅ
+  "ng", ñ "ny"; other marks are dropped (Ṭa, Ta and Ta all spell "Ta"). The
+  starting letters are each syllable's consonants before its vowel, once each.
+- Stated as a naming custom, not a prediction. Regional lists differ in a few
+  syllables (Uttara Bhādrapadā 4 is also given as "Tra"); this one is the
+  table the avakahaḍa page already uses.
+
 ## 14. Bhāva readings, Sarvatobhadra and remedies
 
 Code: `packages/vedic/src/bhava.ts`.

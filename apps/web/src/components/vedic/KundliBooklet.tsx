@@ -159,6 +159,8 @@ function bookletCss(paper: PaperSpec, runningHead: string): string {
     '.kundli .k-cover-foot > div { display: flex; justify-content: space-between; gap: 12px; border-top: 1px solid #e3cfb4; padding-top: 2mm; font-size: 9px; color: #6b5a4a; }',
     '.kundli .k-cover-foot b { font-family: var(--as-font-serif); font-weight: 600; color: #8a2c0d; }',
     '.kundli-indic .k-cover-birth dt { font-size: 9px; letter-spacing: 0; }',
+    // The name-letters block takes the booklet's accent, not the app theme's.
+    '.kundli [data-name-letters] { --as-accent: #8a2c0d; }',
     // Contents: two columns of parts, each entry a link with a dotted leader to its page number.
     '.kundli .k-band a { color: inherit; text-decoration: none; }',
     '.kundli .k-toc { display: grid; grid-template-columns: 1fr 1fr; column-gap: 9mm; margin-top: 2mm; }',

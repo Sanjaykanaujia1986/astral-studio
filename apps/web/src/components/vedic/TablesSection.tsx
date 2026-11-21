@@ -16,6 +16,7 @@ import {
   type Graha, type VedicChart, type VimshopakaScheme,
 } from '@astro/vedic';
 import { ROW, Select, Table, TD, MUTED, fix, localDate, useJy } from './shared.js';
+import { NameLetters } from './NameLetters.js';
 
 /** The English terms of a saham formula, to their catalogue keys. */
 export const SAHAM_TERM: Readonly<Record<string, string>> = {
@@ -227,6 +228,9 @@ export function TablesSection({ vchart, chart, provider, print }: {
                 [t('vedic.tb.gh.moonSign'), rs(k.chandraSign)],
               ]} />
               <p className="as-fineprint mt-2">{t('vedic.tb.ghatakaNote')}</p>
+            </div>
+            <div className="basis-full lg:col-span-2">
+              <NameLetters moon={g.lon.moon} />
             </div>
           </div>
         );
