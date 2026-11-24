@@ -209,6 +209,75 @@ Since a daily price bar is itself an aggregate over a session in some other
 time zone, no sampling instant is correct — what matters is that it is
 consistent and stated.
 
+## Event studies (Financial astrology, 0.42)
+
+Code: `packages/research/src/eventstudy/engine.ts`, `market/calendar.ts`,
+`market/daily.ts`, `combustion/`. The full audit is in
+`docs/FINANCIAL_ASTROLOGY_AUDIT.md`.
+
+The signal study above asks whether returns differ while a condition holds.
+An event study asks what followed an instant, such as the Sun–Venus
+conjunction. Its rules:
+
+- **Two kinds of study, never mixed:**
+  - **Episode study:** one observation per episode at its entry, exact or exit
+    instant. n is the number of episodes, which is small: 20 in 16 years for
+    Venus.
+  - **Daily-state study:** one observation per session close inside a band.
+    Neighbouring sessions of one episode are not independent, so the count
+    of distinct episodes is reported beside n. Read the episode count, not n,
+    as the sample size.
+- **The reference close** is the first session close at or after the event,
+  read in the exchange's own zone (`referenceSession`):
+  - an event during or before the session is measured from that day's close
+    (`same-session-close`; exactly at the close counts as that session);
+  - an event after the close moves to the next session
+    (`after-close-next-session`);
+  - an event on a weekend or holiday moves to the next session
+    (`non-session-next-session`).
+
+  The rule is recorded with every observation.
+- **Forward returns** are measured at +1, +3, +5, +10 and +20 sessions of
+  that instrument's own calendar, as `100 × ln(close[t+h] / close[t])`.
+  - A horizon that runs past the data is **excluded and counted**, never
+    shortened.
+  - Two events that map to the same session are merged, and the merge is
+    counted.
+- **Statistics:** n, positive, negative and flat counts, positive rate,
+  bearish hit rate, mean, median, minimum, maximum and standard deviation.
+  - Every result sits beside the **unconditional baseline**: every session in
+    the same period at the same horizon.
+  - An event rate is meaningless without it. NIFTY's +5 bearish rate is
+    already 43 % on all days.
+- **Day types are kept apart** (`dayStatus`):
+  - session, weekend, holiday (named from the exchange list), **missing** (a
+    listed working day with no bar) and **unknown** (no holiday list covers
+    that date);
+  - a missing bar is never treated as a holiday, and never filled.
+  - Bars dated on a weekend or a holiday are flagged *irregular* and kept out
+    of the daily comparisons. Yahoo's COMEX futures carry Sunday-dated bars
+    from the Globex evening open.
+- **The orb sweep** (`sweepParameter`) chooses one orb on the training period
+  and measures it once on the holdout:
+  - Training observations whose horizon reaches past the split date are
+    **dropped and counted**, so no training result uses a holdout price.
+  - The choice is frozen before the holdout is read. Candidates below the
+    minimum training n are not eligible.
+  - The full table of candidates is shown, because the multiple-comparisons
+    problem above applies here in full. On NIFTY 2011–2026 the best training
+    orb (0.5°, 66.7 % bearish) fell to 38.5 % on the holdout, below the
+    baseline.
+- **Identity:** each saved study records its configuration and the rule-set
+  and ephemeris versions. It also records each dataset's source, coverage,
+  row counts and a SHA-256 fingerprint of its `date,close` lines. Reopening
+  against different data is flagged, never silently rerun. Prices are never
+  saved.
+- **Partial runs are never saved.** A cancelled or failed run cannot be
+  saved as a study.
+- **Daily rows** (`dailyRows`) give one row per calendar day per instrument,
+  with the close and its change since the previous valid session. A move
+  within ±0.05 % is called flat.
+
 ## Verification
 
 Statistical functions are checked against published tables and closed forms,

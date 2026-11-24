@@ -458,3 +458,72 @@ Both hemispheres and quadrants need houses, so both return `undefined` for a
 chart cast without a known birth time rather than inventing an ascendant to
 measure from. Unlike `chartShape`, they count every body the chart holds —
 emphasis is about weight of tenancy, so an included node counts.
+
+---
+
+## 13. Aspect windows and Venus combustion (0.42)
+
+Code: `packages/engine/src/aspects/windows.ts`,
+`packages/research/src/combustion/venus.ts`.
+
+### A window is entry, exacts and exit
+
+`findAspectWindows` finds when the aspect error |e| is inside the allowed orb.
+Here e is the signed difference between the circular separation and the
+aspect angle.
+
+- **Entry and exit** are roots of |e| − orb, bracketed on a scan and refined
+  with Brent's method.
+- **Exacts** come from the same crossing finder as the transit search (§ 4).
+  A retrograde loop gives one window with up to three exacts, each with its
+  `passIndex`.
+- **Near misses:** a window that never reaches exactness records its closest
+  approach, found by a golden-section search.
+- **Branches:** trines, squares and sextiles have a waxing and a waning branch,
+  searched separately. A window never jumps from one branch to the other.
+- **The 0/360 seam:** separations are circular, so 359° and 1° are 2° apart.
+
+Tolerances (`WINDOW_TIME_TOLERANCE_DAYS`, `EXACT_ANGLE_TOLERANCE`):
+
+| Quantity | Tolerance |
+|---|---|
+| Time | 1e-6 day (≈ 0.09 s) |
+| "Exact" | 1e-4° |
+
+Orb strength is `100 × clamp(1 − actual/allowed, 0, 1)`. With an allowed orb
+of 0 it is 100 only when the aspect is exact, and 0 otherwise.
+
+The allowed orb comes from a named orb profile (`ORB_PROFILES`), per aspect
+and scaled per body; the value used is printed on every row. The transit–natal
+mode holds the natal point fixed. The natal–natal mode is a static list with
+no times.
+
+### Checked against native Swiss Ephemeris
+
+The tests bisect the same events with the native `sweph` build. Two
+cross-checks:
+
+- **Window exacts** agree to under 1″ of arc.
+- **Sun–Venus conjunctions** on 2025-03-23, 2026-01-06 and 2026-10-24 agree to
+  under 1 s.
+
+### Combustion is geocentric longitude only
+
+- **Separation:** the circular distance between the geocentric apparent
+  longitudes of the Sun and Venus. Latitude is ignored, as the brief's band
+  preset assumes.
+- **Ayanāṁśa:** the separation does not depend on it. The longitudes shown do.
+- **Episodes:** each episode is bracketed by the widest band's entry and exit.
+  Its id is `venus-sun-` plus the date of the exact conjunction.
+- **Two kinds of instant**, labelled in every export:
+  - refined (root-found) instants: entry, band entry and exit, exact;
+  - sampled values: the daily closes.
+
+### Ephemeris version is recorded
+
+`SwissEphWasmProvider.ephemerisVersion()` returns the library's version
+string (2.10.03 at present). It is saved with every study and printed in every
+export.
+
+The wrapper does not expose SE's returned flags, so a Moshier fallback is
+still inferred from the date range (§ 2), not read from the call.

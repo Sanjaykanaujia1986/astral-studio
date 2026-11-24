@@ -262,7 +262,7 @@ describe('a planned workspace', () => {
 
   it('points at what genuinely works today, where something does', () => {
     renderPlanned('en', { path: '/research', labelKey: 'nav.research' });
-    expect(screen.getByRole('link', { name: 'Research' })).toHaveAttribute('href', '/research');
+    expect(screen.getByRole('link', { name: 'Financial astrology' })).toHaveAttribute('href', '/research');
   });
 
   it('offers no such link when nothing related exists', () => {

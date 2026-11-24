@@ -160,6 +160,8 @@ export interface EphemerisProvider {
     event?: RiseEvent,
   ): number | undefined;
   close(): void;
+  /** Library version, for calculation records; optional so test doubles need not invent one. */
+  ephemerisVersion?(): string;
 }
 
 /**

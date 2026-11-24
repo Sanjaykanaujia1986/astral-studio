@@ -173,6 +173,9 @@ if (bundle) {
     ['Kundli contents page with links and page numbers (0.39)', 'k-toc-part'],
     ['Kundli framed cover with birth-details strip (0.40)', 'k-cover-birth'],
     ['Name letters (namakshara) block (0.41)', 'data-name-letters'],
+    ['Financial astrology: Venus combustion (0.42)', 'fa.venus.episodesNote'],
+    ['Financial astrology: daily vedha (0.42)', 'fa.vedha.compareTarget'],
+    ['Aspect windows on the Calendar (0.42)', 'aw.lede'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

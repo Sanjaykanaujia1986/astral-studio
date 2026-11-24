@@ -79,6 +79,7 @@ const ASCMC_VERTEX = 3;
 /** Minimal shape of the wrapper we rely on; the package ships loose types. */
 interface WasmModule {
   initSwissEph(): Promise<void>;
+  version?(): string;
   calc_ut(jd: number, body: number, flags: number): ArrayLike<number>;
   houses(jd: number, lat: number, lon: number, hsys: string): {
     cusps: ArrayLike<number>;
@@ -137,6 +138,19 @@ export class SwissEphWasmProvider implements EphemerisProvider {
     const instance = new SwissEph() as unknown as WasmModule;
     await instance.initSwissEph();
     this.#wasm = instance;
+  }
+
+  /**
+   * The Swiss Ephemeris library version actually loaded, e.g. "2.10.03", for
+   * the calculation record of a saved study. "unknown" if the build does not say.
+   */
+  ephemerisVersion(): string {
+    try {
+      const v = this.#module().version?.();
+      return typeof v === 'string' && v.trim() ? v.trim() : 'unknown';
+    } catch {
+      return 'unknown';
+    }
   }
 
   #module(): WasmModule {

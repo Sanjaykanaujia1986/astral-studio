@@ -129,3 +129,4 @@ export {
   RATNA, ratnaNakshatras, stonesContradict, ratnaAdvice,
   type Stone, type Metal, type Finger, type RatnaAdvice, type RatnaReason,
 } from './ratna.js';
+export * from './sbcVedha.js';

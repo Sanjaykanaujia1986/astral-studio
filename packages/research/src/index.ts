@@ -90,6 +90,7 @@ export {
   dayStatus, missingSessions, weekdayOf, addDays, localDateTime, minutesOf,
   type ExchangeCalendar, type DayStatus,
 } from './market/calendar.js';
+export { dailyRows, FLAT_PCT, type DailyRow, type Direction } from './market/daily.js';
 
 // Instruments and their chart records
 export {

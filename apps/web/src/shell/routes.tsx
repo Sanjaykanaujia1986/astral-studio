@@ -41,8 +41,10 @@ const VedicPanel = lazy(() =>
   import('../components/VedicPanel.js').then((m) => ({ default: m.VedicPanel })));
 const GannPanel = lazy(() =>
   import('../components/GannPanel.js').then((m) => ({ default: m.GannPanel })));
-const ResearchPanel = lazy(() =>
-  import('../components/ResearchPanel.js').then((m) => ({ default: m.ResearchPanel })));
+const FinancialAstrologyPanel = lazy(() =>
+  import('../components/finastro/FinancialAstrologyPanel.js').then((m) => ({ default: m.FinancialAstrologyPanel })));
+const AspectWindowsPanel = lazy(() =>
+  import('../components/AspectWindowsPanel.js').then((m) => ({ default: m.AspectWindowsPanel })));
 const ReportPanel = lazy(() =>
   import('../components/ReportPanel.js').then((m) => ({ default: m.ReportPanel })));
 
@@ -365,6 +367,9 @@ export function CalendarRoute(): JSX.Element {
   return (
     <Page titleKey="nav.calendar" ledeKey="calendar.lede">
       <section className="as-card"><AspectarianPanel /></section>
+      <section className="as-card">
+        <Suspense fallback={<PanelFallback />}><AspectWindowsPanel /></Suspense>
+      </section>
     </Page>
   );
 }
@@ -393,7 +398,7 @@ export function ResearchRoute(): JSX.Element {
   return (
     <Page titleKey="nav.research" ledeKey="research.lede">
       <Suspense fallback={<PanelFallback />}>
-        <ResearchPanel />
+        <FinancialAstrologyPanel />
       </Suspense>
     </Page>
   );

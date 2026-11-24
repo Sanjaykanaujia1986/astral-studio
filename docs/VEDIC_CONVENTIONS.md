@@ -490,11 +490,81 @@ Code: `packages/vedic/src/bhava.ts`.
   Śravaṇa (276°40′ – 280°53′20″); vowels at the ring corners, consonants on
   the second ring, signs on the third, the tithi groups at the centre. Natal
   grahas are drawn in their nakṣatra's cell, with the transit positions on the
-  generation date. Vedha is described, not computed.
+  generation date. Vedha is computed since 0.42: see § 14a.
 - **Remedies.** The bīja mantras, customary japa counts, weekdays, deities and
   charity of the nine grahas, as tradition records them; marked for the
   running daśā lords and for debilitated or combust grahas. Printed as
   tradition, with the caution that they replace no professional advice.
+
+## 14a. Sarvatobhadra vedha (computed)
+
+Code: `packages/vedic/src/sbcVedha.ts`. Used by Financial astrology → Daily
+vedha.
+
+- **Geometry, verified cell by cell.** A graha in an edge nakṣatra casts
+  three straight lines across the cakra:
+  - **front:** straight across, to the nakṣatra on the facing edge;
+  - **behind:** the diagonal towards the earlier nakṣatra;
+  - **ahead:** the diagonal towards the later nakṣatra.
+
+  Each line strikes every cell it crosses (vowel, consonant, sign, tithi
+  group). For example, Kṛttikā reaches Śravaṇa (front), Bharaṇī (behind) and
+  Viśākhā (ahead). The pairing works both ways, and Abhijit has its own cell
+  at row 8, column 2.
+- **Two methods, reported side by side:**
+  - **Method B** counts all three lines for every graha.
+  - **Method A** counts only the line(s) a tradition's motion rule selects
+    (for example, direct → front). Rāhu and Ketu, and in some texts the Sun,
+    have fixed rules.
+- **The tradition is a versioned object** (`SbcTradition`). It carries its
+  id, version, reference and status, its vāma/dakṣiṇa naming and its Method A
+  table. `validateTradition` refuses one with no version, no reference, or a
+  motion table with no verse reference.
+- **The production tradition** is `SBC_GEOMETRY_V1` (1.0.0). Its status is
+  *unverified*, and its `methodA` and `vamaLine` are null. So:
+  - Method A reports **not evaluated** (`METHOD_A_UNAVAILABLE`) on every day;
+  - diagonals are named only "behind" and "ahead".
+
+  No primary source (a critical edition of *Narapati-jaya-caryā* or
+  *Mānasāgarī* with verse numbers and a worked example) was available.
+- **The test fixture** is `SBC_METHOD_A_FIXTURE` (status *test fixture*). It
+  takes its motion rule from the secondary Wikipedia summary:
+  - direct → sammukha, fast → vāma, retrograde → dakṣiṇa;
+  - the Sun and the nodes cast all three lines;
+  - the Moon is not covered.
+
+  It exists to exercise the code path and is labelled everywhere it appears.
+- **Motion** comes from the graha's speed against `MEAN_DAILY_MOTION`:
+  - retrograde when negative;
+  - stationary below `stationFraction` of its mean;
+  - fast above its mean;
+  - otherwise direct.
+
+  The fixture does not cover stationary.
+- **Ketu** is Rāhu + 180°, normalised, under both the mean and the true node.
+- **Benefic and malefic:**
+  - The Moon is a benefic in śukla pakṣa and a malefic in kṛṣṇa pakṣa.
+  - Mercury is counted as variable, never forced into either.
+  - The rest follow the usual natural classification.
+- **Targets carry provenance.** Each target is one of:
+  - the natal Moon nakṣatra or rāśi, or the ascendant sign, taken from a
+    chart record and labelled with its certainty;
+  - a name consonant or vowel, user-entered and labelled *name-based*;
+  - the tithi group.
+
+  A target never borrows another's provenance.
+- **Three outcomes, never merged:**
+  - **hit:** a line selected by the method reaches the target;
+  - **no hit:** the method was applied and no line reaches it;
+  - **not evaluated:** the method could not be applied. The reason code says
+    why: METHOD_A_UNAVAILABLE, GRAHA_NOT_COVERED, MOTION_NOT_COVERED,
+    SIDES_UNNAMED, TARGET_NOT_GIVEN or TARGET_NOT_ON_CAKRA.
+
+  When A and B differ, `disagreement` names the reason
+  (A_NOT_EVALUATED or MOTION_SELECTS_OTHER_LINE).
+- **What it is not:** a forecast. The daily table counts hits beside the
+  market's direction on valid sessions. It is a description, not a test, and
+  it says so on screen.
 
 ## 15. Readings (phala)
 

@@ -39,12 +39,20 @@ import {
   type AspectEvent,
   type TransitHit,
   type TransitOptions,
+  type WindowSearchOptions,
 } from '@astro/engine';
+import {
+  runCombustionJob, runWindowsJob, runVedhaJob, type CombustionJob, type VedhaJob,
+} from './search-worker-jobs.js';
+export type { CombustionJob, CombustionJobResult, VedhaJob, VedhaJobResult } from './search-worker-jobs.js';
 
 export type WorkerRequest =
   | { readonly id: number; readonly kind: 'aspectarian'; readonly options: AspectarianOptions }
   | { readonly id: number; readonly kind: 'transits'; readonly options: TransitOptions }
-  | { readonly id: number; readonly kind: 'cycle'; readonly options: CycleSearchOptions };
+  | { readonly id: number; readonly kind: 'cycle'; readonly options: CycleSearchOptions }
+  | { readonly id: number; readonly kind: 'combustion'; readonly options: CombustionJob }
+  | { readonly id: number; readonly kind: 'windows'; readonly options: readonly WindowSearchOptions[] }
+  | { readonly id: number; readonly kind: 'vedha'; readonly options: VedhaJob };
 
 export type WorkerResponse =
   | { readonly id: number; readonly ok: true; readonly result: unknown }
@@ -86,6 +94,15 @@ self.addEventListener('message', (event: MessageEvent<WorkerRequest>) => {
           break;
         case 'cycle':
           result = analyseCycle(engine, request.options);
+          break;
+        case 'combustion':
+          result = runCombustionJob(engine, request.options);
+          break;
+        case 'windows':
+          result = runWindowsJob(engine, request.options);
+          break;
+        case 'vedha':
+          result = runVedhaJob(engine, request.options);
           break;
       }
       const response: WorkerResponse = { id: request.id, ok: true, result };

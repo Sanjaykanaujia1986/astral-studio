@@ -23,6 +23,11 @@ import {
 } from '@astro/engine';
 import { getProvider } from './engine.js';
 import type { WorkerRequest, WorkerResponse } from './search-worker.js';
+import {
+  runCombustionJob, runWindowsJob, runVedhaJob,
+  type CombustionJob, type CombustionJobResult, type VedhaJob, type VedhaJobResult,
+} from './search-worker-jobs.js';
+import type { WindowSearchOptions, AspectWindow } from '@astro/engine';
 
 /** Thrown when the worker reports a failure, preserving the engine's code. */
 export class SearchError extends Error {
@@ -115,6 +120,35 @@ export async function searchCycle(options: CycleSearchOptions): Promise<CycleAna
     (await post<CycleAnalysis>({ kind: 'cycle', options }))
     ?? analyseCycle(await getProvider(), options)
   );
+}
+
+export async function searchCombustion(job: CombustionJob): Promise<CombustionJobResult> {
+  return (await post<CombustionJobResult>({ kind: 'combustion', options: job })) ?? runCombustionJob(await getProvider(), job);
+}
+
+export async function searchAspectWindows(jobs: readonly WindowSearchOptions[]): Promise<readonly AspectWindow[]> {
+  return (await post<readonly AspectWindow[]>({ kind: 'windows', options: jobs })) ?? runWindowsJob(await getProvider(), jobs);
+}
+
+export async function searchVedha(job: VedhaJob): Promise<VedhaJobResult> {
+  return (await post<VedhaJobResult>({ kind: 'vedha', options: job })) ?? runVedhaJob(await getProvider(), job);
+}
+
+/**
+ * Stop every running search for real: the worker is terminated, so a long
+ * study stops computing rather than finishing unseen. Every outstanding
+ * promise rejects with code CANCELLED; the next search starts a fresh worker.
+ * On the main-thread fallback nothing can be interrupted, and the caller's
+ * generation check discards the result instead.
+ */
+export function cancelSearches(): void {
+  if (worker) {
+    worker.terminate();
+    worker = undefined;
+  }
+  const failure = new SearchError('cancelled', 'CANCELLED');
+  for (const [, entry] of pending) entry.reject(failure);
+  pending.clear();
 }
 
 /** Test seam: forget the worker so the fallback path can be exercised. */
