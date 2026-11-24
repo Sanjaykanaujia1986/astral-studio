@@ -119,6 +119,12 @@ export {
 
 // Aspect crossings (shared by transits, aspectarian and returns)
 export { findCrossings, isWrap, isGenuineRoot, type CrossingOptions } from './aspects/crossing.js';
+export {
+  findAspectWindows, aspectStateAt, orbStrength, allowedOrbFor,
+  WINDOW_TIME_TOLERANCE_DAYS, EXACT_ANGLE_TOLERANCE,
+  type AspectWindow, type AspectState, type WindowExact, type WindowSide, type AspectRole,
+  type AspectBranch, type WindowSearchOptions,
+} from './aspects/windows.js';
 
 // Sky events: things the sky does on its own, not aspects to a fixed target.
 export { findIngresses, signIndexOf, type IngressOptions } from './events/ingress.js';

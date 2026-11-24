@@ -83,3 +83,40 @@ export {
   runBacktest, maxDrawdown,
   type BacktestOptions, type BacktestResult,
 } from './backtest/engine.js';
+
+// Exchange calendars
+export {
+  NSE_CALENDAR, BSE_CALENDAR, COMEX_CALENDAR, CALENDARS,
+  dayStatus, missingSessions, weekdayOf, addDays, localDateTime, minutesOf,
+  type ExchangeCalendar, type DayStatus,
+} from './market/calendar.js';
+
+// Instruments and their chart records
+export {
+  INSTRUMENTS, CHART_RECORDS, MISSING_RECORDS, instrumentById, chartRecordsFor, validateRecord,
+  type Instrument, type PriceBasis, type ChartRecord, type ChartKind, type TimeCertainty, type RecordProblem,
+} from './instruments.js';
+export {
+  deriveChartFacts,
+  type ChartFacts, type ChartSettings, type FactStatus, type MoonFact,
+} from './chartFacts.js';
+
+// Event studies
+export {
+  runEventStudy, referenceSession, forwardReturns, returnStats, sweepParameter, DEFAULT_HORIZONS,
+  type StudyObservation, type ReferenceRule, type ReferenceSession, type StudyRow, type ReturnStats,
+  type GroupResult, type EventStudyOptions, type EventStudyResult,
+  type SweepCandidate, type SweepObjective, type SweepOptions, type SweepRow, type SweepResult,
+} from './eventstudy/engine.js';
+
+// Venus combustion
+export {
+  VENUS_COMBUSTION_V1, validatePreset, bandFor, windowOrb, combustionEpisodes, sampleCombustion,
+  type CombustionBand, type CombustionPreset, type PresetProblem, type CombustionEvent, type CombustionEventKind,
+  type CombustionEpisode, type CombustionProfile, type CombustionSample, type ConjunctionKind,
+} from './combustion/venus.js';
+export {
+  sessionCloseJds, dailySampleJds, episodeObservations, dailyStateObservations, sweepOrbs, sweepCandidates,
+  sampleSessions, jdOfDate,
+  type EpisodeEventChoice,
+} from './combustion/study.js';
