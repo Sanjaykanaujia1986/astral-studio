@@ -35,6 +35,7 @@ describe('dailyRows', () => {
   });
   it('calls weekdays unknown when there is no series or no holiday list', () => {
     expect(dailyRows(null, NSE_CALENDAR, '2026-10-22', '2026-10-22')[0]!.status).toBe('unknown');
-    expect(dailyRows(null, COMEX_CALENDAR, '2026-11-26', '2026-11-26')[0]!.status).toBe('unknown');
+    expect(dailyRows(null, COMEX_CALENDAR, '2010-11-24', '2010-11-24')[0]!.status).toBe('unknown');
+    expect(dailyRows(null, COMEX_CALENDAR, '2026-11-26', '2026-11-26')[0]).toMatchObject({ status: 'holiday', holiday: 'Thanksgiving (early halt, no trade date)' });
   });
 });

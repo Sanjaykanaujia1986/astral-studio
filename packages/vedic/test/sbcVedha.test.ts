@@ -3,8 +3,10 @@
  * difference between "no hit" and "not evaluated", and a daily run over
  * 8 October – 20 November 2026 at 10:00 Asia/Kolkata.
  *
- * Method A runs only on the labelled TEST FIXTURE; the production tradition
- * has no verified Method A table and must say so.
+ * The production tradition is the Horaratna in Sastri's rendering
+ * (Phaladeepika, 2nd ed. 1950, pp. 311-315); its three worked lists are
+ * checked cell by cell. The labelled fixture and the 1.0.0 geometry stay for
+ * reproducibility.
  */
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { SwissEphWasmProvider, resolveCivilTime, norm360 } from '@astro/engine';
@@ -12,7 +14,8 @@ import { SARVATOBHADRA, sbcCellOf, nakshatra28, ABHIJIT_INDEX } from '../src/bha
 import {
   vedhaLines, vedhaLineCells, evaluateVedha, resolveTargets, tithiGroupOf, motionOf, disagreement,
   vedhaForDay, grahaStates, validateTradition, directionOf,
-  SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE, type GrahaState, type ResolvedTarget,
+  SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE, SBC_HORARATNA_V1, SBC_ALL_THREE_V1, grahaClass, mercuryWithMalefic,
+  type GrahaState, type ResolvedTarget,
 } from '../src/sbcVedha.js';
 
 /** 28-index of a 27-index nakṣatra. */
@@ -140,6 +143,89 @@ describe('Method B and Method A', () => {
   });
 });
 
+const VOWELS = new Set(['A', 'Ā', 'I', 'Ī', 'U', 'Ū', 'Ṛ', 'Ṝ', 'Ḷ', 'Ḹ', 'E', 'Ai', 'O', 'Au', 'Aṁ', 'Aḥ']);
+/** A cell as Sastri names it: a nakṣatra, a sign, a tithi group, "the vowel" or "the consonant". */
+const token = ([r, c]: readonly [number, number]): string => {
+  const x = SARVATOBHADRA[r]![c]!;
+  if (x.kind === 'nakshatra') return `N${x.index}`;
+  if (x.kind === 'sign') return `S${x.index}`;
+  if (x.kind === 'tithi') return `T:${x.group}`;
+  if (x.kind === 'letter') return VOWELS.has(x.text) ? 'vowel' : 'consonant';
+  return '?';
+};
+const pierced = (n: number): string[] => {
+  const l = vedhaLines(n, 'end-nakshatra');
+  return [...l.front, ...l.behind, ...l.ahead].map(token).sort();
+};
+
+describe('the Horaratna lists (Sastri 1950, p. 312)', () => {
+  it('Kṛttikā: Bharaṇī, the vowel, Vṛṣabha, Nandā, Bhadrā, Tulā, the consonant, Viśākhā, Śravaṇa', () => {
+    expect(pierced(KRITTIKA)).toEqual([`N${BHARANI}`, 'vowel', 'S1', 'T:Nandā', 'T:Bhadrā', 'S6', 'consonant', `N${VISHAKHA}`, `N${SHRAVANA}`].sort());
+  });
+  it('Rohiṇī: the vowel, Aśvinī, the consonant, Mithuna, the vowel, Kanyā, the consonant, Svāti, Abhijit', () => {
+    expect(pierced(n28(3))).toEqual(['vowel', `N${n28(0)}`, 'consonant', 'S2', 'vowel', 'S5', 'consonant', `N${n28(14)}`, `N${ABHIJIT_INDEX}`].sort());
+  });
+  it('Mṛgaśirā: Karkaṭa, the consonant, Siṁha, the consonant, Citrā, Revatī, the consonant, the vowel, Uttarāṣāḍhā', () => {
+    expect(pierced(n28(4))).toEqual(['S3', 'consonant', 'S4', 'consonant', `N${n28(13)}`, `N${n28(26)}`, 'consonant', 'vowel', `N${n28(20)}`].sort());
+  });
+  it('lets the front line pierce only the nakṣatra at its end, unlike the 1.0.0 geometry', () => {
+    expect(vedhaLines(KRITTIKA, 'end-nakshatra').front).toEqual([[8, 1]]);
+    expect(vedhaLines(KRITTIKA, 'every-cell').front).toHaveLength(8);
+    // "Ca" sits on Kṛttikā's front column: pierced under 1.0.0, not under the Horaratna.
+    const ca = resolveTargets({ nameConsonant: 'Ca' })[3]!;
+    expect(ca.cell).toEqual([3, 1]);
+    expect(evaluateVedha('B', state('mars', KRITTIKA, 0.4, SBC_GEOMETRY_V1), ca, SBC_GEOMETRY_V1, 'shukla').outcome).toBe('hit');
+    expect(evaluateVedha('B', state('mars', KRITTIKA, 0.4, SBC_HORARATNA_V1), ca, SBC_HORARATNA_V1, 'shukla').outcome).toBe('no-hit');
+  });
+});
+
+describe('Method A under the Horaratna', () => {
+  const T = SBC_HORARATNA_V1;
+  const st = (g: GrahaState['graha'], speed: number) => state(g, KRITTIKA, speed, T);
+  it('validates, with its sources paged and its sides explained', () => {
+    expect(validateTradition(T)).toEqual([]);
+    expect(validateTradition(SBC_ALL_THREE_V1)).toEqual([]);
+    expect(validateTradition({ ...T, sidesBasis: '' })).toContain('SIDES_UNEXPLAINED');
+    expect(validateTradition({ ...T, reference: 'Horaratna' })).toContain('NO_VERSE_REFERENCE');
+  });
+  it('sends mean motion to the front, swift to the left, retrograde to the right (p. 312)', () => {
+    expect(evaluateVedha('A', st('mars', 0.4), target(SHRAVANA), T, 'shukla')).toMatchObject({ outcome: 'hit', directions: ['sammukha'], rule: 'A:motion:direct' });
+    expect(evaluateVedha('A', st('mars', 0.4), target(VISHAKHA), T, 'shukla').outcome).toBe('no-hit');
+    expect(evaluateVedha('A', st('mars', 0.7), target(VISHAKHA), T, 'shukla')).toMatchObject({ outcome: 'hit', directions: ['vama'] });
+    expect(evaluateVedha('A', st('saturn', -0.03), target(BHARANI), T, 'shukla')).toMatchObject({ outcome: 'hit', directions: ['dakshina'] });
+  });
+  it('sends the Sun and the Moon left, Rāhu and Ketu right, whatever their speed (p. 313)', () => {
+    for (const g of ['sun', 'moon'] as const) {
+      expect(evaluateVedha('A', st(g, g === 'sun' ? 1 : 13), target(VISHAKHA), T, 'shukla')).toMatchObject({ outcome: 'hit', rule: 'A:fixed', directions: ['vama'] });
+      expect(evaluateVedha('A', st(g, 1), target(SHRAVANA), T, 'shukla').outcome).toBe('no-hit');
+    }
+    for (const g of ['rahu', 'ketu'] as const) {
+      expect(evaluateVedha('A', st(g, -0.05), target(BHARANI), T, 'shukla')).toMatchObject({ outcome: 'hit', directions: ['dakshina'] });
+    }
+  });
+  it('says nothing about a station: not evaluated, never "no hit"', () => {
+    expect(evaluateVedha('A', st('jupiter', 0.001), target(SHRAVANA), T, 'shukla')).toMatchObject({ outcome: 'not-evaluated', reason: 'MOTION_NOT_COVERED' });
+  });
+  it('lets the luminaries and nodes cast all three under the other reading', () => {
+    for (const n of [SHRAVANA, BHARANI, VISHAKHA]) {
+      expect(evaluateVedha('A', state('sun', KRITTIKA, 1, SBC_ALL_THREE_V1), target(n), SBC_ALL_THREE_V1, 'shukla').outcome).toBe('hit');
+    }
+  });
+  it('classes Mercury by its company and the Moon by the tradition’s rule', () => {
+    expect(grahaClass('mercury', { paksha: 'shukla', mercuryWithMalefic: true }, T)).toBe('malefic');
+    expect(grahaClass('mercury', { paksha: 'shukla', mercuryWithMalefic: false }, T)).toBe('benefic');
+    expect(grahaClass('mercury', { paksha: 'shukla', mercuryWithMalefic: true }, SBC_GEOMETRY_V1)).toBe('variable');
+    expect(grahaClass('moon', { paksha: 'krishna', tithi: 20 }, T)).toBe('malefic');
+    expect(grahaClass('moon', { paksha: 'krishna', tithi: 20 }, SBC_ALL_THREE_V1)).toBe('benefic');
+    expect(grahaClass('moon', { paksha: 'krishna', tithi: 27 }, SBC_ALL_THREE_V1)).toBe('malefic');
+    expect(grahaClass('moon', { paksha: 'shukla', tithi: 3 }, SBC_ALL_THREE_V1)).toBe('malefic');
+    const at = (graha: GrahaState['graha'], longitude: number): GrahaState => ({ graha, longitude, speed: 1, nakshatra28: 0, motion: 'direct' });
+    expect(mercuryWithMalefic([at('mercury', 95), at('mars', 110)], false)).toBe(true);
+    expect(mercuryWithMalefic([at('mercury', 95), at('mars', 125)], false)).toBe(false);
+    expect(mercuryWithMalefic([at('mercury', 95), at('moon', 100)], true)).toBe(true);
+  });
+});
+
 describe('a daily run', () => {
   let provider: SwissEphWasmProvider;
   beforeAll(async () => { provider = new SwissEphWasmProvider(); await provider.init(); });
@@ -162,9 +248,14 @@ describe('a daily run', () => {
       const n = day.evaluations.filter((e) => e.method === c.method && e.target.kind === c.target && e.outcome === 'hit').length;
       expect(c.grahas).toHaveLength(n);
     }
-    // Method B hits are a superset of Method A hits, day after day.
-    for (const date of days) {
-      const d = vedhaForDay(provider, date, at10(date), settings, SBC_METHOD_A_FIXTURE, targets);
+    // Method B hits are a superset of Method A hits, day after day, under the fixture and the Horaratna.
+    for (const date of days) for (const tr of [SBC_METHOD_A_FIXTURE, SBC_HORARATNA_V1]) {
+      const d = vedhaForDay(provider, date, at10(date), settings, tr, targets);
+      if (tr === SBC_HORARATNA_V1) {
+        // Every graha is covered: only a station leaves Method A unevaluated, and Mercury is always classed.
+        for (const e of d.evaluations.filter((x) => x.method === 'A' && x.outcome === 'not-evaluated' && x.target.cell)) expect(e.reason).toBe('MOTION_NOT_COVERED');
+        expect(d.evaluations.filter((x) => x.graha === 'mercury' && x.classification === 'variable')).toHaveLength(0);
+      }
       for (const a of d.evaluations.filter((e) => e.method === 'A' && e.outcome === 'hit')) {
         const b = d.evaluations.find((e) => e.method === 'B' && e.graha === a.graha && e.target.kind === a.target.kind)!;
         expect(b.outcome).toBe('hit');

@@ -3,9 +3,10 @@
  *
  * One row per calendar day at a fixed local time; both methods side by side;
  * each target named with where it came from; prices only on valid sessions of
- * each instrument's own calendar. Method A runs only when a tradition supplies
- * a rule table — the production tradition does not, so its column says "not
- * evaluated", which is a different statement from "no hit".
+ * each instrument's own calendar. The production tradition is the Horaratna
+ * in Sastri's 1950 rendering; where a method cannot be applied (a station, a
+ * tradition with no rule table) the column says "not evaluated", which is a
+ * different statement from "no hit".
  */
 import { useMemo, useRef, useState, type JSX } from 'react';
 import { resolveCivilTime, type EphemerisProvider } from '@astro/engine';
@@ -14,7 +15,7 @@ import {
   type ChartFacts, type DailyRow,
 } from '@astro/research';
 import {
-  SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE, SARVATOBHADRA, TARGET_KINDS, resolveTargets, tithiGroupOf, nakshatra28, disagreement, validateTradition,
+  SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE, SBC_HORARATNA_V1, SBC_ALL_THREE_V1, SARVATOBHADRA, TARGET_KINDS, resolveTargets, tithiGroupOf, nakshatra28, disagreement, validateTradition,
   type SbcTradition, type VedhaDay, type VedhaEvaluation, type TargetKind, type VedhaMethod,
 } from '@astro/vedic';
 import { tithiFrom } from '@astro/vedic';
@@ -29,7 +30,7 @@ import {
   CalcSettingsFields, DatasetCard, ExportBar, LayerBadge, FIELD, BUTTON, PRIMARY, TH, TD, CARD, DEFAULT_SIDEREAL, type CalcSettingsValue,
 } from './shared.js';
 
-const TRADITIONS: readonly SbcTradition[] = [SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE];
+const TRADITIONS: readonly SbcTradition[] = [SBC_HORARATNA_V1, SBC_ALL_THREE_V1, SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE];
 const PRICE_IDS = ['nifty50', 'gold', 'silver'] as const;
 
 const CONSONANTS: readonly string[] = [...new Set(SARVATOBHADRA.flat().flatMap((c, i) => {
@@ -56,7 +57,7 @@ interface Config {
 
 const DEFAULT: Config = {
   from: '2026-10-08', to: '2026-11-20', time: '10:00', zone: 'Asia/Kolkata', settings: DEFAULT_SIDEREAL,
-  traditionId: SBC_GEOMETRY_V1.id, recordId: 'nifty50-launch-provisional', nameConsonant: '', nameVowel: '',
+  traditionId: SBC_HORARATNA_V1.id, recordId: 'nifty50-launch-provisional', nameConsonant: '', nameVowel: '',
 };
 
 interface Run { readonly days: readonly VedhaDay[]; readonly ephemerisVersion: string; readonly facts: ChartFacts; readonly config: Config }
@@ -102,7 +103,7 @@ export function VedhaTab(): JSX.Element {
   const [compareTarget, setCompareTarget] = useState<TargetKind | 'any'>('natal-moon-nakshatra');
   const generation = useRef(0);
   const set = <K extends keyof Config>(k: K, v: Config[K]): void => setConfig((c) => ({ ...c, [k]: v }));
-  const tradition = TRADITIONS.find((x) => x.id === config.traditionId)!;
+  const tradition = TRADITIONS.find((x) => x.id === config.traditionId) ?? SBC_HORARATNA_V1;
   const records = CHART_RECORDS;
 
   const dates = useMemo(() => {
@@ -160,7 +161,7 @@ export function VedhaTab(): JSX.Element {
   };
   const dirText = (r: DailyRow | undefined): string => {
     if (!r) return '—';
-    if (r.status !== 'session') return `${t(`fa.day.${r.status}` as MessageKey)}${r.holiday ? ` (${r.holiday})` : ''}`;
+    if (r.status !== 'session') return `${t(`fa.day.${r.status}` as MessageKey)}${r.holiday ?? r.disputed ? ` (${r.holiday ?? r.disputed})` : ''}`;
     if (r.direction === null) return r.close === null ? '—' : `${r.close.toFixed(2)}`;
     return `${r.close!.toFixed(2)} ${r.direction === 'up' ? '▲' : r.direction === 'down' ? '▼' : '='} ${r.changePct!.toFixed(2)}%${r.irregular ? ' *' : ''}`;
   };
@@ -201,7 +202,7 @@ export function VedhaTab(): JSX.Element {
         const row: Record<string, string | number | null> = { date: d.date, time: run.config.time, tithi: `${d.tithi} (${d.paksha})`, a: hitsTextEn(d, 'A'), b: hitsTextEn(d, 'B') };
         for (const id of PRICE_IDS) {
           const p = prices[id].find((r) => r.date === d.date);
-          row[`${id}Status`] = p ? `${p.status}${p.holiday ? ` (${p.holiday})` : ''}${p.irregular ? ' irregular' : ''}` : '';
+          row[`${id}Status`] = p ? `${p.status}${p.holiday ? ` (${p.holiday})` : ''}${p.disputed ? ` (disputed: ${p.disputed})` : ''}${p.special ? ` (${p.special})` : ''}${p.irregular ? ' irregular' : ''}` : '';
           row[`${id}Close`] = p?.close ?? null; row[`${id}Dir`] = p?.direction ?? null;
         }
         return row;
@@ -238,7 +239,8 @@ export function VedhaTab(): JSX.Element {
         ['zodiac', JSON.stringify(run.config.settings.zodiac)], ['node', run.config.settings.nodeType],
         ['ephemeris', `Swiss Ephemeris ${run.ephemerisVersion}`],
         ['tradition', `${tradition.id} ${tradition.version} (${tradition.status}); ${tradition.reference}`],
-        ['vama line', tradition.vamaLine ?? 'not named by the tradition'], ['method A', tradition.methodA ? 'rule table present' : 'unavailable: no verified rule table'],
+        ['vama line', tradition.vamaLine ?? 'not named by the tradition'], ['sides basis', tradition.sidesBasis ?? ''], ['front line', tradition.frontLine],
+        ['method A', tradition.methodA ? 'rule table present' : 'unavailable: no verified rule table'],
         ['chart record', `${run.facts.record.id}, ${run.facts.record.date}${run.facts.record.time ? ` ${run.facts.record.time}` : ''} ${run.facts.record.timeZone}, ${run.facts.record.timeCertainty}; ${run.facts.record.source}`],
         ['classification', 'natural benefic/malefic by convention: Moon by paksha, Mercury variable'],
         ...PRICE_IDS.map((id) => [id, datasets[id] ? `${datasets[id]!.sourceLabel}, fingerprint ${datasets[id]!.fingerprint}` : 'not loaded']),
@@ -277,7 +279,7 @@ export function VedhaTab(): JSX.Element {
         <div className="flex flex-wrap items-end gap-3 text-sm">
           <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.vedha.tradition')}</span>
             <select className={FIELD} value={config.traditionId} onChange={(e) => set('traditionId', e.target.value)}>
-              {TRADITIONS.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.version}{x.status === 'test-fixture' ? ` — ${t('fa.vedha.fixture')}` : ''}</option>)}
+              {TRADITIONS.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.version}{x.status === 'test-fixture' ? ` — ${t('fa.vedha.fixture')}` : x.status === 'unverified' ? ` — ${t('fa.vedha.superseded')}` : ''}</option>)}
             </select></label>
           <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.vedha.record')}</span>
             <select className={FIELD} value={config.recordId} onChange={(e) => set('recordId', e.target.value)}>
@@ -293,7 +295,12 @@ export function VedhaTab(): JSX.Element {
             </select></label>
         </div>
         <p className="text-xs as-text-muted">{tradition.reference}</p>
-        {tradition.status !== 'verified' ? <p className="text-xs text-amber-700 dark:text-amber-400">{t(tradition.status === 'test-fixture' ? 'fa.vedha.fixtureWarning' : 'fa.vedha.unverified')}</p> : null}
+        {tradition.status !== 'verified' ? (
+          <p className="text-xs text-amber-700 dark:text-amber-400">
+            {t(tradition.status === 'test-fixture' ? 'fa.vedha.fixtureWarning' : tradition.status === 'sourced' ? 'fa.vedha.sourced' : 'fa.vedha.unverified')}
+          </p>
+        ) : null}
+        {tradition.sidesBasis ? <p className="text-xs as-text-muted"><span className="font-medium">{t('fa.vedha.sides')}:</span> {tradition.sidesBasis}</p> : null}
         {problems.length ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{problems.join(', ')}</p> : null}
         <p className="text-xs as-text-muted">{t('fa.vedha.nameNote')}</p>
         <div className="grid gap-2 md:grid-cols-3">{PRICE_IDS.map((id) => <DatasetCard key={id} instrumentId={id} compact />)}</div>

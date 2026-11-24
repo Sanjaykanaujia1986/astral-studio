@@ -69,8 +69,11 @@ Houses and ayanamsha agree far more closely:
 
 ## 2. Ephemeris coverage and the silent-fallback hazard
 
-The bundled `.se1` set covers **1800-01-01 to 2400-12-31 CE**. Verified by probe:
-1799 fails, 1800–2400 succeed, 2401 fails.
+The bundled `.se1` set covers **1800-01-02 to about 2400-01-10 CE**. This
+was measured in 0.43 by reading the returned flag every five days from 1700
+to 2500. Midnight on 1 January 1800 is already Moshier. Chiron has its own
+file and range. The earlier probe ("1799 fails, 1800–2400 succeed") sampled
+too coarsely to see either edge.
 
 **Swiss Ephemeris does not fail loudly outside that range. It silently
 substitutes the lower-precision Moshier ephemeris and still returns a
@@ -86,7 +89,12 @@ Compare 2000-01-01, which succeeds: `returned flag = 258` (SWIEPH bit set), empt
 
 **Engine requirement.** The ephemeris provider MUST compare the *requested*
 flags against the *returned* flags and report which ephemeris actually produced
-each result. A caller must never be able to receive Moshier-precision data
+each result. Since 0.43 it does:
+- the swisseph-wasm wrapper discards the flag, so the provider calls
+  `swe_calc_ut` through the Emscripten module itself;
+- `BodyPosition.source` comes from the flag, and
+  `sourceBasis: 'returned-flag'` says so;
+- the date range is used only if a binding hides the module. A caller must never be able to receive Moshier-precision data
 believing it is Swiss. The UI labels it; it is never silently substituted.
 
 Moshier's own accuracy is ~1″ and it covers 3000 BCE – 3000 CE with no data
@@ -525,5 +533,5 @@ cross-checks:
 string (2.10.03 at present). It is saved with every study and printed in every
 export.
 
-The wrapper does not expose SE's returned flags, so a Moshier fallback is
-still inferred from the date range (§ 2), not read from the call.
+Since 0.43 the fallback is read from SE's returned flag, not inferred from
+the date range (§ 2).

@@ -99,6 +99,12 @@ export interface BodyPosition {
    */
   readonly stationary: boolean;
   readonly source: EphemerisSource;
+  /**
+   * How `source` was established: `returned-flag` when Swiss Ephemeris's own
+   * returned iflag was read (SEFLG_SWIEPH vs SEFLG_MOSEPH, authoritative);
+   * `date-range` when the binding hid it and the bundled data's range was used.
+   */
+  readonly sourceBasis?: 'returned-flag' | 'date-range';
   readonly equatorial?: EquatorialPosition;
 }
 

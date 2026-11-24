@@ -8,7 +8,7 @@
  * different things and are never given a price or a direction.
  */
 import type { Series } from './series.js';
-import { dayStatus, type DayStatus, type ExchangeCalendar } from './calendar.js';
+import { dayStatus, isShut, type DayStatus, type ExchangeCalendar } from './calendar.js';
 
 export type Direction = 'up' | 'down' | 'flat';
 
@@ -17,6 +17,10 @@ export interface DailyRow {
   readonly status: DayStatus;
   /** Holiday name, when it is one. */
   readonly holiday?: string;
+  /** Why the day is unknown although its year is listed: the sources disagree. */
+  readonly disputed?: string;
+  /** A weekend day the exchange opened for a full special session. */
+  readonly special?: string;
   readonly close: number | null;
   /** The session this close is compared with: the previous bar in the series. */
   readonly previousDate: string | null;
@@ -40,17 +44,20 @@ export function dailyRows(series: Series | null, calendar: ExchangeCalendar, fro
     let status = dayStatus(calendar, date, have);
     if (!series && status === 'missing') status = 'unknown';
     const holiday = calendar.holidays[date];
+    const disputed = calendar.disputed?.[date];
+    const special = calendar.specialSessions?.[date];
+    const notes = { ...(holiday ? { holiday } : {}), ...(disputed ? { disputed } : {}), ...(special ? { special } : {}) };
     const i = index.get(date);
     if (status !== 'session' || i === undefined) {
-      out.push({ date, status, ...(holiday ? { holiday } : {}), close: null, previousDate: null, changePct: null, direction: null });
+      out.push({ date, status, ...notes, close: null, previousDate: null, changePct: null, direction: null });
       continue;
     }
-    const shut = calendar.weekend.includes(new Date(t).getUTCDay()) || holiday !== undefined;
+    const shut = isShut(calendar, date);
     const prev = i > 0 ? bars[i - 1]! : null;
     const close = bars[i]!.close;
     const changePct = prev ? 100 * (close / prev.close - 1) : null;
     const direction: Direction | null = changePct === null ? null : Math.abs(changePct) <= FLAT_PCT ? 'flat' : changePct > 0 ? 'up' : 'down';
-    out.push({ date, status, close, previousDate: prev?.date ?? null, changePct, direction, ...(shut ? { irregular: true as const, ...(holiday ? { holiday } : {}) } : {}) });
+    out.push({ date, status, close, previousDate: prev?.date ?? null, changePct, direction, ...notes, ...(shut ? { irregular: true as const } : {}) });
   }
   return out;
 }

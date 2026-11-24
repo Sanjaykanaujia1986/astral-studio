@@ -176,6 +176,7 @@ if (bundle) {
     ['Financial astrology: Venus combustion (0.42)', 'fa.venus.episodesNote'],
     ['Financial astrology: daily vedha (0.42)', 'fa.vedha.compareTarget'],
     ['Aspect windows on the Calendar (0.42)', 'aw.lede'],
+    ['Sarvatobhadra Horaratna tradition (0.43)', 'fa.vedha.sourced'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

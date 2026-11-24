@@ -7,7 +7,7 @@
  */
 import { describe, it, expect } from 'vitest';
 import { makeSeries } from '../src/market/series.js';
-import { NSE_CALENDAR, COMEX_CALENDAR, dayStatus, missingSessions } from '../src/market/calendar.js';
+import { NSE_CALENDAR, BSE_CALENDAR, COMEX_CALENDAR, dayStatus, missingSessions, isShut, comexHolidays, easterSunday } from '../src/market/calendar.js';
 import {
   runEventStudy, referenceSession, forwardReturns, returnStats, sweepParameter,
   type StudyObservation,
@@ -44,8 +44,35 @@ describe('exchange calendar', () => {
     expect(missingSessions(NSE_CALENDAR, '2026-10-05', '2026-11-30', gappy)).toEqual(['2026-10-22']);
   });
   it('says unknown where no holiday list is loaded, rather than guessing', () => {
-    expect(dayStatus(NSE_CALENDAR, '2025-10-22', new Set())).toBe('unknown');
-    expect(dayStatus(COMEX_CALENDAR, '2026-11-26', new Set())).toBe('unknown');
+    expect(dayStatus(NSE_CALENDAR, '2010-10-22', new Set())).toBe('unknown');
+    expect(dayStatus(COMEX_CALENDAR, '2010-11-24', new Set())).toBe('unknown');
+  });
+  it('holds the NSE and BSE lists for 2011-2025 and keeps disputed dates unknown', () => {
+    for (const y of [2011, 2018, 2025]) expect(NSE_CALENDAR.holidayYears).toContain(y);
+    expect(dayStatus(NSE_CALENDAR, '2025-10-22', new Set())).toBe('holiday');
+    expect(dayStatus(BSE_CALENDAR, '2020-04-10', new Set())).toBe('holiday');
+    expect(dayStatus(NSE_CALENDAR, '2018-06-14', new Set())).toBe('missing');
+    // The list and all three Yahoo series disagree: said, not settled.
+    expect(dayStatus(NSE_CALENDAR, '2019-02-13', new Set())).toBe('unknown');
+    expect(dayStatus(NSE_CALENDAR, '2013-11-14', new Set(['2013-11-14']))).toBe('session');
+    expect(isShut(NSE_CALENDAR, '2013-11-14')).toBe(false);
+  });
+  it('treats a special Saturday session as a session, and a Muhurat bar on a holiday as irregular', () => {
+    expect(isShut(NSE_CALENDAR, '2025-02-01')).toBe(false);
+    expect(dayStatus(NSE_CALENDAR, '2025-02-01', new Set())).toBe('missing');
+    expect(isShut(NSE_CALENDAR, '2024-11-01')).toBe(true);
+  });
+  it('derives COMEX trade-date holidays from CME rules', () => {
+    expect(easterSunday(2025)).toBe('2025-04-20');
+    expect(easterSunday(2026)).toBe('2026-04-05');
+    expect(Object.keys(comexHolidays(2026)).sort()).toEqual([
+      '2026-01-01', '2026-01-19', '2026-02-16', '2026-04-03', '2026-05-25', '2026-06-19', '2026-07-03', '2026-09-07', '2026-11-26', '2026-12-25',
+    ]);
+    // Juneteenth only from 2022; a Saturday New Year's Day is not moved; a Sunday Christmas moves to Monday.
+    expect(Object.values(comexHolidays(2021)).some((n) => n.startsWith('Juneteenth'))).toBe(false);
+    expect(comexHolidays(2022)['2021-12-31']).toBeUndefined();
+    expect(comexHolidays(2022)['2022-12-26']).toBe('Christmas (closed)');
+    expect(dayStatus(COMEX_CALENDAR, '2012-10-29', new Set())).toBe('unknown');
   });
 });
 

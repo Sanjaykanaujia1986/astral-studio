@@ -27,7 +27,8 @@ import { NSE_CALENDAR, BSE_CALENDAR, COMEX_CALENDAR } from './market/calendar.js
 export type PriceBasis =
   | 'price-index'
   | 'equity-as-provided'
-  | 'futures-continuous';
+  | 'futures-continuous'
+  | 'etf-units';
 
 export interface Instrument {
   readonly id: string;
@@ -66,13 +67,34 @@ export const INSTRUMENTS: readonly Instrument[] = [
     id: 'gold', name: 'Gold (COMEX futures)', exchange: 'COMEX', symbol: 'GC=F', currency: 'USD',
     priceBasis: 'futures-continuous', adjustment: 'Unadjusted continuous series: no back-adjustment at rolls.',
     hasVolume: true, calendar: COMEX_CALENDAR,
-    contract: 'COMEX GC, 100 troy oz. Continuous front-month as the source builds it; its roll rule is not documented by the source, so a jump at a roll is part of the series.',
+    contract:
+      'COMEX GC, 100 troy oz. Continuous front-month as the source builds it. The roll rule is not documented, and the source serves no ' +
+      'expired contracts (GCZ24.CMX and others return "not found", checked 2026-11-24), so the roll dates cannot be reconstructed from it: ' +
+      'a jump at a roll is part of the series. For a series with no roll use GOLDBEES.',
   },
   {
     id: 'silver', name: 'Silver (COMEX futures)', exchange: 'COMEX', symbol: 'SI=F', currency: 'USD',
     priceBasis: 'futures-continuous', adjustment: 'Unadjusted continuous series: no back-adjustment at rolls.',
     hasVolume: true, calendar: COMEX_CALENDAR,
-    contract: 'COMEX SI, 5,000 troy oz. Continuous front-month as the source builds it; its roll rule is not documented by the source.',
+    contract:
+      'COMEX SI, 5,000 troy oz. Continuous front-month as the source builds it; the roll rule is not documented and expired contracts ' +
+      'are not served, so roll dates cannot be reconstructed. For a series with no roll use SILVERBEES.',
+  },
+  {
+    id: 'goldbees', name: 'Gold (Nippon India ETF Gold BeES)', exchange: 'NSE', symbol: 'GOLDBEES.NS', currency: 'INR',
+    priceBasis: 'etf-units',
+    adjustment:
+      'Exchange-traded fund units backed by physical gold, priced in rupees: no futures roll and no contract expiry. Tracks the domestic ' +
+      'gold price, so it includes the rupee exchange rate and Indian duties, and trails it by the expense ratio. Check for unit splits before comparing across years.',
+    hasVolume: true, calendar: NSE_CALENDAR,
+  },
+  {
+    id: 'silverbees', name: 'Silver (Nippon India Silver ETF)', exchange: 'NSE', symbol: 'SILVERBEES.NS', currency: 'INR',
+    priceBasis: 'etf-units',
+    adjustment:
+      'Exchange-traded fund units backed by physical silver, priced in rupees: no futures roll. Listed February 2022, so it cannot cover ' +
+      'a 10-15 year study. Includes the rupee exchange rate and Indian duties.',
+    hasVolume: true, calendar: NSE_CALENDAR,
   },
 ];
 
@@ -121,7 +143,9 @@ export const CHART_RECORDS: readonly ChartRecord[] = [
   {
     id: 'nifty50-launch-provisional', instrumentId: 'nifty50', kind: 'index-launch', date: '1996-04-22', time: '10:00',
     timeCertainty: 'provisional', place: MUMBAI, timeZone: 'Asia/Kolkata',
-    source: 'Launch date: NSE Indices (index launched 22 April 1996). Time 10:00 is a research convention, not a documented launch time.',
+    source:
+      'Launch date: NSE Indices (index launched 22 April 1996). No launch time is published: NSE Indices, Wikipedia and the press ' +
+      'were searched on 2026-11-24 without finding one. Time 10:00 is a research convention, not a documented launch time.',
   },
   {
     id: 'nifty50-base', instrumentId: 'nifty50', kind: 'index-base-date', date: '1995-11-03', timeCertainty: 'date-only',
@@ -137,19 +161,29 @@ export const CHART_RECORDS: readonly ChartRecord[] = [
   {
     id: 'reliance-incorporation', instrumentId: 'reliance', kind: 'incorporation', date: '1973-05-08', timeCertainty: 'date-only',
     place: { label: 'Bengaluru, Karnataka, India', latitude: 12.9716, longitude: 77.5946 }, timeZone: 'Asia/Kolkata',
-    source: 'Incorporated as Mynylon Limited in Karnataka on 8 May 1973 (company history; secondary sources agree, a filing should confirm).',
+    source:
+      'Incorporated as Mynylon Limited, registered in Karnataka, on 8 May 1973 (company history). The company’s Annual Report 1976-77 ' +
+      '(ril.com archive, Notes on accounts, note 1) confirms the Mynylon name, its change to Reliance Textile Industries Limited and the ' +
+      'Karnataka registration; it does not restate the date.',
     note: 'Some secondary sources date an earlier Reliance entity to 1966; this record is the 1973 incorporation only.',
+  },
+  {
+    id: 'reliance-listing', instrumentId: 'reliance', kind: 'listing', date: '1978-01-23', timeCertainty: 'date-only',
+    place: MUMBAI, timeZone: 'Asia/Kolkata',
+    source:
+      'Reliance Textile Industries Limited, Annual Report 1976-77, Directors’ Report, p. 6 (ril.com archive): the shares were ' +
+      '"listed on the Stock Exchanges at Bombay and Ahmedabad with effect from 23rd January, 1978". The Offer for Sale of 28,20,000 ' +
+      'equity shares is dated 24 October 1977 (Annual Report 1977-78).',
+    note: 'Listing took effect on that date; the report gives no time and no first-trade price. Bombay is the exchange of record here.',
   },
 ];
 
 /**
- * The listing chart is not built in: published accounts agree on a 1977 public
- * issue but not on a first-trade date. A user who has the exchange's record
- * adds it as a `listing` or `first-trade` record of their own.
+ * Chart records still owed. Empty since 0.43: the Reliance listing date was
+ * found in the company's own annual report. A user who has another record (a
+ * first-trade time, say) adds it as a record of their own.
  */
-export const MISSING_RECORDS: readonly { readonly instrumentId: string; readonly kind: ChartKind; readonly needed: string }[] = [
-  { instrumentId: 'reliance', kind: 'listing', needed: 'BSE listing or first-trade date of Reliance Textile Industries shares (1977–78), from an exchange record or the prospectus.' },
-];
+export const MISSING_RECORDS: readonly { readonly instrumentId: string; readonly kind: ChartKind; readonly needed: string }[] = [];
 
 /** The records of one instrument, built-in and the user's own. */
 export function chartRecordsFor(instrumentId: string, own: readonly ChartRecord[] = []): ChartRecord[] {

@@ -252,11 +252,28 @@ conjunction. Its rules:
 - **Day types are kept apart** (`dayStatus`):
   - session, weekend, holiday (named from the exchange list), **missing** (a
     listed working day with no bar) and **unknown** (no holiday list covers
-    that date);
+    that date, or the sources disagree about it);
   - a missing bar is never treated as a holiday, and never filled.
   - Bars dated on a weekend or a holiday are flagged *irregular* and kept out
-    of the daily comparisons. Yahoo's COMEX futures carry Sunday-dated bars
-    from the Globex evening open.
+    of the daily comparisons. In practice these are NSE's Diwali Muhurat
+    sessions and the odd stub bar on a COMEX holiday. A Saturday listed as a
+    special session (the 2025 Budget day) is a session.
+- **Holiday lists and their checks:**
+  - NSE/BSE 2011–2025 come from the `exchange_calendars` XBOM list. They are
+    checked against the NIFTY, SENSEX and RELIANCE.NS bars.
+  - COMEX 2011–2027 follows CME's rules as `pandas_market_calendars` encodes
+    them. It is checked against the GC=F and SI=F bars.
+  - Where the list and every series disagree, the date is **disputed**, read
+    as unknown, and the disagreement is shown. It is never resolved by
+    picking a side.
+- **Date bars in the exchange's own IANA zone, never a fixed offset.** A
+  converter that dated Yahoo's COMEX timestamps with the current EST offset
+  moved every daylight-saving bar to the previous day. That produced
+  "Sunday bars" and "missing Fridays", which a reader could take for a data
+  fault.
+- **Futures rolls:** a continuous futures series carries a price jump at each
+  roll. Where the vendor's roll cannot be reconstructed, prefer a roll-free
+  series: the NSE gold and silver ETFs (GOLDBEES, SILVERBEES).
 - **The orb sweep** (`sweepParameter`) chooses one orb on the training period
   and measures it once on the holdout:
   - Training observations whose horizon reaches past the split date are

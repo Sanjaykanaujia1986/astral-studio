@@ -19,7 +19,7 @@ import {
 } from '../src/combustion/venus.js';
 import { episodeObservations, dailyStateObservations, sweepOrbs, sweepCandidates, dailySampleJds } from '../src/combustion/study.js';
 import { deriveChartFacts } from '../src/chartFacts.js';
-import { CHART_RECORDS, validateRecord } from '../src/instruments.js';
+import { CHART_RECORDS, MISSING_RECORDS, INSTRUMENTS, validateRecord } from '../src/instruments.js';
 
 const EPHE = join(dirname(fileURLToPath(import.meta.url)), '..', '..', 'engine', 'ephe');
 const HAVE_ORACLE = existsSync(join(EPHE, 'sepl_18.se1'));
@@ -177,5 +177,15 @@ describe('chart records', () => {
     expect(validateRecord({ ...rec, time: '10:00' })).toContain('TIME_WITHOUT_CERTAINTY');
     expect(validateRecord({ ...rec, source: ' ' })).toContain('NO_SOURCE');
     for (const r of CHART_RECORDS) expect(validateRecord(r)).toEqual([]);
+  });
+  it('holds Reliance incorporation and listing as separate date-only records, each with its source', () => {
+    const rel = CHART_RECORDS.filter((r) => r.instrumentId === 'reliance');
+    expect(rel.map((r) => [r.kind, r.date, r.timeCertainty])).toEqual([['incorporation', '1973-05-08', 'date-only'], ['listing', '1978-01-23', 'date-only']]);
+    expect(rel[1]!.source).toMatch(/Annual Report 1976-77/);
+    expect(MISSING_RECORDS).toEqual([]);
+  });
+  it('offers roll-free ETF series beside the COMEX continuous futures', () => {
+    for (const id of ['goldbees', 'silverbees']) expect(INSTRUMENTS.find((i) => i.id === id)).toMatchObject({ priceBasis: 'etf-units', currency: 'INR' });
+    for (const id of ['gold', 'silver']) expect(INSTRUMENTS.find((i) => i.id === id)!.contract).toMatch(/cannot be reconstructed/);
   });
 });

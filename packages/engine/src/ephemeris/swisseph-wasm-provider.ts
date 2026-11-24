@@ -36,6 +36,7 @@ import {
 
 /** Swiss Ephemeris calculation flags. */
 const SEFLG_SWIEPH = 2;
+const SEFLG_MOSEPH = 4;
 const SEFLG_SPEED = 256;
 const SEFLG_EQUATORIAL = 2048;
 const SEFLG_SIDEREAL = 65536;
@@ -77,8 +78,19 @@ const ASCMC_ARMC = 2;
 const ASCMC_VERTEX = 3;
 
 /** Minimal shape of the wrapper we rely on; the package ships loose types. */
+/** The Emscripten module under the wrapper, used to read swe_calc_ut's returned flag. */
+interface EmscriptenModule {
+  ccall(name: string, ret: 'number', types: readonly string[], args: readonly unknown[]): number;
+  _malloc(bytes: number): number;
+  _free(ptr: number): void;
+  readonly HEAPF64: Float64Array;
+  UTF8ToString(ptr: number): string;
+}
+
 interface WasmModule {
   initSwissEph(): Promise<void>;
+  /** Present in swisseph-wasm 0.1.x; the wrapper's calc_ut discards the returned flag, so it is read here. */
+  readonly SweModule?: EmscriptenModule;
   version?(): string;
   calc_ut(jd: number, body: number, flags: number): ArrayLike<number>;
   houses(jd: number, lat: number, lon: number, hsys: string): {
@@ -150,6 +162,29 @@ export class SwissEphWasmProvider implements EphemerisProvider {
       return typeof v === 'string' && v.trim() ? v.trim() : 'unknown';
     } catch {
       return 'unknown';
+    }
+  }
+
+  /**
+   * swe_calc_ut with its returned flag. The wrapper's own calc_ut throws the
+   * flag away, and that flag is the only authoritative statement of which
+   * ephemeris answered: SE silently falls back to Moshier where its data files
+   * do not reach (the bundled files start on 1800-01-02, not 1800-01-01).
+   */
+  #calcUt(jdUT: number, planet: number, flags: number, context: string): { values: number[]; returned: number | null } {
+    const wasm = this.#module();
+    const m = wasm.SweModule;
+    if (!m || typeof m.ccall !== 'function') return { values: readArray(wasm.calc_ut(jdUT, planet, flags), 6, context), returned: null };
+    const out = m._malloc(6 * 8);
+    const err = m._malloc(256);
+    try {
+      const returned = m.ccall('swe_calc_ut', 'number', ['number', 'number', 'number', 'pointer', 'pointer'], [jdUT, planet, flags, out, err]);
+      if (returned < 0) throw new EphemerisError(`${context}: ${m.UTF8ToString(err)}`);
+      const start = out / 8;
+      return { values: readArray(m.HEAPF64.slice(start, start + 6), 6, context), returned };
+    } finally {
+      m._free(out);
+      m._free(err);
     }
   }
 
@@ -258,7 +293,7 @@ export class SwissEphWasmProvider implements EphemerisProvider {
     const frameFlag = this.#applyFrame(options, body);
     const flags = SEFLG_SWIEPH | SEFLG_SPEED | siderealFlag | frameFlag;
 
-    const raw = readArray(wasm.calc_ut(jdUT, planet, flags), 6, `calc(${body})`);
+    const { values: raw, returned } = this.#calcUt(jdUT, planet, flags, `calc(${body})`);
     const [longitude, latitude, distanceAu, longitudeSpeed, latitudeSpeed, distanceSpeed] =
       raw as [number, number, number, number, number, number];
 
@@ -284,9 +319,12 @@ export class SwissEphWasmProvider implements EphemerisProvider {
       distanceSpeed,
       retrograde: longitudeSpeed < 0,
       stationary: Math.abs(longitudeSpeed) < threshold,
-      // Provenance, not decoration: the wrapper hides the returned flags, so
-      // the range check is how degraded results are identified.
-      source: sourceForJd(jdUT),
+      // Provenance, not decoration. Swiss Ephemeris's returned flag says which
+      // ephemeris actually answered; the date range is only the fallback when
+      // the binding hides it.
+      ...(returned !== null
+        ? { source: returned & SEFLG_MOSEPH || !(returned & SEFLG_SWIEPH) ? ('moshier' as const) : ('swiss' as const), sourceBasis: 'returned-flag' as const }
+        : { source: sourceForJd(jdUT), sourceBasis: 'date-range' as const }),
       ...(equatorial ? { equatorial } : {}),
     };
   }

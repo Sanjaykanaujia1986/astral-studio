@@ -6,9 +6,13 @@
  * A graha stands in the nakṣatra on the cakra's edge where its sidereal
  * longitude falls (28 nakṣatras, Abhijit between Uttarāṣāḍhā and Śravaṇa,
  * 276°40′–280°53′20″). From that edge cell three straight lines run into the
- * grid: one straight across to the opposite edge, and two diagonals. Every
- * cell a line crosses (letters, signs, tithi groups, and the nakṣatra where
- * it leaves the grid) is "pierced".
+ * grid: one straight across to the opposite edge, and two diagonals. A
+ * diagonal pierces every cell it crosses (letters, signs, tithi groups, and
+ * the nakṣatra where it leaves the grid). The front line pierces only the
+ * nakṣatra at its far end: Sastri's rendering of the Horaratna lists nine
+ * cells each for Kṛttikā, Rohiṇī and Mṛgaśirā, and in each the front line
+ * contributes only that nakṣatra (Phaladeepika, 2nd ed. 1950, p. 312). The
+ * tests check all three lists cell by cell.
  *
  * The two diagonals are named here by where they lead round the ring, which
  * does not depend on how one pictures the cakra: `behind` reaches a nakṣatra
@@ -22,11 +26,16 @@
  *   `vamaLine`; when it is null the diagonals are reported by geometry only.
  * - **Method B** counts all three lines for every graha (sammukha, vāma and
  *   dakṣiṇa together). Its hits depend on the geometry alone.
- * - **Method A** lets motion choose the line(s): direct, fast, retrograde. Its
- *   rule table must come from a verified reference. The production tradition
- *   ships WITHOUT one (`methodA: null`), so Method A is "not evaluated", never
- *   "no hit". `SBC_METHOD_A_FIXTURE` is a labelled test fixture transcribed
- *   from a secondary summary, for exercising the engine and the screen only.
+ * - **Method A** lets motion choose the line. The production tradition,
+ *   `SBC_HORARATNA_V1`, takes it from the Horaratna as rendered in English by
+ *   V. Subrahmanya Sastri (Phaladeepika, 2nd ed. 1950, pp. 312-313):
+ *   retrograde → right, swift → left, mean → front, for the five tārā grahas;
+ *   Rāhu and Ketu always right; the Sun and the Moon always left. The text
+ *   names no speed thresholds and says nothing of stations, so "swift" is
+ *   faster than the mean daily motion (a stated convention) and a station is
+ *   "not evaluated". Which diagonal is "left" the text does not say either:
+ *   see `sidesBasis`. `SBC_GEOMETRY_V1` (no Method A) is kept so studies saved
+ *   with it reopen unchanged; `SBC_METHOD_A_FIXTURE` is a labelled test fixture.
  *
  * Directions are never inferred from Western aspects.
  */
@@ -61,11 +70,25 @@ export interface SbcTradition {
   readonly name: string;
   /** Where the layout, the names and the motion rule come from. */
   readonly reference: string;
-  /** `verified`: checked against the reference with a worked example; `unverified`: in use, evidence owed; `test-fixture`: tests and demonstration only. */
-  readonly status: 'verified' | 'unverified' | 'test-fixture';
+  /**
+   * `verified`: checked against the reference with a worked example;
+   * `sourced`: the rule is read from a named, paged source and the geometry is
+   * checked against its worked lists, any point the source leaves open being
+   * settled by a stated convention (`sidesBasis`); `unverified`: in use,
+   * evidence owed; `test-fixture`: tests and demonstration only.
+   */
+  readonly status: 'verified' | 'sourced' | 'unverified' | 'test-fixture';
   readonly abhijit: 'between-uttarashadha-and-shravana';
-  /** Which diagonal is called vāma; null when the reference does not settle it. */
+  /** Which diagonal is called vāma; null when the tradition does not name the sides. */
   readonly vamaLine: 'behind' | 'ahead' | null;
+  /** Why `vamaLine` is what it is: quoted from the source, or the convention adopted and its grounds. */
+  readonly sidesBasis?: string;
+  /** `end-nakshatra`: the front line pierces only the nakṣatra at its far end (the Horaratna lists); `every-cell`: every cell it crosses (the 1.0.0 geometry). */
+  readonly frontLine: 'end-nakshatra' | 'every-cell';
+  /** When the Moon counts as malefic. */
+  readonly moonMalefic: 'krishna-paksha' | 'krishna-11-to-shukla-4';
+  /** `by-association`: Mercury is malefic when it shares a rāśi with a malefic, else benefic; `variable`: left unclassified. */
+  readonly mercury: 'by-association' | 'variable';
   /** Method A's table; null when no verified table exists. */
   readonly methodA: MotionRule | null;
   /** Below this fraction of mean motion a graha counts as stationary. */
@@ -83,7 +106,78 @@ export const SBC_GEOMETRY_V1: SbcTradition = {
   status: 'unverified',
   abhijit: 'between-uttarashadha-and-shravana',
   vamaLine: null,
+  frontLine: 'every-cell',
+  moonMalefic: 'krishna-paksha',
+  mercury: 'variable',
   methodA: null,
+  stationFraction: 0.1,
+};
+
+const HORARATNA_SIDES =
+  'The text gives the order "left, front, right" but does not say which diagonal is left: its lists name cells, not sides. ' +
+  'Convention adopted: a graha stands on the edge facing into the cakra (East at the top), so from Kṛttikā its left hand points to Viśākhā, ' +
+  'the line towards later nakṣatras ("ahead"). It fits the rule: swift motion, which carries a graha forward through the nakṣatras, ' +
+  'gives the left vedha, and retrograde motion, which carries it back, gives the right. Not stated by the source; a text that names a side would replace it.';
+
+/**
+ * The production tradition. Rule: Horaratna, in V. Subrahmanya Sastri's
+ * English rendering (Phaladeepika, 2nd ed., Bangalore 1950, pp. 311-315, a
+ * "free rendering" of the Horaratna ślokas); Phaladeepika XXVI.48 for the
+ * place of Sarvatobhadra vedha in judging transits. Malefics per p. 312:
+ * Saturn, the Sun, Rāhu, Ketu and Mars; Mercury with malefics; the waning Moon.
+ */
+export const SBC_HORARATNA_V1: SbcTradition = {
+  id: 'sbc-horaratna',
+  version: '1.0.0',
+  name: 'Sarvatobhadra, Horaratna (Sastri 1950)',
+  reference:
+    'Horaratna on the Sarvatobhadra cakra, English rendering by V. Subrahmanya Sastri, Phaladeepika, 2nd ed. 1950, pp. 311-315 ' +
+    '(motion rule p. 312; Rāhu, Ketu, Sun and Moon p. 313; worked lists for Kṛttikā, Rohiṇī and Mṛgaśirā p. 312, from Rajavijaya); Phaladeepika XXVI.48.',
+  status: 'sourced',
+  abhijit: 'between-uttarashadha-and-shravana',
+  vamaLine: 'ahead',
+  sidesBasis: HORARATNA_SIDES,
+  frontLine: 'end-nakshatra',
+  moonMalefic: 'krishna-paksha',
+  mercury: 'by-association',
+  methodA: {
+    byMotion: { direct: ['sammukha'], fast: ['vama'], retrograde: ['dakshina'] },
+    fixed: { sun: ['vama'], moon: ['vama'], rahu: ['dakshina'], ketu: ['dakshina'] },
+    notCovered: [],
+  },
+  stationFraction: 0.1,
+};
+
+/**
+ * The other reading on record: the luminaries and the nodes cast all three
+ * vedhas. N. Venkatachalaiah and K. R. Sai Shankar, "Sri Varaha Mihira's
+ * Sarvato Bhadra Chakra" (a compilation), whose note records a serious
+ * difference of opinion on the point. The Moon is malefic from the 11th of the
+ * dark half to the 4th of the bright half, as it states. Tārā grahas as in the
+ * Horaratna. Mercury is left unclassified: its rule was not legible in the scan.
+ */
+export const SBC_ALL_THREE_V1: SbcTradition = {
+  id: 'sbc-luminaries-all-three',
+  version: '1.0.0',
+  name: 'Sarvatobhadra, luminaries and nodes cast all three',
+  reference:
+    'N. Venkatachalaiah & K. R. Sai Shankar, Sri Varaha Mihira’s Sarvato Bhadra Chakra (compilation; cites Phaladeepika XXVI.47, which is 48 in Sastri 1950); ' +
+    'tārā-graha rule as the Horaratna, Sastri 1950 p. 312. The compilation’s page numbers are not legible in the scan.',
+  status: 'sourced',
+  abhijit: 'between-uttarashadha-and-shravana',
+  vamaLine: 'ahead',
+  sidesBasis: HORARATNA_SIDES,
+  frontLine: 'end-nakshatra',
+  moonMalefic: 'krishna-11-to-shukla-4',
+  mercury: 'variable',
+  methodA: {
+    byMotion: { direct: ['sammukha'], fast: ['vama'], retrograde: ['dakshina'] },
+    fixed: {
+      sun: ['sammukha', 'vama', 'dakshina'], moon: ['sammukha', 'vama', 'dakshina'],
+      rahu: ['sammukha', 'vama', 'dakshina'], ketu: ['sammukha', 'vama', 'dakshina'],
+    },
+    notCovered: [],
+  },
   stationFraction: 0.1,
 };
 
@@ -103,6 +197,9 @@ export const SBC_METHOD_A_FIXTURE: SbcTradition = {
   status: 'test-fixture',
   abhijit: 'between-uttarashadha-and-shravana',
   vamaLine: 'ahead',
+  frontLine: 'every-cell',
+  moonMalefic: 'krishna-paksha',
+  mercury: 'variable',
   methodA: {
     byMotion: { direct: ['sammukha'], fast: ['vama'], retrograde: ['dakshina'] },
     fixed: { sun: ['sammukha', 'vama', 'dakshina'], rahu: ['sammukha', 'vama', 'dakshina'], ketu: ['sammukha', 'vama', 'dakshina'] },
@@ -119,7 +216,8 @@ export function validateTradition(t: SbcTradition): string[] {
   if (t.methodA) {
     const needsSides = [...Object.values(t.methodA.byMotion), ...Object.values(t.methodA.fixed)].some((d) => d?.some((x) => x !== 'sammukha'));
     if (needsSides && t.vamaLine === null) out.push('SIDES_UNNAMED');
-    if (t.status === 'verified' && t.methodA && !/\d/.test(t.reference)) out.push('NO_VERSE_REFERENCE');
+    if ((t.status === 'verified' || t.status === 'sourced') && !/\d/.test(t.reference)) out.push('NO_VERSE_REFERENCE');
+    if (t.status === 'sourced' && t.vamaLine !== null && !t.sidesBasis?.trim()) out.push('SIDES_UNEXPLAINED');
   }
   if (!(t.stationFraction >= 0 && t.stationFraction < 1)) out.push('BAD_STATION_FRACTION');
   return out;
@@ -148,10 +246,15 @@ export function vedhaLineCells(source: Cell, line: VedhaLine): Cell[] {
   return out;
 }
 
-/** The three lines from a nakṣatra (28-index). */
-export function vedhaLines(index28: number): Record<VedhaLine, Cell[]> {
+/**
+ * The cells each line from a nakṣatra (28-index) pierces. The diagonals pierce
+ * every cell they cross; the front line, under `end-nakshatra`, only the
+ * nakṣatra where it leaves the grid.
+ */
+export function vedhaLines(index28: number, frontLine: SbcTradition['frontLine'] = 'end-nakshatra'): Record<VedhaLine, Cell[]> {
   const src = sbcCellOf(index28);
-  return { front: vedhaLineCells(src, 'front'), behind: vedhaLineCells(src, 'behind'), ahead: vedhaLineCells(src, 'ahead') };
+  const front = vedhaLineCells(src, 'front');
+  return { front: frontLine === 'end-nakshatra' ? front.slice(-1) : front, behind: vedhaLineCells(src, 'behind'), ahead: vedhaLineCells(src, 'ahead') };
 }
 
 export function lineOf(direction: VedhaDirection, t: SbcTradition): VedhaLine | null {
@@ -265,13 +368,45 @@ export type NotEvaluatedReason =
   | 'TARGET_NOT_GIVEN'
   | 'TARGET_NOT_ON_CAKRA';
 
-/** Natural benefic/malefic, by convention: the Moon by pakṣa, Mercury variable (by association). */
+/**
+ * Natural benefic/malefic as the tradition states it. Sastri 1950 p. 312:
+ * Saturn, the Sun, Rāhu, Ketu and Mars malefic, the rest benefic, Mercury
+ * malefic with malefics, the waning Moon malefic.
+ */
 export type GrahaClass = 'benefic' | 'malefic' | 'variable';
-export function grahaClass(graha: Graha, paksha: 'shukla' | 'krishna'): GrahaClass {
+export interface ClassContext {
+  readonly paksha: 'shukla' | 'krishna';
+  /** Tithi 1-30, for the `krishna-11-to-shukla-4` Moon rule. */
+  readonly tithi?: number;
+  /** Whether Mercury shares a rāśi with a malefic, for `by-association`. */
+  readonly mercuryWithMalefic?: boolean;
+}
+export function grahaClass(
+  graha: Graha, ctx: ClassContext | 'shukla' | 'krishna', t?: Pick<SbcTradition, 'moonMalefic' | 'mercury'>,
+): GrahaClass {
+  const c: ClassContext = typeof ctx === 'string' ? { paksha: ctx } : ctx;
   if (graha === 'jupiter' || graha === 'venus') return 'benefic';
-  if (graha === 'moon') return paksha === 'shukla' ? 'benefic' : 'malefic';
-  if (graha === 'mercury') return 'variable';
+  if (graha === 'moon') {
+    if (t?.moonMalefic === 'krishna-11-to-shukla-4' && c.tithi !== undefined) return c.tithi >= 26 || c.tithi <= 4 ? 'malefic' : 'benefic';
+    return c.paksha === 'shukla' ? 'benefic' : 'malefic';
+  }
+  if (graha === 'mercury') {
+    if (t?.mercury === 'by-association' && c.mercuryWithMalefic !== undefined) return c.mercuryWithMalefic ? 'malefic' : 'benefic';
+    return 'variable';
+  }
   return 'malefic';
+}
+
+/** Whether Mercury shares a rāśi with a malefic (Sun, Mars, Saturn, Rāhu, Ketu, or the Moon when it counts as malefic). */
+export function mercuryWithMalefic(states: readonly GrahaState[], moonIsMalefic: boolean): boolean {
+  const sign = (g: Graha): number | undefined => {
+    const st = states.find((x) => x.graha === g);
+    return st ? Math.floor(st.longitude / 30) : undefined;
+  };
+  const m = sign('mercury');
+  if (m === undefined) return false;
+  const malefics: Graha[] = ['sun', 'mars', 'saturn', 'rahu', 'ketu', ...(moonIsMalefic ? (['moon'] as const) : [])];
+  return malefics.some((g) => sign(g) === m);
 }
 
 export interface VedhaEvaluation {
@@ -298,12 +433,12 @@ function onLine(lines: Record<VedhaLine, Cell[]>, which: readonly VedhaLine[], c
 const ALL: readonly VedhaLine[] = ['front', 'behind', 'ahead'];
 
 export function evaluateVedha(
-  method: VedhaMethod, g: GrahaState, target: ResolvedTarget, t: SbcTradition, paksha: 'shukla' | 'krishna',
+  method: VedhaMethod, g: GrahaState, target: ResolvedTarget, t: SbcTradition, ctx: ClassContext | 'shukla' | 'krishna',
 ): VedhaEvaluation {
-  const base = { method, graha: g.graha, source: g.nakshatra28, motion: g.motion, target, classification: grahaClass(g.graha, paksha) };
+  const base = { method, graha: g.graha, source: g.nakshatra28, motion: g.motion, target, classification: grahaClass(g.graha, ctx, t) };
   const notEvaluated = (rule: string, reason: NotEvaluatedReason): VedhaEvaluation => ({ ...base, outcome: 'not-evaluated', lines: [], directions: [], rule, reason });
   if (!target.cell) return notEvaluated(`${method}:target`, target.missing === 'NOT_ON_CAKRA' ? 'TARGET_NOT_ON_CAKRA' : 'TARGET_NOT_GIVEN');
-  const lines = vedhaLines(g.nakshatra28);
+  const lines = vedhaLines(g.nakshatra28, t.frontLine);
   let looked: readonly VedhaLine[];
   let rule: string;
   if (method === 'B') {
@@ -367,8 +502,10 @@ export function vedhaForDay(
   const states = grahaStates(provider, jd, settings, t);
   const sun = states.find((s) => s.graha === 'sun')!; const moon = states.find((s) => s.graha === 'moon')!;
   const tithi = tithiFrom(sun.longitude, moon.longitude);
+  const moonMalefic = grahaClass('moon', { paksha: tithi.paksha, tithi: tithi.number }, t) === 'malefic';
+  const ctx: ClassContext = { paksha: tithi.paksha, tithi: tithi.number, mercuryWithMalefic: mercuryWithMalefic(states, moonMalefic) };
   const evaluations: VedhaEvaluation[] = [];
-  for (const method of ['A', 'B'] as const) for (const target of targets) for (const g of states) evaluations.push(evaluateVedha(method, g, target, t, tithi.paksha));
+  for (const method of ['A', 'B'] as const) for (const target of targets) for (const g of states) evaluations.push(evaluateVedha(method, g, target, t, ctx));
   const concurrent = (['A', 'B'] as const).flatMap((method) => targets.map((target) => {
     const hits = evaluations.filter((e) => e.method === method && e.target.kind === target.kind && e.outcome === 'hit');
     return {

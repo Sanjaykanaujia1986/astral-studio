@@ -1,10 +1,17 @@
-# Financial astrology: audit and implementation (0.42.0)
+# Financial astrology: audit and implementation (0.42.0, updated 0.43.0)
 
 This audit covers the research brief for aspect events, Venus combustion,
 instruments and their charts, the daily Sarvatobhadra vedha and historical
 event studies. It records what existed, the gaps that were verified, what was
 built and the test that proves each item. It ends with what is still blocked
 and the evidence needed to unblock it.
+
+**0.43.0** worked through the blocked list. The Sarvatobhadra motion rule,
+the Reliance listing date, the NSE/BSE holidays for 2011–2025, the COMEX
+holiday rules and the Swiss Ephemeris return flag are now sourced and in the
+code. Two corrections came out of that work: the front vedha line, and a
+time-zone fault in the scratch converter used for the COMEX examples. See
+"0.43.0: what was resolved" below. Rows changed by 0.43 are marked †.
 
 ## The platform, as found
 
@@ -46,7 +53,7 @@ Missing, and Blocked (missing evidence).
 | # | Requirement | Existing file or symbol | Current behaviour (before) | Verified gap | Change made | Acceptance test | Before → After |
 |---|---|---|---|---|---|---|---|
 | 1 | Swiss Ephemeris binding: units, time scale, flags, errors | `engine/src/ephemeris/swisseph-wasm-provider.ts` | UT Julian Day in, degrees and °/day out, speeds via SEFLG_SPEED, `EphemerisError` on misuse | Library version not recorded anywhere; returned flags hidden by the wrapper | `ephemerisVersion()` on the provider, recorded with every saved study and in exports | `engine/test/integration/version.test.ts` | Partial → Working |
-| 2 | Fallback made visible | `sourceForJd`, `BodyPosition.source` | Moshier outside 1800–2400 is labelled per position | Wrapper does not return SE's flags, so the fallback is inferred from the range | Unchanged; documented | existing `ephemeris` tests | Partial → Partial |
+| 2† | Fallback made visible | `sourceForJd`, `BodyPosition.source` | Moshier outside 1800–2400 is labelled per position | Wrapper discards SE's returned flag, so the fallback was inferred from the range (and the range was a day too generous: the files start 1800-01-02) | Provider calls `swe_calc_ut` itself and reads the returned flag; `sourceBasis: 'returned-flag'` | `engine/test/integration/version.test.ts` (1800-01-01 00:00 is Moshier by flag) | Partial → Working |
 | 3 | Settings carried through the workflow: date, local time, zone, UTC, place, zodiac (Lahiri/KP/Raman), node, houses, versions | `resolveCivilTime`, `ZodiacMode`, `NodeType`, `HouseSystem` | Present per chart, not per research run | Research had no calculation record, no rule-set version | `CalcSettingsFields` on every new tab; `CalcRecord` saved with zodiac, node, houses, ephemeris version, rule id and version | `apps/web/test/finastro.test.ts` (save), `research/test/combustion.test.ts` (ayanāṁśa) | Missing → Working |
 | 4 | Mean/true node, Ketu opposite Rahu in [0,360) | `NODE_BODIES`, `grahas.ts` | Ketu = Rahu + 180 in charts | No test in an event engine | Vedha engine and aspect windows take the node setting; Ketu normalised | `vedic/test/sbcVedha.test.ts` "keeps Ketu opposite Rahu" | Partial → Working |
 | 5 | Full precision; settings in cache keys; switching ayanāṁśa updates results; reopen reproduces | — | No research cache, no saved studies | Missing | `RunCache` keyed by `stableKey` of every setting plus the dataset fingerprint; `saveStudy` / reopen with mismatch warning | `finastro.test.ts` "keys on every setting", "reports data that differs" | Missing → Working |
@@ -63,13 +70,13 @@ Missing, and Blocked (missing evidence).
 | 16 | Navigation Financial Astrology → Venus Combustion → … → export | `ResearchRoute` | Signal study only | Missing | Nav renamed *Financial astrology* (hi *वित्तीय ज्योतिष*, gu *નાણાકીય જ્યોતિષ*); tabs Signal study, Venus combustion, Daily vedha, Instruments and charts; `?tab=` deep link | browser run on real data (below); `shell.test.tsx` | Missing → Working |
 | 17 | Instruments: NIFTY 50, SENSEX, RELIANCE, gold, silver, with provenance and futures roll | `ProviderDescription` | Symbol only | Missing | `INSTRUMENTS` with exchange, symbol, currency, price basis, adjustment, volume, calendar, contract/roll | combustion tests "chart records"; UI dataset cards | Missing → Working |
 | 18 | Multiple chart records per instrument with source, place, zone, time certainty | — | — | Missing | `CHART_RECORDS` (NIFTY launch provisional, NIFTY base, SENSEX launch, Reliance incorporation), user records validated | combustion tests "refuses a time on a date-only record" | Missing → Working |
-| 19 | Reliance incorporation vs listing | — | — | Listing date not verifiable from available sources | Side-by-side card; listing shown as **needed evidence** (`MISSING_RECORDS`), user can add it | UI | Missing → Blocked (missing evidence) |
+| 19† | Reliance incorporation vs listing | — | — | Listing date found in the company's Annual Report 1976-77 | Records `reliance-incorporation` (1973-05-08) and `reliance-listing` (1978-01-23), both date-only, side by side | combustion tests "holds Reliance incorporation and listing…" | Missing → Working |
 | 20 | Date-only records: time-sensitive outputs uncertain/unavailable; visible noon convention | — | — | Missing | `deriveChartFacts`: no ascendant, noon Moon labelled `noon-convention`, `certainForDay` checked 00:00–24:00 | combustion tests "date-only record" | Missing → Working |
 | 21 | NIFTY 22 Apr 1996 10:00 Mumbai, provisional, Moon/nakṣatra/ascendant from settings, apart from name targets | — | — | Missing | Record `nifty50-launch-provisional`; facts change with ayanāṁśa; name letters are a separate, user-entered target with its own provenance | combustion tests "changes with the ayanāṁśa" | Missing → Working |
-| 22 | SBC vedha, Method A vs Method B | `SARVATOBHADRA`, `sbcCellOf` (display only) | "Vedha is described, not computed" | Missing | `sbcVedha.ts`: geometric lines (front, behind, ahead), Method B (all three), Method A from a tradition's table | `vedic/test/sbcVedha.test.ts` (14) | Missing → Working (engine) |
-| 23 | Versioned tradition with reference; Abhijit; orientation verified | — | — | Primary reference unavailable | `SBC_GEOMETRY_V1` (geometry verified cell by cell, names and motion rule **unverified**, `methodA: null`); `SBC_METHOD_A_FIXTURE` labelled test fixture | sbcVedha tests "Kṛttikā → Śravaṇa, Bharaṇī, Viśākhā", pairing both ways, Abhijit at (8,2) | Missing → Blocked (missing evidence) for the motion rule and vāma/dakṣiṇa naming |
+| 22† | SBC vedha, Method A vs Method B | `SARVATOBHADRA`, `sbcCellOf` (display only) | "Vedha is described, not computed" | Missing | `sbcVedha.ts`: lines (front, behind, ahead), Method B (all three), Method A from a tradition's table; the front line pierces only its end nakṣatra (0.43 correction) | `vedic/test/sbcVedha.test.ts` (24), including Sastri's three lists cell by cell | Missing → Working |
+| 23† | Versioned tradition with reference; Abhijit; orientation verified | — | — | 0.42: no reference. 0.43: Horaratna in Sastri's Phaladeepika (1950), pp. 311–315 | `SBC_HORARATNA_V1` (status *sourced*): retrograde → right, swift → left, mean → front; Sun and Moon left, Rāhu and Ketu right. `SBC_ALL_THREE_V1` (luminaries and nodes all three). Which diagonal is "left" is a stated convention (`sidesBasis`). `SBC_GEOMETRY_V1` kept, marked superseded | sbcVedha tests "Method A under the Horaratna" | Missing → Working; sides by stated convention |
 | 24 | Daily rows; targets; "no hit" ≠ "not evaluated"; why methods disagree | — | — | Missing | `vedhaForDay`, `evaluateVedha` (outcome hit/no-hit/not-evaluated with reason codes), `disagreement`, concurrent counts; VedhaTab with detail rows | sbcVedha tests; browser run | Missing → Working |
-| 25 | Study 8 Oct–20 Nov 2026 at 10:00 Asia/Kolkata, holidays/weekends, prices only on valid sessions, NIFTY/gold/silver direction | `NSE_CALENDAR` (new), `dailyRows` (new) | — | Missing | One row per calendar day (44), each instrument on its own calendar, irregular bars flagged | `research/test/daily.test.ts`; browser run on real data | Missing → Working |
+| 25† | Study 8 Oct–20 Nov 2026 at 10:00 Asia/Kolkata, holidays/weekends, prices only on valid sessions, NIFTY/gold/silver direction | `NSE_CALENDAR` (new), `dailyRows` (new) | — | Missing | One row per calendar day (44), each instrument on its own calendar, irregular bars flagged; NSE/BSE holidays 2011–2026 and COMEX rules 2011–2027 (0.43), disputed dates read as unknown | `research/test/daily.test.ts`, `eventstudy.test.ts` calendar tests; real data | Missing → Working |
 | 26 | Historical event studies reusing the CSV/provider; source, adjustment, coverage; missing ≠ holiday | `parseMarketCsv`, `apiProvider` | Single shared series | No per-instrument data, no coverage or fingerprint | `useInstrumentData` per instrument (file, provider or the Signal study series), fingerprint SHA-256; `dayStatus` session/weekend/holiday/missing/unknown | `eventstudy.test.ts` "missing session, not a holiday"; `finastro.test.ts` fingerprint | Partial → Working |
 | 27 | Episode study and daily-state study | — | — | Missing | `episodeObservations`, `dailyStateObservations`; sessions and distinct episodes both reported | combustion + eventstudy tests | Missing → Working |
 | 28 | Forward returns +1,+3,+5,+10,+20; reference-close mapping; after-close; own calendar; incomplete excluded and counted | `logReturns` (daily) | — | Missing | `referenceSession` (same-session-close / after-close-next-session / non-session-next-session), `forwardReturns` (null past data) | eventstudy tests "after the close", "exchange zone", "incomplete horizons" | Missing → Working |
@@ -170,9 +177,12 @@ Missing, and Blocked (missing evidence).
 
 1. **Financial astrology → Daily vedha.** The range defaults to 2026-10-08 →
    2026-11-20 at 10:00 Asia/Kolkata, with sidereal Lahiri and the mean node.
-2. **Tradition:** *Sarvatobhadra, geometric lines* 1.0.0, which is
-   unverified, so Method A is not evaluated. The *Method A test fixture* is
-   offered for demonstration and is labelled as such everywhere.
+2. **Tradition:** *Sarvatobhadra, Horaratna (Sastri 1950)* 1.0.0, status
+   *sourced*. The screen shows its reference and the stated convention for
+   which diagonal is "left". Also offered:
+   - *luminaries and nodes cast all three* 1.0.0;
+   - the superseded 1.0.0 geometry, kept so studies saved with it reopen;
+   - the labelled *Method A test fixture*.
 3. **Chart record:** NIFTY 50 index launch, 1996-04-22 10:00, provisional. The
    targets are:
    - natal Moon nakṣatra: Mṛgaśira;
@@ -225,27 +235,47 @@ with the app; to reproduce, export the same series and check the fingerprint.
 
     The training "edge" did not survive. This is the behaviour the split
     exists to expose.
-- **Vedha, NIFTY 50.** Settings: the same NIFTY file, plus COMEX `GC=F` and
-  `SI=F` from the same source, 44 days at 10:00 IST, geometric tradition
-  1.0.0.
-  - **Valid NIFTY sessions:** 30 (Dussehra on 20 October and Diwali
-    Balipratipada on 10 November are holidays).
-  - **Target, natal Moon nakṣatra:**
+- **Vedha, NIFTY 50 (rerun for 0.43).** Settings: the same NIFTY file, plus
+  COMEX `GC=F` and `SI=F` from the same source, 44 days at 10:00 IST,
+  sidereal Lahiri, mean node.
+  - **Targets** from the provisional NIFTY chart: Moon in Mṛgaśirā, Moon
+    rāśi Vṛṣabha, ascendant Mithuna, tithi group Pūrṇā.
+  - **Valid sessions:**
+    - NIFTY: 30 (Dussehra on 20 October and Diwali Balipratipada on
+      10 November are holidays);
+    - gold and silver: 32 each, with no irregular bars.
+  - **Malefic hits by session**, as up / down counts. The reproduction
+    script is `vedha_compare.mts`; the numbers below are its output.
 
-    | | Sessions with a malefic hit | Sessions without |
-    |---|---|---|
-    | Method B | 4 up / 7 down | 15 up / 4 down |
-    | Method A, fixture only | 3 up / 6 down | 16 up / 5 down |
-    | Method A, production | not evaluated on all 30 | |
+    | Tradition, target | Method A: hit | Method A: no hit | Method B: hit | Method B: no hit |
+    |---|---|---|---|---|
+    | Horaratna, Moon nakṣatra | 0 / 0 | 19 / 11 | 4 / 7 | 15 / 4 |
+    | Horaratna, Moon rāśi | 4 / 2 | 15 / 9 | 10 / 8 | 9 / 3 |
+    | Horaratna, ascendant | 8 / 0 | 11 / 11 | 16 / 6 | 3 / 5 |
+    | Horaratna, tithi group | 0 / 0 | 19 / 11 | 0 / 0 | 19 / 11 |
+    | Horaratna, any target | 11 / 2 | 8 / 9 | 18 / 11 | 1 / 0 |
+    | All three, Moon nakṣatra | 3 / 6 | 16 / 5 | 4 / 7 | 15 / 4 |
 
-  - **Target, tithi group:** Saturn sits on the Pūrṇā line through the
-    whole window, so every session is "hit". With *any* target, every session
-    has a malefic Method B hit. Neither discriminates.
-  - **Data-quality finding:** Yahoo's COMEX daily bars include **Sunday-dated
-    bars** (the Globex evening open) and miss some Fridays. The screen flags
-    the Sunday bars as irregular (*) and keeps them out of the comparison.
-    With no COMEX holiday list, a weekday without a bar is *unknown*, not
-    *missing*.
+  - **Method A is evaluated on every session.** The only "not evaluated"
+    rows are Mercury and Venus at their stations (8 graha-days, 32 evaluations
+    over the four targets), which the
+    Horaratna does not cover.
+  - **Correction to 0.42.** The 0.42 report said the tithi group was "hit"
+    every day. That was an artifact of letting the front line pierce every
+    cell it crosses: Saturn's front line ran through the centre. Under
+    Sastri's lists the front line reaches only its end nakṣatra, and the
+    tithi group is never hit in this window.
+  - **Correction to 0.42: COMEX "Sunday bars".** The 0.42 report described
+    Sunday-dated bars and missing Fridays in Yahoo's COMEX data. That was a
+    fault in the scratch converter used for these examples, not in the data
+    or the app:
+    - the converter dated Yahoo's timestamps with the current fixed UTC
+      offset (EST), so in daylight-saving months every 00:00 EDT bar fell on
+      the previous day;
+    - dated in America/New_York, the series has no weekend bars.
+
+    The app's own CSV import was never affected. The converter now uses the
+    IANA zone.
 
 **Fixtures, in the tests.** These are synthetic:
 - the closes 100, 101, 102… on the NSE 2026 calendar (`eventstudy.test.ts`,
@@ -255,34 +285,52 @@ with the app; to reproduce, export the same series and check the fingerprint.
 
 Astronomy in the tests is real (Swiss Ephemeris, checked against native SE).
 
-## Blocked items, their effect, and the evidence needed
+## 0.43.0: what was resolved
+
+| 0.42 blocked item | Resolution | Evidence used | Test |
+|---|---|---|---|
+| Sarvatobhadra Method A motion rule | `SBC_HORARATNA_V1`: for Mars to Saturn, retrograde → right, swift → left, mean → front; Rāhu and Ketu always right; Sun and Moon always left. A station is not evaluated, because the text is silent on it | Horaratna, English rendering by V. Subrahmanya Sastri, *Phaladeepika*, 2nd ed. (Bangalore 1950), pp. 312–313; Phaladeepika XXVI.48 | sbcVedha "Method A under the Horaratna" |
+| The other reading (the luminaries and nodes cast all three) | `SBC_ALL_THREE_V1`, offered beside it | N. Venkatachalaiah & K. R. Sai Shankar, *Sri Varaha Mihira's Sarvato Bhadra Chakra* (compilation) | same |
+| Which cells a line pierces | The front line pierces only its end nakṣatra; the diagonals pierce every cell. This corrects 0.42 | Sastri p. 312: the nine-cell lists for Kṛttikā, Rohiṇī and Mṛgaśirā | sbcVedha "the Horaratna lists", cell by cell |
+| Malefic and benefic classes | Saturn, Sun, Rāhu, Ketu and Mars are malefic; Mercury is malefic when it shares a rāśi with a malefic; the waning Moon is malefic | Sastri p. 312 | sbcVedha "classes Mercury by its company…" |
+| Reliance listing date | `reliance-listing`, 1978-01-23, date-only, Bombay | Reliance Textile Industries Ltd, *Annual Report 1976-77*, Directors' Report p. 6 (ril.com archive): listed at Bombay and Ahmedabad "with effect from 23rd January, 1978". The Offer for Sale dated 24 Oct 1977 is in the *Annual Report 1977-78* | combustion "holds Reliance incorporation and listing…" |
+| NSE/BSE holidays 2011–2025 | 219 weekday holidays loaded. Seven dates where the list and all three series disagree are kept as *disputed* (read as unknown). The Saturday special sessions on 2024-01-20 and 2025-02-01 count as sessions | `exchange_calendars` XBOM list (Apache-2.0; it cites the NSE and BSE pages and Zerodha), cross-checked with the Yahoo NIFTY, SENSEX and RELIANCE.NS series: 212 of 219 dates have no bar in any series, and the other 7 are Muhurat sessions | eventstudy calendar tests |
+| COMEX holiday calendar | `comexHolidays(year)`, 2011–2027. Closed: New Year, Good Friday, Christmas. Early halt with no trade date: MLK, Presidents, Memorial, Juneteenth (2022+), July 4, Labor, Thanksgiving. Hurricane Sandy and the 2018 day of mourning are disputed | `pandas_market_calendars` CMEGlobexEnergyAndMetals (MIT), cross-checked with GC=F and SI=F: no bar on 158 of 160 rule days | eventstudy "derives COMEX trade-date holidays…" |
+| Futures roll | Not reconstructible: Yahoo serves no expired contracts (GCZ24.CMX and others return "not found"). Roll-free series were added instead: GOLDBEES.NS (2009–) and SILVERBEES.NS (2022–), on the NSE calendar | Yahoo chart API, checked 2026-11-24 | combustion "offers roll-free ETF series…" |
+| Swiss Ephemeris return flag | Read from `swe_calc_ut` directly. It showed that the bundled files start on 1800-01-02, so midnight on 1 January 1800 is Moshier, which the range check had called Swiss | swisseph-wasm 0.1.0 exposes the Emscripten module | version.test "reads the ephemeris used…" |
+
+## Blocked items still open, their effect, and the evidence needed
 
 | Item | Effect now | Evidence needed |
 |---|---|---|
-| Sarvatobhadra Method A motion rule (which line for direct, fast, retrograde, stationary; exceptions for the luminaries and nodes) | Method A is "not evaluated" in production; only the labelled fixture runs it | A critical edition of Narapati Jayacharya's *Narapati-jaya-caryā Svarodaya* (Sarvatobhadra chapter) or *Mānasāgarī* with verse numbers, giving the motion → direction table and at least one worked example |
-| Vāma/dakṣiṇa naming of the diagonals | Diagonals are reported as "behind"/"ahead" (geometric) without traditional names | The same source: a worked example naming the left and right vedha from one nakṣatra (for example Kṛttikā) |
-| Treatment of a graha standing on the target itself, and of the Moon in Method A | Not counted; the Moon is "not evaluated" in the fixture | The same source |
-| Reliance listing / first-trade date (1977–78) | The comparison shows incorporation only; listing "needed" | A BSE listing record or the 1977 prospectus |
-| NIFTY launch time | 10:00 is a research convention, labelled provisional | An NSE circular or press release with the launch time |
-| COMEX holiday calendar and the continuous-contract roll rule | Gold and silver weekdays without bars are "unknown"; roll jumps stay in the series | CME's holiday calendar for the years studied, and the data vendor's roll methodology (or a back-adjusted series with its rule) |
-| NSE holiday lists before 2026 | Weekdays without bars before 2026 are "unknown", not "missing" | NSE's yearly holiday circulars for 2011–2025 (transcribe into `NSE_CALENDAR`) |
-| Swiss Ephemeris return flags | The Moshier fallback is inferred from the range, not read from SE | A binding that returns `iflag` (or a patch to swisseph-wasm) |
-| Android device check | Layout verified at 375×812 in the browser; not run on a device in this session | A Capacitor build on a phone (`docs/ANDROID.md`) |
+| Which diagonal is vāma (left) | Settled by a stated convention, shown on screen and in exports. A graha stands on the edge facing into the cakra with East at the top, so from Kṛttikā "left" is Viśākhā (towards later nakṣatras); swift motion, which moves a graha forward, gives the left vedha | A text or commentary that names the left and right vedha of one nakṣatra (Narapati-jaya-caryā, Mānasāgarī, or a commentary on Horaratna) |
+| Numerical speed for "swift" vs "mean", and stations | Swift means faster than the mean daily motion (convention); a station (below 10 % of the mean) is "not evaluated" | The speed table in Venkatachalaiah & Sai Shankar, which is illegible in the scan, or another source with numbers |
+| NIFTY launch time | 10:00 is a research convention, labelled provisional. NSE Indices, Wikipedia and the press were searched; the only 1996 trading-hours table found was a forum post its author says ChatGPT wrote | An NSE or IISL circular or press release from April 1996 |
+| Disputed NSE dates (7) and COMEX dates (3) | Read as *unknown*, with the disagreement stated | The NSE circular for that year; CME's notice for 29–30 Oct 2012 and 5 Dec 2018 |
+| COMEX roll dates | GC=F/SI=F roll jumps remain in those series; GOLDBEES/SILVERBEES avoid them | A vendor's back-adjusted continuous series with its documented rule, or individual contract histories |
+| Android device check | Layout verified at 375×812 in the browser. No device is connected and no emulator image is installed on this machine | A phone with USB debugging, or permission to download an emulator system image (about 1 GB) |
 
 ## Sources consulted
 
 - NIFTY 50 base date and launch: [NSE Indices: NIFTY 50](https://www.niftyindices.com/indices/equity/broad-based-indices/NIFTY--50)
   and [Wikipedia: NIFTY 50](https://en.wikipedia.org/wiki/NIFTY_50). The base
   date is 3 November 1995 (base value 1000); the launch was 22 April 1996.
-- Reliance incorporation (8 May 1973, as Mynylon Limited) and the 1977 issue:
-  [RIL history](https://www.ril.com/about/history) and secondary press. No
-  primary listing record was found.
-- Sarvatobhadra, as a secondary source only:
-  [Wikipedia: Sarvatobhadra chakra](https://en.wikipedia.org/wiki/Sarvatobhadra_chakra),
-  which cites Phaladeepika ch. XXVI. It gave the fixture, not the production
-  rule.
+- Reliance:
+  - incorporation as Mynylon Limited, 8 May 1973: [RIL history](https://www.ril.com/about/history);
+  - listing and offer for sale: the company's own annual reports,
+    [1976-77](https://www.ril.com/sites/default/files/2023-01/1976-1977.pdf)
+    and [1977-78](https://www.ril.com/sites/default/files/2023-01/1977-1978.pdf).
+- Sarvatobhadra:
+  - production rule: V. Subrahmanya Sastri, [Phaladeepika, 2nd ed. 1950](https://archive.org/details/Phaladeepika2ndEd.1950ByVSubrahmanyaSastri),
+    ch. XXVI and the Horaratna rendering on pp. 311–315;
+  - the other reading: [Sri Varaha Mihira's Sarvato Bhadra Chakra](https://archive.org/stream/astrology-book-collection/Naksatras_stars_special%20Chakras_Sarvatobhadra/Sarvatobhadra/Jyotish_Sarvatho%20bhadra%20chakra_djvu.txt);
+  - the fixture: [Wikipedia: Sarvatobhadra chakra](https://en.wikipedia.org/wiki/Sarvatobhadra_chakra)
+    (secondary).
+- Holidays:
+  - [exchange_calendars XBOM](https://github.com/gerrymanoim/exchange_calendars/blob/master/exchange_calendars/exchange_calendar_xbom.py);
+  - [pandas_market_calendars CME energy and metals](https://github.com/rsheftel/pandas_market_calendars/blob/master/pandas_market_calendars/calendars/cme_globex_energy_and_metals.py).
 
-## Roadmap (not in 0.42)
+## Roadmap (not in 0.43)
 
 - **Cycles:**
   - planetary synodic-cycle studies on the same event engine;

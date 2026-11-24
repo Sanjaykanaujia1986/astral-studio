@@ -507,26 +507,57 @@ vedha.
   - **behind:** the diagonal towards the earlier nakṣatra;
   - **ahead:** the diagonal towards the later nakṣatra.
 
-  Each line strikes every cell it crosses (vowel, consonant, sign, tithi
-  group). For example, Kṛttikā reaches Śravaṇa (front), Bharaṇī (behind) and
-  Viśākhā (ahead). The pairing works both ways, and Abhijit has its own cell
-  at row 8, column 2.
+  The diagonals strike every cell they cross (vowel, consonant, sign, tithi
+  group). The **front line strikes only the nakṣatra at its far end.**
+  - This is how the Horaratna's worked lists read in V. Subrahmanya Sastri's
+    rendering (*Phaladeepika*, 2nd ed. 1950, p. 312). Kṛttikā: Bharaṇī, the
+    vowel, Vṛṣabha, Nandā, Bhadrā, Tulā, the consonant, Viśākhā, Śravaṇa.
+    Rohiṇī and Mṛgaśirā are given likewise. All three lists match the cakra
+    cell for cell in the tests.
+  - 0.42 let the front line strike every cell, which made Saturn "hit" the
+    tithi group every day in late 2026.
+
+  The pairing works both ways, and Abhijit has its own cell at row 8,
+  column 2.
 - **Two methods, reported side by side:**
   - **Method B** counts all three lines for every graha.
   - **Method A** counts only the line(s) a tradition's motion rule selects
     (for example, direct → front). Rāhu and Ketu, and in some texts the Sun,
     have fixed rules.
-- **The tradition is a versioned object** (`SbcTradition`). It carries its
-  id, version, reference and status, its vāma/dakṣiṇa naming and its Method A
-  table. `validateTradition` refuses one with no version, no reference, or a
-  motion table with no verse reference.
-- **The production tradition** is `SBC_GEOMETRY_V1` (1.0.0). Its status is
-  *unverified*, and its `methodA` and `vamaLine` are null. So:
-  - Method A reports **not evaluated** (`METHOD_A_UNAVAILABLE`) on every day;
-  - diagonals are named only "behind" and "ahead".
+- **The tradition is a versioned object** (`SbcTradition`). It carries:
+  - its id, version, reference and status;
+  - its vāma/dakṣiṇa naming and the basis for it;
+  - its front-line rule, its Moon and Mercury rules, and its Method A table.
 
-  No primary source (a critical edition of *Narapati-jaya-caryā* or
-  *Mānasāgarī* with verse numbers and a worked example) was available.
+  `validateTradition` refuses one with no version or no reference. It also
+  refuses a *sourced* or *verified* one with no page or verse number, and a
+  *sourced* one that names sides without explaining them.
+- **The production tradition** is `SBC_HORARATNA_V1` (1.0.0, status
+  *sourced*), from the Horaratna in Sastri's English rendering
+  (*Phaladeepika*, 2nd ed. 1950, pp. 311–315; Phaladeepika XXVI.48):
+  - for Mars, Mercury, Jupiter, Venus and Saturn: retrograde → right
+    (dakṣiṇa), swift → left (vāma), mean → front (sammukha), p. 312;
+  - Rāhu and Ketu, "always retrograde": right; the Sun and the Moon, which
+    never retrograde: left (p. 313);
+  - malefics are Saturn, the Sun, Rāhu, Ketu and Mars; Mercury with
+    malefics; the waning Moon (p. 312). "With malefics" is read as sharing a
+    rāśi with one.
+- **Not stated by the text, so settled by a convention shown with every
+  result (`sidesBasis`):**
+  - Which diagonal is left. A graha stands on the edge facing into the cakra
+    with East at the top, so from Kṛttikā its left hand points to Viśākhā
+    (`vamaLine: 'ahead'`). This fits the rule: swift motion carries a graha
+    forward and gives the left vedha; retrograde carries it back and gives
+    the right.
+  - What "swift" means: faster than the mean daily motion.
+  - Stations: not covered, so "not evaluated".
+- **The other reading** is `SBC_ALL_THREE_V1`: the luminaries and the nodes
+  cast all three vedhas, and the Moon is malefic from the 11th tithi of the
+  dark half to the 4th of the bright. Source: N. Venkatachalaiah and K. R. Sai
+  Shankar's compilation, whose own note records the difference of opinion.
+- **The superseded geometry** `SBC_GEOMETRY_V1` (1.0.0: front line on every
+  cell, no Method A) is kept so that studies saved with it reopen
+  unchanged.
 - **The test fixture** is `SBC_METHOD_A_FIXTURE` (status *test fixture*). It
   takes its motion rule from the secondary Wikipedia summary:
   - direct → sammukha, fast → vāma, retrograde → dakṣiṇa;
@@ -540,12 +571,11 @@ vedha.
   - fast above its mean;
   - otherwise direct.
 
-  The fixture does not cover stationary.
+  Neither the fixture nor the Horaratna covers stationary.
 - **Ketu** is Rāhu + 180°, normalised, under both the mean and the true node.
-- **Benefic and malefic:**
-  - The Moon is a benefic in śukla pakṣa and a malefic in kṛṣṇa pakṣa.
-  - Mercury is counted as variable, never forced into either.
-  - The rest follow the usual natural classification.
+- **Benefic and malefic:** set by the tradition, as listed above. Under the
+  superseded geometry, the Moon goes by pakṣa and Mercury is left
+  *variable*.
 - **Targets carry provenance.** Each target is one of:
   - the natal Moon nakṣatra or rāśi, or the ascendant sign, taken from a
     chart record and labelled with its certainty;

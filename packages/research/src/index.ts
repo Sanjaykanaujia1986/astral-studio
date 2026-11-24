@@ -87,7 +87,7 @@ export {
 // Exchange calendars
 export {
   NSE_CALENDAR, BSE_CALENDAR, COMEX_CALENDAR, CALENDARS,
-  dayStatus, missingSessions, weekdayOf, addDays, localDateTime, minutesOf,
+  dayStatus, isShut, missingSessions, weekdayOf, addDays, localDateTime, minutesOf, comexHolidays, easterSunday,
   type ExchangeCalendar, type DayStatus,
 } from './market/calendar.js';
 export { dailyRows, FLAT_PCT, type DailyRow, type Direction } from './market/daily.js';
