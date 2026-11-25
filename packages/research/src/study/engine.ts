@@ -141,6 +141,17 @@ export interface StudyResult {
   /** Raw versus corrected survivor counts, side by side. */
   readonly correction: ReturnType<typeof survivorCounts>;
   readonly warnings: readonly StudyWarning[];
+  /**
+   * With a holdout, the return dates each part covers (0.45): signals are
+   * chosen and tested on the training part only; the held-back part is read
+   * once, for the out-of-sample check.
+   */
+  readonly split?: {
+    readonly trainFrom: string;
+    readonly trainTo: string;
+    readonly holdoutFrom: string;
+    readonly holdoutTo: string;
+  };
 }
 
 /**
@@ -172,6 +183,13 @@ export function runStudy(
   // The in-sample/out-of-sample boundary, computed once so every signal is
   // split at the same date.
   const splitIndex = holdout > 0 ? Math.floor(values.length * (1 - holdout)) : values.length;
+  /*
+   * Every number that chooses a signal (means, tests, corrections) reads the
+   * training part only. Before 0.45 they read the whole series, held-back tail
+   * included, so "out of sample" re-measured data the signal had already been
+   * chosen on. The tail is read once, below, for the Out of sample column.
+   */
+  const trainValues = values.slice(0, splitIndex);
 
   const studies: SignalStudy[] = [];
   const masks: (readonly boolean[])[] = [];
@@ -179,17 +197,19 @@ export function runStudy(
   for (const spec of specs) {
     const evaluated = evaluateSignal(provider, spec, dates);
     const active = evaluated.active;
+    const trainActive = active.slice(0, splitIndex);
+    const activeDays = trainActive.reduce<number>((n, on) => n + (on ? 1 : 0), 0);
     const warnings: StudyWarning[] = [];
 
-    masks.push(active);
-    const { inSignal, outOfSignal } = partition(values, active);
-    const activeShare = active.length === 0 ? 0 : evaluated.activeDays / active.length;
-    const rotationFloor = rotationPValueFloor(active);
+    masks.push(trainActive);
+    const { inSignal, outOfSignal } = partition(trainValues, trainActive);
+    const activeShare = trainActive.length === 0 ? 0 : activeDays / trainActive.length;
+    const rotationFloor = rotationPValueFloor(trainActive);
 
-    if (evaluated.activeDays < MINIMUM_ACTIVE_BARS) {
+    if (activeDays < MINIMUM_ACTIVE_BARS) {
       warnings.push({
         code: 'SMALL_ACTIVE_SAMPLE',
-        params: { active: evaluated.activeDays, minimum: MINIMUM_ACTIVE_BARS },
+        params: { active: activeDays, minimum: MINIMUM_ACTIVE_BARS },
       });
     }
     if (activeShare < MINIMUM_ACTIVE_SHARE || activeShare > 1 - MINIMUM_ACTIVE_SHARE) {
@@ -214,7 +234,7 @@ export function runStudy(
         };
 
     const rotation = canTest
-      ? rotationTest(values, active, { iterations, seed })
+      ? rotationTest(trainValues, trainActive, { iterations, seed })
       : undefined;
 
     let outOfSampleResult: SignalStudy['outOfSample'];
@@ -224,9 +244,7 @@ export function runStudy(
       const heldActiveCount = heldActive.reduce<number>((n, on) => n + (on ? 1 : 0), 0);
       if (heldActiveCount >= 2 && heldActiveCount <= heldActive.length - 2) {
         const held = rotationTest(heldValues, heldActive, { iterations, seed: seed + 1 });
-        const inSample = partition(values.slice(0, splitIndex), active.slice(0, splitIndex));
-        const inSampleDifference =
-          summarise(inSample.inSignal).mean - summarise(inSample.outOfSignal).mean;
+        const inSampleDifference = summarise(inSignal).mean - summarise(outOfSignal).mean;
         outOfSampleResult = {
           activeBars: heldActiveCount,
           difference: held.observed,
@@ -239,8 +257,8 @@ export function runStudy(
     studies.push({
       signalId: spec.id,
       spec,
-      activeBars: evaluated.activeDays,
-      inactiveBars: active.length - evaluated.activeDays,
+      activeBars: activeDays,
+      inactiveBars: trainActive.length - activeDays,
       activeShare,
       inSignal: summarise(inSignal),
       outOfSignal: summarise(outOfSignal),
@@ -308,6 +326,9 @@ export function runStudy(
     signals: withCorrections,
     correction: survivorCounts(pValues, alpha),
     warnings,
+    ...(splitIndex > 0 && splitIndex < dates.length
+      ? { split: { trainFrom: dates[0]!, trainTo: dates[splitIndex - 1]!, holdoutFrom: dates[splitIndex]!, holdoutTo: dates[dates.length - 1]! } }
+      : {}),
   };
 }
 

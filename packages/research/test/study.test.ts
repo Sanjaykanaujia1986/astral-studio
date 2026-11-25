@@ -177,6 +177,19 @@ describe('a study of a random walk', () => {
     expect(typeof study.outOfSample!.signAgrees).toBe('boolean');
   });
 
+  it('chooses and tests signals on the training part only, never on the held-back tail (0.45)', () => {
+    const full = runStudy(provider, series, [MERCURY_RX], { iterations: 500 });
+    const split = runStudy(provider, series, [MERCURY_RX], { iterations: 500, outOfSampleFraction: 0.3 });
+    const all = full.signals[0]!; const train = split.signals[0]!;
+    // The tail's active bars are counted once, in the out-of-sample check, not also in the main columns.
+    expect(train.activeBars + train.outOfSample!.activeBars).toBe(all.activeBars);
+    expect(train.activeBars + train.inactiveBars).toBeLessThan(all.activeBars + all.inactiveBars);
+    expect(train.rotation!.pValue).not.toBe(all.rotation!.pValue);
+    expect(split.split).toBeDefined();
+    expect(split.split!.trainTo < split.split!.holdoutFrom).toBe(true);
+    expect(full.split).toBeUndefined();
+  });
+
   it('warns when a signal cannot reach significance because of its own period', () => {
     /*
      * The full-moon window recurs every synodic month, so rotating by a whole

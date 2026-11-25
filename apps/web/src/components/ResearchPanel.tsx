@@ -19,6 +19,7 @@ import {
   runBacktest,
   evaluateSignal,
   describeSignal,
+  truncatedHistory,
   type SignalSpec,
   type StudyResult,
   type BacktestResult,
@@ -94,7 +95,7 @@ export function ResearchPanel(): JSX.Element {
    * disagree about the data they are both describing.
    */
   const {
-    series, rejected, suspect, choices, errorCode: importErrorCode, source, providerName,
+    series, rejected, suspect, firstTrade, choices, errorCode: importErrorCode, source, providerName,
     busy: fetching, setChoices, importCsv: ingest, fetchSymbol,
     descriptor, remember, setRemember, tooLargeToRemember,
   } = useSeriesStore();
@@ -131,7 +132,7 @@ export function ResearchPanel(): JSX.Element {
   const PROVIDER_CODES = [
     'PROVIDER_NOT_CONFIGURED', 'PROVIDER_UNKNOWN', 'PROVIDER_KEY_MISSING',
     'INVALID_SYMBOL', 'SYMBOL_NOT_FOUND', 'PROVIDER_UNAVAILABLE',
-    'PROVIDER_TIMEOUT', 'MALFORMED_RESPONSE',
+    'PROVIDER_TIMEOUT', 'MALFORMED_RESPONSE', 'SIGN_IN_REQUIRED',
   ];
   const csvError = importErrorCode === null
     ? null
@@ -351,6 +352,11 @@ export function ResearchPanel(): JSX.Element {
                 <span className="tabular-nums">{suspect.slice(0, 6).map((x) => x.date).join(', ')}{suspect.length > 6 ? ', …' : ''}</span>
               </span>
             ) : null}
+            {source === 'provider' && truncatedHistory(firstTrade, series.firstDate) !== null ? (
+              <span role="alert" className="block as-text-warning">
+                {t('provider.truncated', { provider: providerName ?? '', firstTrade: firstTrade ?? '', firstBar: series.firstDate })}
+              </span>
+            ) : null}
           </p>
         ) : null}
       </section>
@@ -435,6 +441,9 @@ export function ResearchPanel(): JSX.Element {
                 holm: n(result.correction.holmBelowAlpha),
               })}
             </p>
+            {result.split ? (
+              <p className="mt-1 text-xs leading-relaxed as-text">{t('research.split', { ...result.split })}</p>
+            ) : null}
           </div>
 
           {result.warnings.length > 0 ? (

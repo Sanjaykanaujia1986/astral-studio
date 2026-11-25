@@ -178,6 +178,7 @@ if (bundle) {
     ['Aspect windows on the Calendar (0.42)', 'aw.lede'],
     ['Sarvatobhadra Horaratna tradition (0.43)', 'fa.vedha.sourced'],
     ['Bad-bar screen on price series (0.44)', 'fa.data.suspectCount'],
+    ['Holdout split note in the Signal study (0.45)', 'research.split'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {
@@ -259,16 +260,14 @@ check('range cap enforced',
 // ------------------------------------------------------------- market data
 section('Market data API');
 /*
- * Since 0.44 the deployment fetches daily prices from Yahoo (MARKET_DATA_PROVIDER
- * = yahoo). NIFTY must come back dated in IST, with no unfinished session.
+ * Since 0.45 the route answers admins only: before, it was an open, anonymous
+ * proxy to the provider with a shared CDN cache. The smoke test has no admin
+ * session, so it checks the gate; the Yahoo adapter itself is covered by the
+ * api-tests `prices` suite, and a signed-in fetch by the release check.
  */
-const nifty = await json('/api/prices?symbol=%5ENSEI');
-const niftyRows = typeof nifty.body?.csv === 'string' ? nifty.body.csv.split('\n') : [];
-check('NIFTY daily prices fetch', nifty.status === 200 && niftyRows.length > 4000, `${nifty.status} ${nifty.body?.error ?? ''} ${niftyRows.length} rows`);
-check('prices come from the configured provider', nifty.body?.provider === 'yahoo', String(nifty.body?.provider));
-check('header is date,open,high,low,close,volume', niftyRows[0] === 'date,open,high,low,close,volume', niftyRows[0]);
-check('an unknown NSE symbol is not found, not an outage',
-  (await json('/api/prices?symbol=NOSUCHSTOCK123.NS')).body?.error === 'SYMBOL_NOT_FOUND');
+const anonymousPrices = await json('/api/prices?symbol=%5ENSEI');
+check('prices refuse a signed-out caller', anonymousPrices.status === 401 && anonymousPrices.body?.error === 'SIGN_IN_REQUIRED',
+  `${anonymousPrices.status} ${anonymousPrices.body?.error ?? ''}`);
 
 // ------------------------------------------------------- accounts & access
 /*

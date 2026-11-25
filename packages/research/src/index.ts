@@ -32,13 +32,13 @@
 
 // Market data
 export {
-  parseMarketCsv, splitCsvLine, detectDelimiter, parseDateCell, parseNumberCell,
+  parseMarketCsv, splitCsvLine, detectDelimiter, parseDateCell, parseNumberCell, detectDayFirst, detectDecimalComma,
   CsvImportError,
   type Bar, type CsvErrorCode, type ParsedCsv, type ParseOptions, type RejectedRow,
 } from './market/csv.js';
 export { screenBars, type SuspectBar, type ScreenOptions, type ScreenedBars } from './market/quality.js';
 export {
-  ProviderError, PROVIDER_ERROR_CODES, isProviderErrorCode,
+  ProviderError, PROVIDER_ERROR_CODES, isProviderErrorCode, truncatedHistory,
   type FetchedBars, type FetchedSeries, type MarketDataProvider,
   type ProviderDescription,
   type ProviderErrorCode,

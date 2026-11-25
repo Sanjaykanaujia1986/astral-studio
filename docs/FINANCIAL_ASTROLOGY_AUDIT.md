@@ -310,6 +310,22 @@ Astronomy in the tests is real (Swiss Ephemeris, checked against native SE).
 | Days past the data | New day status `outside`, not `missing` | daily.test |
 | NSE 2027 holidays | Not yet published by NSE (it usually publishes in December); 2027 weekdays read as unknown and the Vedha tab says why | NSE circular archive, searched 2026-11-25 |
 
+## 0.45.0: findings from a full test of the page
+
+The test covered every tab and control, each instrument and tradition, the exports, saved studies, Hindi and Gujarati, and phone width. It used a local admin account and synthetic records. Seven defects were found and fixed:
+
+| Defect | Effect before | Fix | Evidence |
+|---|---|---|---|
+| Events before the first bar were measured from the first bar | SILVERBEES (listed 2022) showed 20 "complete" Venus episodes from 2011, with median = max at +20 | `referenceSession` returns null before the first bar, across a `missing` session, or across more than two `unknown` weekdays; counted as outside the data | eventstudy.test; SILVERBEES 6 episodes and 14 outside; NIFTY 20 and 0 |
+| Holdout leaked into the main columns | In-sample p-values and FDR/Holm read the held-back tail | `runStudy` measures on the training part only and reports `split` dates | study.test; ^NSEI Mercury Rx: 912 → 637 training bars at 30 % |
+| CSV slash dates defaulted to MM/DD | 02/11/2026 imported as 11 Feb | `detectDayFirst`: the file's own dates decide; undecidable files are refused | market.test |
+| CSV decimal comma defaulted off | `100,5` read as 1005 | `detectDecimalComma`, the same principle | market.test |
+| `/api/prices` open to anyone, cached publicly | Anonymous proxy to the provider | `requireAdmin`, `cache-control: private` | api-tests `prices` (401 / 403 / 200) |
+| Truncated Yahoo histories passed silently | RELIANCE.BO: 8 bars, first trade 1995-07-10 | `firstTrade` from Yahoo meta; notice when it precedes the first bar by more than 30 days | market.test `truncatedHistory`; live RELIANCE.BO, INFY.BO |
+| Venus blank date; Vedha menus at 375 px | Raw engine error; 612 px page | Range check with message; `max-w-full` menus | Browser check |
+
+Checked and working: access (customers and signed-out visitors cannot reach the page), all seven fetches (0 rows rejected), record validation, all 20 Vedha tradition and record pairs, the 400-day cap and the 2027 notice, Cancel, CSV, Excel and print exports (valid XML, no formula-like cells), saving and reopening a study with its dataset warning, a remembered series across a reload, Hindi and Gujarati with no raw keys, and no console errors.
+
 ## Blocked items still open, their effect, and the evidence needed
 
 | Item | Effect now | Evidence needed |

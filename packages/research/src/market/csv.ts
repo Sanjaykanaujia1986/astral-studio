@@ -17,7 +17,10 @@ export type CsvErrorCode =
   | 'NO_HEADER'
   | 'MISSING_DATE_COLUMN'
   | 'MISSING_PRICE_COLUMN'
-  | 'NO_VALID_ROWS';
+  | 'NO_VALID_ROWS'
+  | 'AMBIGUOUS_DATES'
+  | 'MIXED_DATE_ORDER'
+  | 'AMBIGUOUS_DECIMAL';
 
 export class CsvImportError extends Error {
   readonly code: CsvErrorCode;
@@ -143,7 +146,7 @@ export function parseDateCell(cell: string, dayFirst: boolean): string | undefin
   const iso = /^(\d{4})-(\d{2})-(\d{2})(?:[T ].*)?$/.exec(text);
   if (iso) return validDate(Number(iso[1]), Number(iso[2]), Number(iso[3]));
 
-  const slash = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/.exec(text);
+  const slash = SLASH_DATE.exec(text);
   if (slash) {
     const first = Number(slash[1]);
     const second = Number(slash[2]);
@@ -187,10 +190,86 @@ export function parseNumberCell(cell: string, decimalComma: boolean): number | u
 }
 
 export interface ParseOptions {
-  /** True when slash dates are DD/MM/YYYY. Ambiguous otherwise — see parseDateCell. */
+  /**
+   * True when slash dates are DD/MM/YYYY, false for MM/DD/YYYY. Left out, the
+   * file decides: see {@link detectDayFirst}.
+   */
   readonly dayFirst?: boolean;
-  /** True when the file uses a comma as the decimal separator. */
+  /**
+   * True when the file uses a comma as the decimal separator. Left out, the
+   * file decides: see {@link detectDecimalComma}.
+   */
   readonly decimalComma?: boolean;
+}
+
+const SLASH_DATE = /^(\d{1,2})[/.-](\d{1,2})[/.-](\d{4})$/;
+
+/**
+ * The date order a file's own slash dates prove, since 0.45.
+ *
+ * Evidence, not a guess: a first part above 12 can only be a day (13/11/2026)
+ * and a second part above 12 can only be a day (11/13/2026). Any daily file
+ * longer than twelve days contains such a date. Indian and European exports
+ * are DD/MM, American ones MM/DD, so no default is safe; before 0.45 the
+ * default was MM/DD and an Indian file's 02/11/2026 silently became 11 February.
+ *
+ * Returns undefined when the file has no slash dates (ISO dates need no
+ * order). Throws AMBIGUOUS_DATES when every slash date reads both ways, and
+ * MIXED_DATE_ORDER when the file proves both orders.
+ */
+export function detectDayFirst(cells: readonly string[]): boolean | undefined {
+  let any = false; let dayFirst = false; let monthFirst = false;
+  for (const cell of cells) {
+    const m = SLASH_DATE.exec(cell.trim());
+    if (!m) continue;
+    any = true;
+    if (Number(m[1]) > 12) dayFirst = true;
+    if (Number(m[2]) > 12) monthFirst = true;
+  }
+  if (!any) return undefined;
+  if (dayFirst && monthFirst) {
+    throw new CsvImportError('MIXED_DATE_ORDER', 'The file has dates in both DD/MM and MM/DD order.');
+  }
+  if (!dayFirst && !monthFirst) {
+    throw new CsvImportError('AMBIGUOUS_DATES', 'Every slash date reads both as DD/MM and as MM/DD.');
+  }
+  return dayFirst;
+}
+
+/** A thousands-grouped number: 1,234 or 12,34,567 (Indian grouping), with an optional decimal point. */
+const GROUPED_COMMA = /^\d{1,3}(,\d{3})+(\.\d+)?$|^\d{1,2}(,\d{2})*,\d{3}(\.\d+)?$/;
+const GROUPED_DOT = /^\d{1,3}(\.\d{3})+(,\d+)?$/;
+
+/**
+ * The decimal mark a file's own prices prove, since 0.45.
+ *
+ * A cell with both marks shows which is decimal (the last one). A comma
+ * followed by other than three digits (100,5) is a decimal comma; a dot
+ * followed by other than three digits (100.5) is a decimal point. 1,234 and
+ * 1.234 prove nothing. Before 0.45 a comma was always a thousands separator,
+ * so a semicolon file's 100,5 was read as 1005 with no row rejected.
+ *
+ * False when nothing points to a comma. Throws AMBIGUOUS_DECIMAL when the
+ * prices prove both marks, or when commas appear and none of them decides.
+ */
+export function detectDecimalComma(cells: readonly string[]): boolean {
+  let comma = false; let point = false; let undecidedComma = false;
+  for (const raw of cells) {
+    const text = raw.trim().replace(/^"|"$/g, '').replace(/[$€£¥₹\s]/g, '');
+    if (text === '') continue;
+    const c = text.lastIndexOf(','); const d = text.lastIndexOf('.');
+    if (c >= 0 && d >= 0) { if (c > d) comma = true; else point = true; continue; }
+    if (c >= 0) { if (GROUPED_COMMA.test(text)) undecidedComma = true; else comma = true; continue; }
+    if (d >= 0 && !GROUPED_DOT.test(text)) point = true;
+  }
+  if (comma && point) {
+    throw new CsvImportError('AMBIGUOUS_DECIMAL', 'The prices use both a decimal comma and a decimal point.');
+  }
+  if (comma) return true;
+  if (undecidedComma && !point) {
+    throw new CsvImportError('AMBIGUOUS_DECIMAL', 'Every comma in the prices could be a thousands separator or a decimal comma.');
+  }
+  return false;
 }
 
 /**
@@ -201,9 +280,6 @@ export interface ParseOptions {
  * before drawing any conclusion from the remaining ones.
  */
 export function parseMarketCsv(text: string, options: ParseOptions = {}): ParsedCsv {
-  const dayFirst = options.dayFirst ?? false;
-  const decimalComma = options.decimalComma ?? false;
-
   const lines = text.split(/\r\n|\n|\r/).filter((line) => line.trim() !== '');
   if (lines.length === 0) throw new CsvImportError('EMPTY_FILE', 'The file is empty.');
 
@@ -231,13 +307,20 @@ export function parseMarketCsv(text: string, options: ParseOptions = {}): Parsed
   const lowIndex = indexOf('low');
   const volumeIndex = indexOf('volume');
 
+  // What the caller states wins; otherwise the file's own cells decide.
+  const rows = lines.slice(1).map((raw) => splitCsvLine(raw, delimiter));
+  const column = (index: number): string[] => (index < 0 ? [] : rows.map((fields) => fields[index] ?? ''));
+  const dayFirst = options.dayFirst ?? detectDayFirst(column(dateIndex)) ?? false;
+  const decimalComma = options.decimalComma
+    ?? detectDecimalComma([closeIndex, openIndex, highIndex, lowIndex].flatMap(column));
+
   const bars: Bar[] = [];
   const rejected: RejectedRow[] = [];
   const seen = new Set<string>();
 
   for (let i = 1; i < lines.length; i++) {
     const raw = lines[i]!;
-    const fields = splitCsvLine(raw, delimiter);
+    const fields = rows[i - 1]!;
     const line = i + 1;
 
     if (fields.length <= Math.max(dateIndex, closeIndex)) {

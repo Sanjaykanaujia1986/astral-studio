@@ -177,6 +177,11 @@ is appealing and the statistics say it is nothing, so both are shown together.
 | `IMBALANCED_SAMPLE` | signal active on under 2% or over 98% of the sample |
 | `MULTIPLE_TESTS` | more than one signal tested; states how many are expected by chance |
 | `IN_SAMPLE_ONLY` | no holdout was reserved |
+
+With a holdout, every column that chooses a signal (means, both tests, FDR
+and Holm) is measured on the training part only, and the study reports
+both date ranges (`split`). Before 0.45 those columns read the whole series,
+so the out-of-sample check re-measured data the choice had already seen.
 | `SERIES_HAS_GAPS` | gaps longer than a long weekend |
 | `SHORT_SERIES` | fewer than 250 bars |
 | `SIGNALS_OVERLAP` | two signals share over 80% of their active days |
@@ -236,7 +241,11 @@ conjunction. Its rules:
   - an event on a weekend or holiday moves to the next session
     (`non-session-next-session`).
 
-  The rule is recorded with every observation.
+  The rule is recorded with every observation. Since 0.45 an observation
+  with no honest reference is left out and counted, never moved: one before
+  the series' first bar (an episode before a listing), one whose next bar
+  lies across a `missing` session, and one that would cross more than two
+  weekdays of `unknown` status.
 - **Forward returns** are measured at +1, +3, +5, +10 and +20 sessions of
   that instrument's own calendar, as `100 × ln(close[t+h] / close[t])`.
   - A horizon that runs past the data is **excluded and counted**, never
@@ -268,6 +277,16 @@ conjunction. Its rules:
   - Where the list and every series disagree, the date is **disputed**, read
     as unknown, and the disagreement is shown. It is never resolved by
     picking a side.
+- **CSV formats are proven by the file, never defaulted** (0.45). Slash
+  dates are DD/MM when a first part exceeds 12 and MM/DD when a second part
+  does (`detectDayFirst`). A comma followed by other than three digits is a
+  decimal comma, and a dot likewise a decimal point (`detectDecimalComma`).
+  A file that proves neither, or proves both, is refused. A box the reader
+  ticks overrides the detection.
+- **A cut-short provider history is flagged.** When the provider's own
+  first-trade day precedes the first bar it sent by more than 30 days
+  (Yahoo, Nov 2026: RELIANCE.BO and INFY.BO, 8 bars against a 1995 first
+  trade), the page says so. Nothing is filled in.
 - **Vendor faults are screened out, never repaired** (`screenBars`). A bar
   more than 40 % away from the previous close that comes back within 10 %
   of it inside 10 bars is set aside and listed with both prices: in practice

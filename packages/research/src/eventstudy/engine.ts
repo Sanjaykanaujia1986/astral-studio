@@ -14,6 +14,18 @@
  *
  * The rule applied is recorded on every row, so the mapping can be checked.
  *
+ * An observation is left out, and counted, when there is no honest
+ * reference (0.45):
+ *
+ * - it falls before the series' first bar. Before 0.45 it was measured from
+ *   the first bar instead, so every SILVERBEES episode from 2011 to 2021 (the
+ *   ETF listed in February 2022) got the same return from February 2022;
+ * - the next bar lies across a gap in the data: a session the calendar lists
+ *   as open has no bar (status `missing`), or more than
+ *   {@link MAX_UNKNOWN_WEEKDAYS} weekdays the calendar cannot vouch for
+ *   (`unknown`, a year with no holiday list) would be bridged;
+ * - the data ends first.
+ *
  * ## Forward returns
  *
  *     r(h) = 100 × (close[ref + h] / close[ref] − 1)
@@ -29,7 +41,7 @@
  * compute anything here.
  */
 import type { Series } from '../market/series.js';
-import { localDateTime, minutesOf, type ExchangeCalendar } from '../market/calendar.js';
+import { addDays, dayStatus, localDateTime, minutesOf, weekdayOf, type ExchangeCalendar } from '../market/calendar.js';
 
 export const DEFAULT_HORIZONS: readonly number[] = [1, 3, 5, 10, 20];
 
@@ -63,9 +75,31 @@ function lowerBound(dates: readonly string[], date: string): number {
   return lo;
 }
 
-/** The session whose close an observation is measured from, or null when the data ends first. */
+/**
+ * Weekdays of unknown status (no holiday list for the year, or a disputed
+ * date) that a reference may be carried across. No exchange here closes for
+ * more than two weekdays in a row outside its listed holidays, so a longer
+ * run is a gap in the data, not a closure.
+ */
+export const MAX_UNKNOWN_WEEKDAYS = 2;
+
+const sessionSets = new WeakMap<readonly string[], ReadonlySet<string>>();
+function sessionsOf(dates: readonly string[]): ReadonlySet<string> {
+  let set = sessionSets.get(dates);
+  if (!set) { set = new Set(dates); sessionSets.set(dates, set); }
+  return set;
+}
+
+/**
+ * The session whose close an observation is measured from, or null when there
+ * is none to measure from honestly: before the first bar, across a gap in the
+ * data, or after the data ends.
+ */
 export function referenceSession(calendar: ExchangeCalendar, dates: readonly string[], instantMs: number): ReferenceSession | null {
+  if (dates.length === 0) return null;
   const local = localDateTime(instantMs, calendar.timeZone);
+  // No price existed yet: snapping forward would measure from a later listing.
+  if (local.date < dates[0]!) return null;
   let index = lowerBound(dates, local.date);
   let rule: ReferenceRule;
   if (index < dates.length && dates[index] === local.date) {
@@ -75,6 +109,14 @@ export function referenceSession(calendar: ExchangeCalendar, dates: readonly str
     rule = 'non-session-next-session';
   }
   if (index >= dates.length) return null;
+  // Every day carried across must be one the exchange was shut, never a missing session.
+  const sessions = sessionsOf(dates);
+  let unknownWeekdays = 0;
+  for (let d = rule === 'after-close-next-session' ? addDays(local.date, 1) : local.date; d < dates[index]!; d = addDays(d, 1)) {
+    const status = dayStatus(calendar, d, sessions);
+    if (status === 'missing') return null;
+    if (status === 'unknown' && !calendar.weekend.includes(weekdayOf(d)) && ++unknownWeekdays > MAX_UNKNOWN_WEEKDAYS) return null;
+  }
   return { index, date: dates[index]!, rule, localDate: local.date, localMinutes: local.minutes };
 }
 

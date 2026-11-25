@@ -94,6 +94,8 @@ interface SeriesState {
   readonly rejected: number;
   /** Bars the bad-bar screen set aside as vendor faults. Shown, never filled. */
   readonly suspect: readonly SuspectBar[];
+  /** The provider's own first-trade day for the last fetched symbol, when it said (0.45). */
+  readonly firstTrade: string | null;
   readonly fileName: string | null;
   /** Where the current series came from. */
   readonly source: 'file' | 'provider' | null;
@@ -224,6 +226,7 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
   series: null,
   rejected: 0,
   suspect: [],
+  firstTrade: null,
   fileName: null,
   source: null,
   providerName: null,
@@ -302,7 +305,12 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
   importCsv(fileName, text) {
     const { choices } = get();
     try {
-      const parsed = parseMarketCsv(text, choices);
+      // A ticked box states the format; an unticked one lets the file's own
+      // dates and prices decide (0.45), rather than meaning MM/DD and a point.
+      const parsed = parseMarketCsv(text, {
+        ...(choices.dayFirst ? { dayFirst: true } : {}),
+        ...(choices.decimalComma ? { decimalComma: true } : {}),
+      });
       // The file name is the only symbol available; nothing is fetched.
       const screened = screenBars(parsed.bars);
       const series = makeSeries(fileName.replace(/\.csv$/i, ''), screened.bars);
@@ -345,6 +353,7 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
       set({
         series,
         suspect: screened.suspect,
+        firstTrade: fetched.providerFirstTrade ?? null,
         rejected: 0,
         fileName: null,
         source: 'provider',
@@ -357,6 +366,7 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
       set({
         series: null,
         suspect: [],
+        firstTrade: null,
         rejected: 0,
         source: null,
         providerName: provider.describe.name,

@@ -33,7 +33,9 @@ const DESCRIPTION: ProviderDescription = {
 };
 
 async function readError(response: Response, fallback: string): Promise<never> {
-  let code = fallback;
+  // Since 0.45 the route answers admins only: a lapsed session or a
+  // customer account is a sign-in problem, not a provider outage.
+  let code = response.status === 401 || response.status === 403 ? 'SIGN_IN_REQUIRED' : fallback;
   try {
     const body: unknown = await response.json();
     const candidate = (body as { error?: unknown } | null)?.error;
@@ -54,9 +56,9 @@ export const apiProvider: MarketDataProvider = {
     const response = await fetch(`/api/prices?symbol=${encodeURIComponent(symbol)}`);
     if (!response.ok) await readError(response, 'PROVIDER_UNAVAILABLE');
 
-    let payload: { csv?: unknown; provider?: unknown };
+    let payload: { csv?: unknown; provider?: unknown; firstTrade?: unknown };
     try {
-      payload = (await response.json()) as { csv?: unknown; provider?: unknown };
+      payload = (await response.json()) as { csv?: unknown; provider?: unknown; firstTrade?: unknown };
     } catch {
       throw new ProviderError('MALFORMED_RESPONSE', DESCRIPTION.name);
     }
@@ -73,6 +75,7 @@ export const apiProvider: MarketDataProvider = {
     return {
       bars: parsed.bars,
       ...(typeof payload.provider === 'string' ? { providerName: payload.provider } : {}),
+      ...(typeof payload.firstTrade === 'string' ? { providerFirstTrade: payload.firstTrade } : {}),
     };
   },
 };

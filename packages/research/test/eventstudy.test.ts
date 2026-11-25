@@ -106,6 +106,28 @@ describe('reference close', () => {
     expect(referenceSession(NSE_CALENDAR, dates, ist('2026-10-20', '09:00'))!.date).toBe('2026-10-21');
     expect(referenceSession(NSE_CALENDAR, dates, ist('2026-10-18', '09:00'))!).toMatchObject({ date: '2026-10-19', rule: 'non-session-next-session' });
   });
+  it('leaves out an event before the first bar instead of measuring it from a later listing (0.45)', () => {
+    // SILVERBEES listed in 2022: an episode in 2011 has no price to start from.
+    expect(referenceSession(NSE_CALENDAR, dates, ist('2026-09-30', '10:00'))).toBeNull();
+    expect(referenceSession(NSE_CALENDAR, dates, ist('2011-07-18', '10:00'))).toBeNull();
+    // The first bar's own day, before the close, is still measured.
+    expect(referenceSession(NSE_CALENDAR, dates, ist('2026-10-05', '10:00'))!.date).toBe('2026-10-05');
+  });
+  it('never carries a reference across a missing session (0.45)', () => {
+    // 22 October 2026 is a listed NSE session with no bar here.
+    const gappy = sessions('2026-10-05', 40, ['2026-10-22']).map((b) => b.date);
+    expect(referenceSession(NSE_CALENDAR, gappy, ist('2026-10-22', '10:00'))).toBeNull();
+    expect(referenceSession(NSE_CALENDAR, gappy, ist('2026-10-21', '16:00'))).toBeNull();
+    // A weekend before a bar is still fine.
+    expect(referenceSession(NSE_CALENDAR, gappy, ist('2026-10-24', '10:00'))!.date).toBe('2026-10-26');
+  });
+  it('carries a reference across at most two weekdays of unknown status (0.45)', () => {
+    // 2010 has no NSE holiday list. A Friday-to-Tuesday step bridges one unknown weekday;
+    // a gap of a week is a hole in the data.
+    const old = ['2010-03-01', '2010-03-02', '2010-03-04', '2010-03-12'];
+    expect(referenceSession(NSE_CALENDAR, old, ist('2010-03-03', '10:00'))!.date).toBe('2010-03-04');
+    expect(referenceSession(NSE_CALENDAR, old, ist('2010-03-05', '10:00'))).toBeNull();
+  });
   it('reads the instant in the exchange’s zone, not UTC', () => {
     // 2026-10-21 23:00 UTC is already 22 October 04:30 in India.
     expect(referenceSession(NSE_CALENDAR, dates, Date.parse('2026-10-21T23:00:00Z'))!.date).toBe('2026-10-22');

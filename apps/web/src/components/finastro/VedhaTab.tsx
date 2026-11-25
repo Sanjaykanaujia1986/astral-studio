@@ -304,20 +304,20 @@ export function VedhaTab(): JSX.Element {
           <CalcSettingsFields value={config.settings} onChange={(v) => set('settings', v)} showHouses={false} />
         </div>
         <div className="flex flex-wrap items-end gap-3 text-sm">
-          <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.vedha.tradition')}</span>
-            <select className={FIELD} value={config.traditionId} onChange={(e) => set('traditionId', e.target.value)}>
+          <label className="flex min-w-0 max-w-full flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.vedha.tradition')}</span>
+            <select className={`${FIELD} max-w-full`} value={config.traditionId} onChange={(e) => set('traditionId', e.target.value)}>
               {TRADITIONS.map((x) => <option key={x.id} value={x.id}>{x.name} · {x.version}{x.status === 'test-fixture' ? ` — ${t('fa.vedha.fixture')}` : x.status === 'unverified' ? ` — ${t('fa.vedha.superseded')}` : ''}</option>)}
             </select></label>
-          <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.vedha.record')}</span>
-            <select className={FIELD} value={config.recordId} onChange={(e) => set('recordId', e.target.value)}>
+          <label className="flex min-w-0 max-w-full flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.vedha.record')}</span>
+            <select className={`${FIELD} max-w-full`} value={config.recordId} onChange={(e) => set('recordId', e.target.value)}>
               {records.map((r) => <option key={r.id} value={r.id}>{instrumentById(r.instrumentId)?.name} · {t(`fa.kind.${r.kind}` as MessageKey)} · {r.date}{r.time ? ` ${r.time}` : ''} ({t(`fa.certainty.${r.timeCertainty}` as MessageKey)})</option>)}
             </select></label>
           <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.target.name-consonant')} <LayerBadge layer="input" /></span>
-            <select className={FIELD} value={config.nameConsonant} onChange={(e) => set('nameConsonant', e.target.value)}>
+            <select className={`${FIELD} max-w-full`} value={config.nameConsonant} onChange={(e) => set('nameConsonant', e.target.value)}>
               <option value="">{t('fa.vedha.notGiven')}</option>{CONSONANTS.map((c) => <option key={c} value={c}>{sc(c)} ({c})</option>)}
             </select></label>
           <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.target.name-vowel')}</span>
-            <select className={FIELD} value={config.nameVowel} onChange={(e) => set('nameVowel', e.target.value)}>
+            <select className={`${FIELD} max-w-full`} value={config.nameVowel} onChange={(e) => set('nameVowel', e.target.value)}>
               <option value="">{t('fa.vedha.notGiven')}</option>{VOWELS.map((c) => <option key={c} value={c}>{sc(c)} ({c})</option>)}
             </select></label>
         </div>

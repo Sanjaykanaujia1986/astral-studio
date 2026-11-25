@@ -2,6 +2,16 @@
 
 Newest first.
 
+## 0.45.0 — 2026-11-25
+From a full test of the Financial astrology page.
+- FIX: **Venus combustion no longer invents returns before a listing.** An episode before an instrument's first bar was measured from the first bar instead. SILVERBEES, listed in February 2022, showed 20 complete episodes from 2011, most with the same return. Such episodes, and any whose next bar lies across a gap in the data, are now left out and counted as "outside the data or across a gap". SILVERBEES now reports 6 episodes; NIFTY still reports all 20.
+- FIX: **The Signal study's holdout is really held back.** The main columns (means, p-values, FDR and Holm) were measured on the whole series, held-back tail included, so "Out of sample" re-read data the signal had been chosen on. They now use the training part only, and the page states both date ranges.
+- FIX: **Indian CSV dates and decimal commas import correctly.** 02/11/2026 was read as 11 February, and in a semicolon file 100,5 became 1005, both without warning. The file's own dates and prices now decide: a day above 12 proves DD/MM, and a comma followed by other than three digits proves a decimal comma. A file that proves neither is refused with a plain message instead of being guessed.
+- SECURITY: **Price fetching is for signed-in admins only.** `/api/prices` answered anyone, so anyone could use it as an anonymous proxy to the provider, and its public CDN cache could serve one caller's answer to another. It now needs an admin session and caches only in that admin's browser. A lapsed session says so instead of reporting an outage.
+- NEW: **Cut-short provider history is flagged.** Yahoo currently sends 8 bars for RELIANCE.BO and INFY.BO while dating their first trades to 1995. When a provider's first-trade day is more than 30 days before the first bar it sends, the page says so and suggests the .NS symbol.
+- FIX: **Venus combustion checks its dates.** A blank From date ran the engine and showed "month out of range: undefined". A blank or reversed range now disables Calculate and says why.
+- FIX: **Daily vedha fits a phone screen.** The Tradition and Chart record menus were as wide as their longest option, which pushed the page to 612 px on a 375 px screen.
+
 ## 0.44.0 — 2026-11-25
 - FIX: **Fetch from provider works for Indian instruments.** The live site answered every Fetch with "no provider configured". The server now reads daily prices from Yahoo, keyless, for NIFTY, SENSEX, Reliance, GOLDBEES, SILVERBEES and COMEX gold and silver, and for any NSE (`.NS`) or BSE (`.BO`) symbol in the Signal study. Bars are dated in the exchange's own time zone. A session still trading is left out rather than read as a close, and a day with no close is skipped, never filled. Symbols such as `GC=F` and `M&M.NS` are now accepted.
 - NEW: **Vendor faults are set aside, not studied.** A price far from the day before that is back within ten sessions is a vendor fault, such as a split applied to two days only. Examples are GOLDBEES on 19–20 Dec 2019 (1/100 of the price) and Reliance in Oct–Nov 1997 and on 28 Jul 2005. Such bars are listed on the dataset card with both prices and kept out of every study. The days then read as missing. Real moves stay, including the 2009 election day, March 2020 and January 2026 in silver.

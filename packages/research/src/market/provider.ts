@@ -49,6 +49,27 @@ export interface FetchedBars {
    * answered. Recording the wrong name is worse than recording none.
    */
   readonly providerName?: string;
+  /**
+   * The day the provider dates the symbol's first trade, when it says
+   * (0.45). Compared with the first bar received, it shows a history the
+   * provider cut short: see {@link truncatedHistory}.
+   */
+  readonly providerFirstTrade?: string;
+}
+
+/**
+ * Days by which the provider's own first-trade day precedes the first bar
+ * it sent, when that is more than 30: a cut-short history, not a late
+ * listing. Null when the provider does not say or the gap is small.
+ *
+ * In November 2026 Yahoo sent 8 bars for RELIANCE.BO and INFY.BO while dating
+ * their first trades to 1995; for every other instrument checked the two days
+ * agreed within one day.
+ */
+export function truncatedHistory(firstTrade: string | undefined | null, firstBar: string | undefined): number | null {
+  if (!firstTrade || !firstBar || !/^\d{4}-\d{2}-\d{2}$/.test(firstTrade)) return null;
+  const days = Math.round((Date.parse(`${firstBar}T00:00:00Z`) - Date.parse(`${firstTrade}T00:00:00Z`)) / 86_400_000);
+  return Number.isFinite(days) && days > 30 ? days : null;
 }
 
 export interface MarketDataProvider {
@@ -71,7 +92,8 @@ export type ProviderErrorCode =
   | 'SYMBOL_NOT_FOUND'
   | 'PROVIDER_UNAVAILABLE'
   | 'PROVIDER_TIMEOUT'
-  | 'MALFORMED_RESPONSE';
+  | 'MALFORMED_RESPONSE'
+  | 'SIGN_IN_REQUIRED';
 
 export class ProviderError extends Error {
   constructor(readonly code: ProviderErrorCode, readonly provider: string) {
@@ -90,6 +112,7 @@ export const PROVIDER_ERROR_CODES: ReadonlySet<string> = new Set<ProviderErrorCo
   'PROVIDER_UNAVAILABLE',
   'PROVIDER_TIMEOUT',
   'MALFORMED_RESPONSE',
+  'SIGN_IN_REQUIRED',
 ]);
 
 export function isProviderErrorCode(code: unknown): code is ProviderErrorCode {

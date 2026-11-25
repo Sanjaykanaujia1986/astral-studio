@@ -32,7 +32,16 @@
  * proof-of-work challenge instead of data; working around that is
  * circumventing bot detection, so the adapter would be permanently broken and
  * is better absent than present and failing.
+ *
+ * ## Admins only (0.45)
+ *
+ * Financial astrology is an admin page, and until 0.45 this route answered
+ * anyone, signed in or not: a free, anonymous proxy to the provider on this
+ * deployment's quota and reputation, and with `public, s-maxage` the CDN
+ * could hand one answer to every caller. It now needs an admin session and
+ * its answers are cached privately, in the admin's own browser only.
  */
+import { ensureSchema, requireAdmin } from './_auth.js';
 import { fail, HttpError, json, preflight } from './_lib.js';
 
 /**
@@ -53,6 +62,8 @@ interface Upstream {
   readonly toCsv?: (text: string, now: number) => string | null;
   /** The upstream answers an unknown symbol with HTTP 404. */
   readonly notFoundIs404?: boolean;
+  /** The day the upstream dates the symbol's first trade (exchange-local ISO date), when it says. */
+  readonly firstTrade?: (text: string) => string | null;
   readonly accept?: string;
 }
 
@@ -61,12 +72,34 @@ interface YahooChart {
     result?: Array<{
       meta?: {
         exchangeTimezoneName?: string;
+        firstTradeDate?: number | null;
         currentTradingPeriod?: { regular?: { start?: number; end?: number } };
       };
       timestamp?: number[];
       indicators?: { quote?: Array<{ open?: (number | null)[]; high?: (number | null)[]; low?: (number | null)[]; close?: (number | null)[]; volume?: (number | null)[] }> };
     }> | null;
   };
+}
+
+/**
+ * The first-trade day Yahoo reports in its own metadata, or null.
+ *
+ * Yahoo sometimes serves a truncated history: in November 2026 RELIANCE.BO and
+ * INFY.BO came back with 8 bars although the same metadata dates their first
+ * trade to 1995. The page compares this day with the first bar it received
+ * and says so, rather than letting eight days pass as the whole history.
+ */
+export function yahooFirstTrade(text: string): string | null {
+  try {
+    const r = (JSON.parse(text) as YahooChart).chart?.result?.[0];
+    const first = r?.meta?.firstTradeDate;
+    if (typeof first !== 'number' || !Number.isFinite(first)) return null;
+    return new Intl.DateTimeFormat('en-CA', {
+      timeZone: r?.meta?.exchangeTimezoneName ?? 'UTC', year: 'numeric', month: '2-digit', day: '2-digit',
+    }).format(new Date(first * 1000));
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -115,6 +148,7 @@ const UPSTREAMS: Readonly<Record<string, Upstream>> = {
     looksRight: (text) => text.trimStart().startsWith('{'),
     toCsv: yahooToCsv,
     notFoundIs404: true,
+    firstTrade: yahooFirstTrade,
     accept: 'application/json',
   },
   alphavantage: {
@@ -153,6 +187,9 @@ export async function OPTIONS(request: Request): Promise<Response> {
 
 export async function GET(request: Request): Promise<Response> {
   try {
+    await ensureSchema();
+    await requireAdmin(request);
+
     const name = (process.env.MARKET_DATA_PROVIDER ?? '').trim().toLowerCase();
     if (!name) throw new HttpError(503, 'PROVIDER_NOT_CONFIGURED');
 
@@ -177,16 +214,19 @@ export async function GET(request: Request): Promise<Response> {
     if (!upstream.looksRight(raw)) throw new HttpError(404, 'SYMBOL_NOT_FOUND');
     const text = upstream.toCsv ? upstream.toCsv(raw, Date.now()) : raw;
     if (text === null) throw new HttpError(404, 'SYMBOL_NOT_FOUND');
+    const firstTrade = upstream.firstTrade?.(raw) ?? null;
 
     return json(request, {
       symbol,
       provider: name,
       csv: normaliseHeader(text),
+      ...(firstTrade ? { firstTrade } : {}),
       notice: `Fetched server-side from ${name}. Data quality and terms are the provider’s.`,
     }, 200, {
       // A daily series changes once a day. Re-fetching per keystroke would be
-      // rude to the provider and, on a keyed plan, expensive.
-      'cache-control': 'public, max-age=900, s-maxage=3600',
+      // rude to the provider and, on a keyed plan, expensive. Private: the
+      // answer is for a signed-in admin, never for a shared cache (0.45).
+      'cache-control': 'private, max-age=900',
     });
   } catch (cause) {
     if (cause instanceof Error && cause.name === 'TimeoutError') {

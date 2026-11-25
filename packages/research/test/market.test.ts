@@ -12,10 +12,12 @@ import {
   detectDelimiter,
   parseDateCell,
   parseNumberCell,
+  detectDayFirst,
+  detectDecimalComma,
   CsvImportError,
 } from '../src/market/csv.js';
 import {
-  ProviderError, isProviderErrorCode, type MarketDataProvider,
+  ProviderError, isProviderErrorCode, truncatedHistory, type MarketDataProvider,
 } from '../src/market/provider.js';
 import {
   makeSeries,
@@ -98,6 +100,47 @@ describe('parseNumberCell', () => {
     expect(parseNumberCell('N/A', false)).toBeUndefined();
     expect(parseNumberCell('null', false)).toBeUndefined();
     expect(parseNumberCell('-', false)).toBeUndefined();
+  });
+});
+
+describe('date order and decimal mark come from the file, never a default (0.45)', () => {
+  // SYNTHETIC rows. Before 0.45 an Indian 02/11/2026 became 11 February and 100,5 became 1005.
+  it('reads DD/MM when any day is above 12, MM/DD when any month position is, and refuses to guess', () => {
+    expect(detectDayFirst(['02/11/2026', '13/11/2026'])).toBe(true);
+    expect(detectDayFirst(['11/02/2026', '11/13/2026'])).toBe(false);
+    expect(detectDayFirst(['2026-11-02'])).toBeUndefined();
+    expect(() => detectDayFirst(['02/11/2026', '03/11/2026'])).toThrow(expect.objectContaining({ code: 'AMBIGUOUS_DATES' }));
+    expect(() => detectDayFirst(['13/11/2026', '11/13/2026'])).toThrow(expect.objectContaining({ code: 'MIXED_DATE_ORDER' }));
+  });
+  it('imports an Indian DD/MM file on the right days, and keeps a stated order', () => {
+    const csv = 'Date,Close\n02/11/2026,100\n13/11/2026,101\n';
+    expect(parseMarketCsv(csv).bars.map((b) => b.date)).toEqual(['2026-11-02', '2026-11-13']);
+    // A stated order wins: 13/11 is no month, so that row is rejected, not reinterpreted.
+    const stated = parseMarketCsv(csv, { dayFirst: false });
+    expect(stated.bars.map((b) => b.date)).toEqual(['2026-02-11']);
+    expect(stated.rejected.map((r) => r.reason)).toEqual(['BAD_DATE']);
+    expect(() => parseMarketCsv('Date,Close\n02/11/2026,100\n03/11/2026,101\n')).toThrow(CsvImportError);
+  });
+  it('reads a decimal comma when the prices prove it, and refuses commas that prove nothing', () => {
+    expect(detectDecimalComma(['100,5', '101,25'])).toBe(true);
+    expect(detectDecimalComma(['1.234,56'])).toBe(true);
+    expect(detectDecimalComma(['22,600.50', '22,601'])).toBe(false);
+    expect(detectDecimalComma(['100.5', '1,00,000.25'])).toBe(false);
+    expect(detectDecimalComma(['100', '101'])).toBe(false);
+    expect(() => detectDecimalComma(['22,600', '22,601'])).toThrow(expect.objectContaining({ code: 'AMBIGUOUS_DECIMAL' }));
+    expect(() => detectDecimalComma(['100,5', '100.5'])).toThrow(expect.objectContaining({ code: 'AMBIGUOUS_DECIMAL' }));
+    expect(parseMarketCsv('Date;Close\n2026-11-02;100,5\n2026-11-03;101,25\n').bars.map((b) => b.close)).toEqual([100.5, 101.25]);
+  });
+});
+
+describe('truncatedHistory (0.45)', () => {
+  it('flags a provider history that starts long after the provider’s own first-trade day', () => {
+    // Yahoo, Nov 2026: RELIANCE.BO first trade 1995-07-10, first bar sent 2026-11-13.
+    expect(truncatedHistory('1995-07-10', '2026-11-13')).toBeGreaterThan(11_000);
+    // GOLDBEES: first trade 2009-01-01, first bar 2009-01-02. A day apart is no truncation.
+    expect(truncatedHistory('2009-01-01', '2009-01-02')).toBeNull();
+    expect(truncatedHistory(undefined, '2026-11-13')).toBeNull();
+    expect(truncatedHistory('not a date', '2026-11-13')).toBeNull();
   });
 });
 

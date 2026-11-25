@@ -5,7 +5,7 @@
  */
 import { useRef, type ChangeEvent, type JSX, type ReactNode } from 'react';
 import type { HouseSystem, NodeType, ZodiacMode } from '@astro/engine';
-import { INSTRUMENTS, instrumentById, isProviderErrorCode, type ReturnStats } from '@astro/research';
+import { INSTRUMENTS, instrumentById, isProviderErrorCode, truncatedHistory, type ReturnStats } from '@astro/research';
 import { useTranslator, type MessageKey } from '@astro/i18n';
 import { useInstrumentData } from '../../state/instrumentData.js';
 import { useSeriesStore } from '../../state/series.js';
@@ -92,7 +92,7 @@ export function InstrumentSelect({ value, onChange, ids }: { value: string; onCh
   );
 }
 
-const CSV_CODES = new Set(['EMPTY_FILE', 'NO_HEADER', 'MISSING_DATE_COLUMN', 'MISSING_PRICE_COLUMN', 'NO_VALID_ROWS']);
+const CSV_CODES = new Set(['EMPTY_FILE', 'NO_HEADER', 'MISSING_DATE_COLUMN', 'MISSING_PRICE_COLUMN', 'NO_VALID_ROWS', 'AMBIGUOUS_DATES', 'MIXED_DATE_ORDER', 'AMBIGUOUS_DECIMAL']);
 /** The catalogue's sentence for a load failure; the bare code only when no sentence exists. */
 function loadErrorKey(code: string): MessageKey | null {
   if (isProviderErrorCode(code)) return `provider.error.${code}` as MessageKey;
@@ -147,6 +147,11 @@ export function DatasetCard({ instrumentId, compact = false }: { instrumentId: s
                 {t('fa.data.suspectCount', { count: d.suspect.length })} {t('fa.data.suspect')}{' '}
                 <span className="tabular-nums">{d.suspect.slice(0, 6).map((x) => `${x.date} (${n(x.close)} ← ${n(x.previousClose)} → ${n(x.backTo)})`).join('; ')}{d.suspect.length > 6 ? '; …' : ''}</span>
               </dd></>
+          ) : null}
+          {truncatedHistory(d.providerFirstTrade, d.firstDate) !== null ? (
+            <dd role="alert" className="col-span-2 md:col-span-4 whitespace-normal text-amber-700 dark:text-amber-400">
+              {t('provider.truncated', { provider: d.sourceLabel, firstTrade: d.providerFirstTrade ?? '', firstBar: d.firstDate })}
+            </dd>
           ) : null}
           {compact ? null : <><dt className="as-text-muted">{t('fa.data.basis')}</dt><dd className="col-span-1 md:col-span-3 whitespace-normal">{inst.adjustment}{inst.contract ? ` ${inst.contract}` : ''}</dd></>}
         </dl>

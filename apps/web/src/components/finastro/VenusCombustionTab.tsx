@@ -72,6 +72,8 @@ export function VenusCombustionTab(): JSX.Element {
   const inst = instrumentById(config.instrumentId)!;
   const dataset = datasets[config.instrumentId];
   const problems = validatePreset(config.preset);
+  // A blank or reversed range is refused here, in words, rather than reaching the engine (0.45).
+  const rangeOk = /^\d{4}-\d{2}-\d{2}$/.test(config.from) && /^\d{4}-\d{2}-\d{2}$/.test(config.to) && config.from <= config.to;
   const profile = useMemo(() => ({ zodiac: config.settings.zodiac, preset: config.preset }), [config.settings.zodiac, config.preset]);
   const stale = run !== null && (run.config.from !== config.from || run.config.to !== config.to || run.config.instrumentId !== config.instrumentId
     || JSON.stringify(run.config.settings) !== JSON.stringify(config.settings) || JSON.stringify(run.config.preset) !== JSON.stringify(config.preset)
@@ -244,12 +246,13 @@ export function VenusCombustionTab(): JSX.Element {
         <DatasetCard instrumentId={config.instrumentId} />
         <PresetEditor preset={config.preset} onChange={(p) => set('preset', p)} />
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className={PRIMARY} disabled={busy || problems.length > 0 || config.from > config.to} onClick={() => void calculate()}>{t('fa.calculate')}</button>
+          <button type="button" className={PRIMARY} disabled={busy || problems.length > 0 || !rangeOk} onClick={() => void calculate()}>{t('fa.calculate')}</button>
           {busy ? <button type="button" className={BUTTON} onClick={cancel}>{t('fa.cancel')}</button> : null}
           <span role="status" className="text-sm as-text-muted">{t(`fa.status.${status}` as MessageKey)}{error ? ` — ${error}` : ''}</span>
           {stale ? <span className="text-xs text-amber-700 dark:text-amber-400">{t('fa.stale')}</span> : null}
           {!dataset ? <span className="text-xs as-text-muted">{t('fa.venus.noData')}</span> : null}
         </div>
+        {rangeOk ? null : <p role="alert" className="text-xs text-red-700 dark:text-red-400">{t('fa.vedha.badRange')}</p>}
         {notice ? <p role="status" className="text-sm">{notice}</p> : null}
       </section>
 

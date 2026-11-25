@@ -36,6 +36,8 @@ export interface DatasetDescriptor {
   readonly fingerprint: string;
   /** Bars the bad-bar screen set aside (a vendor fault such as a split applied to two days). Absent on older descriptors. */
   readonly suspect?: readonly SuspectBar[];
+  /** The provider's own first-trade day, when it said (0.45): shows a history it cut short. */
+  readonly providerFirstTrade?: string;
   readonly importedAt: string;
 }
 
@@ -121,7 +123,8 @@ export const useInstrumentData = create<State>((set, get) => {
       try {
         const fetched = await apiProvider.fetchDaily(symbol);
         if (fetched.bars.length === 0) { fail(instrumentId, 'NO_ROWS'); return; }
-        put(await build(instrumentId, 'provider', fetched.providerName ?? apiProvider.describe.name, fetched.bars, ['date', 'close'], 0));
+        const built = await build(instrumentId, 'provider', fetched.providerName ?? apiProvider.describe.name, fetched.bars, ['date', 'close'], 0);
+        put(fetched.providerFirstTrade ? { ...built, providerFirstTrade: fetched.providerFirstTrade } : built);
       } catch (cause) {
         fail(instrumentId, cause instanceof ProviderError ? cause.code : 'unknown');
       } finally { busy(instrumentId, false); }
