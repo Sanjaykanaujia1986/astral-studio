@@ -52,10 +52,23 @@ describe('exchange calendar', () => {
     expect(dayStatus(NSE_CALENDAR, '2025-10-22', new Set())).toBe('holiday');
     expect(dayStatus(BSE_CALENDAR, '2020-04-10', new Set())).toBe('holiday');
     expect(dayStatus(NSE_CALENDAR, '2018-06-14', new Set())).toBe('missing');
-    // The list and all three Yahoo series disagree: said, not settled.
-    expect(dayStatus(NSE_CALENDAR, '2019-02-13', new Set())).toBe('unknown');
-    expect(dayStatus(NSE_CALENDAR, '2013-11-14', new Set(['2013-11-14']))).toBe('session');
+    // The list and all Yahoo series disagree and nothing settles it: said, not settled.
+    expect(dayStatus(NSE_CALENDAR, '2012-10-26', new Set())).toBe('unknown');
+    expect(Object.keys(NSE_CALENDAR.disputed ?? {}).sort()).toEqual(['2011-10-26', '2012-10-26', '2012-11-13']);
+  });
+  it('settles the dates a second source decides (0.44)', () => {
+    // Muharram 2013 moved from Thursday the 14th to Friday the 15th.
     expect(isShut(NSE_CALENDAR, '2013-11-14')).toBe(false);
+    expect(dayStatus(NSE_CALENDAR, '2013-11-14', new Set(['2013-11-14']))).toBe('session');
+    expect(dayStatus(NSE_CALENDAR, '2013-11-15', new Set())).toBe('holiday');
+    expect(NSE_CALENDAR.holidays['2013-11-15']).toMatch(/Muharram/);
+    expect(BSE_CALENDAR.holidays['2013-11-15']).toMatch(/Muharram/);
+    // INDstocks has full bars where Yahoo has none: a gap in the series, not a holiday.
+    expect(dayStatus(NSE_CALENDAR, '2019-02-13', new Set())).toBe('missing');
+    expect(dayStatus(NSE_CALENDAR, '2019-03-29', new Set())).toBe('missing');
+    // Budget weekends were full sessions; a Muhurat Sunday is not.
+    for (const d of ['2015-02-28', '2020-02-01', '2026-02-01']) expect(isShut(NSE_CALENDAR, d)).toBe(false);
+    expect(isShut(NSE_CALENDAR, '2023-11-12')).toBe(true);
   });
   it('treats a special Saturday session as a session, and a Muhurat bar on a holiday as irregular', () => {
     expect(isShut(NSE_CALENDAR, '2025-02-01')).toBe(false);

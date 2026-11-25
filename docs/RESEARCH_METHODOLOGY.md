@@ -253,7 +253,9 @@ conjunction. Its rules:
   - session, weekend, holiday (named from the exchange list), **missing** (a
     listed working day with no bar) and **unknown** (no holiday list covers
     that date, or the sources disagree about it);
-  - a missing bar is never treated as a holiday, and never filled.
+  - a missing bar is never treated as a holiday, and never filled;
+  - a weekday before the series' first bar or after its last is **outside**
+    the data (today before the close, or any later day), not missing.
   - Bars dated on a weekend or a holiday are flagged *irregular* and kept out
     of the daily comparisons. In practice these are NSE's Diwali Muhurat
     sessions and the odd stub bar on a COMEX holiday. A Saturday listed as a
@@ -266,6 +268,17 @@ conjunction. Its rules:
   - Where the list and every series disagree, the date is **disputed**, read
     as unknown, and the disagreement is shown. It is never resolved by
     picking a side.
+- **Vendor faults are screened out, never repaired** (`screenBars`). A bar
+  more than 40 % away from the previous close that comes back within 10 %
+  of it inside 10 bars is set aside and listed with both prices: in practice
+  a split applied to a day or two only, or a stray print. A real move that
+  stays (a crash, a re-rating) is never touched. The dataset fingerprint is
+  taken before the screen, so the same file always gives the same value.
+- **Second source for the calendar.** INDstocks' exchange-sourced daily bars
+  (from 2013-03-28) settled four disputed NSE dates in 0.44. Its NIFTY and
+  SENSEX closes equal Yahoo's on every shared day; its single-stock closes
+  are adjusted differently (RELIANCE.NS differs by a stepped factor of up to
+  8 %), so returns from the two vendors differ on adjustment dates.
 - **Date bars in the exchange's own IANA zone, never a fixed offset.** A
   converter that dated Yahoo's COMEX timestamps with the current EST offset
   moved every daylight-saving bar to the previous day. That produced

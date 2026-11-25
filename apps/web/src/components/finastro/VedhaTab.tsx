@@ -27,11 +27,13 @@ import { saveStudy, RunCache, type RunStatus } from '../../state/studies.js';
 import type { Sheet } from '../../lib/exporter.js';
 import { useJy } from '../vedic/shared.js';
 import {
-  CalcSettingsFields, DatasetCard, ExportBar, LayerBadge, FIELD, BUTTON, PRIMARY, TH, TD, CARD, DEFAULT_SIDEREAL, type CalcSettingsValue,
+  CalcSettingsFields, DatasetCard, ExportBar, LayerBadge, FIELD, BUTTON, PRIMARY, TH, TD, CARD, DEFAULT_SIDEREAL, istDate, type CalcSettingsValue,
 } from './shared.js';
 
 const TRADITIONS: readonly SbcTradition[] = [SBC_HORARATNA_V1, SBC_ALL_THREE_V1, SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE];
 const PRICE_IDS = ['nifty50', 'gold', 'silver'] as const;
+/** Days per run. A longer range is cut here and the cut is said, never silent. */
+const MAX_DAYS = 400;
 
 const CONSONANTS: readonly string[] = [...new Set(SARVATOBHADRA.flat().flatMap((c, i) => {
   const r = Math.floor(i / 9); const col = i % 9;
@@ -56,7 +58,8 @@ interface Config {
 }
 
 const DEFAULT: Config = {
-  from: '2026-10-08', to: '2026-11-20', time: '10:00', zone: 'Asia/Kolkata', settings: DEFAULT_SIDEREAL,
+  // The last six weeks up to today (IST), so a fresh visit shows recent sessions.
+  from: istDate(42), to: istDate(), time: '10:00', zone: 'Asia/Kolkata', settings: DEFAULT_SIDEREAL,
   traditionId: SBC_HORARATNA_V1.id, recordId: 'nifty50-launch-provisional', nameConsonant: '', nameVowel: '',
 };
 
@@ -109,7 +112,7 @@ export function VedhaTab(): JSX.Element {
   const dates = useMemo(() => {
     const out: string[] = [];
     if (config.from > config.to) return out;
-    for (let x = Date.parse(`${config.from}T00:00:00Z`); x <= Date.parse(`${config.to}T00:00:00Z`) && out.length < 400; x += 864e5) out.push(new Date(x).toISOString().slice(0, 10));
+    for (let x = Date.parse(`${config.from}T00:00:00Z`); x <= Date.parse(`${config.to}T00:00:00Z`) && out.length < MAX_DAYS; x += 864e5) out.push(new Date(x).toISOString().slice(0, 10));
     return out;
   }, [config.from, config.to]);
 
@@ -264,6 +267,30 @@ export function VedhaTab(): JSX.Element {
 
   const busy = status === 'running';
   const problems = validateTradition(tradition);
+  // Input checks, said in words before anything is calculated.
+  const timeOk = /^\d{2}:\d{2}$/.test(config.time);
+  const zoneOk = ((): boolean => { try { new Intl.DateTimeFormat('en', { timeZone: config.zone }); return config.zone.trim() !== ''; } catch { return false; } })();
+  const rangeOk = Boolean(config.from && config.to && config.from <= config.to);
+  const capped = rangeOk && dates.length >= MAX_DAYS && dates[dates.length - 1]! < config.to;
+  const unlisted = ((): { exchange: string; years: string }[] => {
+    if (!rangeOk) return [];
+    const out: { exchange: string; years: string }[] = [];
+    const seen = new Set<string>();
+    for (const id of PRICE_IDS) {
+      const cal = instrumentById(id)!.calendar;
+      if (seen.has(cal.id)) continue;
+      seen.add(cal.id);
+      const years: number[] = [];
+      for (let y = Number(config.from.slice(0, 4)); y <= Number(config.to.slice(0, 4)); y++) if (!cal.holidayYears.includes(y)) years.push(y);
+      if (years.length) out.push({ exchange: cal.name, years: years.join(', ') });
+    }
+    return out;
+  })();
+  const inputProblems = [
+    ...(rangeOk ? [] : [t('fa.vedha.badRange')]),
+    ...(timeOk ? [] : [t('fa.vedha.badTime')]),
+    ...(zoneOk ? [] : [t('fa.vedha.badZone', { zone: config.zone })]),
+  ];
 
   return (
     <div className="space-y-4">
@@ -305,10 +332,13 @@ export function VedhaTab(): JSX.Element {
         <p className="text-xs as-text-muted">{t('fa.vedha.nameNote')}</p>
         <div className="grid gap-2 md:grid-cols-3">{PRICE_IDS.map((id) => <DatasetCard key={id} instrumentId={id} compact />)}</div>
         <div className="flex flex-wrap items-center gap-2">
-          <button type="button" className={PRIMARY} disabled={busy || dates.length === 0} onClick={() => void calculate()}>{t('fa.calculate')}</button>
+          <button type="button" className={PRIMARY} disabled={busy || dates.length === 0 || inputProblems.length > 0} onClick={() => void calculate()}>{t('fa.calculate')}</button>
           {busy ? <button type="button" className={BUTTON} onClick={cancel}>{t('fa.cancel')}</button> : null}
           <span role="status" className="text-sm as-text-muted">{t(`fa.status.${status}` as MessageKey)}{error ? ` — ${error}` : ''} · {t('fa.vedha.days', { count: dates.length })}</span>
         </div>
+        {inputProblems.length ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{inputProblems.join(' ')}</p> : null}
+        {capped ? <p className="text-xs text-amber-700 dark:text-amber-400">{t('fa.vedha.capped', { count: MAX_DAYS, to: dates[dates.length - 1]! })}</p> : null}
+        {unlisted.map((u) => <p key={u.exchange} className="text-xs text-amber-700 dark:text-amber-400">{t('fa.vedha.noList', u)}</p>)}
         {notice ? <p role="status" className="text-sm">{notice}</p> : null}
       </section>
 

@@ -5,7 +5,7 @@
  */
 import { useRef, type ChangeEvent, type JSX, type ReactNode } from 'react';
 import type { HouseSystem, NodeType, ZodiacMode } from '@astro/engine';
-import { INSTRUMENTS, instrumentById, type ReturnStats } from '@astro/research';
+import { INSTRUMENTS, instrumentById, isProviderErrorCode, type ReturnStats } from '@astro/research';
 import { useTranslator, type MessageKey } from '@astro/i18n';
 import { useInstrumentData } from '../../state/instrumentData.js';
 import { useSeriesStore } from '../../state/series.js';
@@ -23,6 +23,12 @@ export interface CalcSettingsValue {
   readonly zodiac: ZodiacMode;
   readonly nodeType: NodeType;
   readonly houseSystem: HouseSystem;
+}
+
+/** Today's date on the Indian exchanges' clock (Asia/Kolkata), as YYYY-MM-DD; `back` days earlier when given. */
+export function istDate(back = 0): string {
+  const today = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return new Date(Date.parse(`${today}T00:00:00Z`) - back * 86_400_000).toISOString().slice(0, 10);
 }
 
 export const DEFAULT_SIDEREAL: CalcSettingsValue = { zodiac: { kind: 'sidereal', ayanamsha: 'lahiri' }, nodeType: 'mean', houseSystem: 'wholeSign' };
@@ -86,6 +92,15 @@ export function InstrumentSelect({ value, onChange, ids }: { value: string; onCh
   );
 }
 
+const CSV_CODES = new Set(['EMPTY_FILE', 'NO_HEADER', 'MISSING_DATE_COLUMN', 'MISSING_PRICE_COLUMN', 'NO_VALID_ROWS']);
+/** The catalogue's sentence for a load failure; the bare code only when no sentence exists. */
+function loadErrorKey(code: string): MessageKey | null {
+  if (isProviderErrorCode(code)) return `provider.error.${code}` as MessageKey;
+  if (code === 'NO_ROWS') return 'csvError.NO_VALID_ROWS';
+  if (CSV_CODES.has(code)) return `csvError.${code}` as MessageKey;
+  return null;
+}
+
 /** Provenance, coverage and the import controls for one instrument's series. */
 export function DatasetCard({ instrumentId, compact = false }: { instrumentId: string; compact?: boolean }): JSX.Element {
   const { t, n } = useTranslator();
@@ -113,7 +128,11 @@ export function DatasetCard({ instrumentId, compact = false }: { instrumentId: s
           {d ? <button type="button" className={BUTTON} onClick={() => clear(instrumentId)}>{t('fa.data.clear')}</button> : null}
         </span>
       </div>
-      {errors[instrumentId] ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{t('fa.data.error', { code: errors[instrumentId]! })}</p> : null}
+      {errors[instrumentId] ? (() => {
+        const code = errors[instrumentId]!;
+        const key = loadErrorKey(code);
+        return <p role="alert" className="text-xs text-red-700 dark:text-red-400">{key ? t(key) : t('fa.data.error', { code })}</p>;
+      })() : null}
       {d ? (
         <dl className={`grid gap-x-3 gap-y-0.5 text-xs ${compact ? 'grid-cols-2' : 'grid-cols-2 md:grid-cols-4'}`}>
           <dt className="as-text-muted">{t('fa.data.source')}</dt><dd>{d.sourceLabel} ({t(`fa.data.origin.${d.origin}` as MessageKey)})</dd>
@@ -122,6 +141,13 @@ export function DatasetCard({ instrumentId, compact = false }: { instrumentId: s
           <dt className="as-text-muted">{t('fa.data.fingerprint')}</dt><dd className="font-mono">{d.fingerprint}</dd>
           <dt className="as-text-muted">{t('fa.data.closeColumn')}</dt><dd>{d.closeColumn ?? '—'}</dd>
           <dt className="as-text-muted">{t('fa.data.volume')}</dt><dd>{inst.hasVolume ? (d.hasVolume ? t('fa.yes') : t('fa.data.volumeAbsent')) : t('fa.data.volumeNone')}</dd>
+          {d.suspect && d.suspect.length > 0 ? (
+            <><dt className="as-text-muted">{t('fa.data.suspectLabel')}</dt>
+              <dd className="col-span-1 md:col-span-3 whitespace-normal text-amber-700 dark:text-amber-400">
+                {t('fa.data.suspectCount', { count: d.suspect.length })} {t('fa.data.suspect')}{' '}
+                <span className="tabular-nums">{d.suspect.slice(0, 6).map((x) => `${x.date} (${n(x.close)} ← ${n(x.previousClose)} → ${n(x.backTo)})`).join('; ')}{d.suspect.length > 6 ? '; …' : ''}</span>
+              </dd></>
+          ) : null}
           {compact ? null : <><dt className="as-text-muted">{t('fa.data.basis')}</dt><dd className="col-span-1 md:col-span-3 whitespace-normal">{inst.adjustment}{inst.contract ? ` ${inst.contract}` : ''}</dd></>}
         </dl>
       ) : (

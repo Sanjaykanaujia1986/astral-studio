@@ -94,7 +94,7 @@ export function ResearchPanel(): JSX.Element {
    * disagree about the data they are both describing.
    */
   const {
-    series, rejected, choices, errorCode: importErrorCode, source, providerName,
+    series, rejected, suspect, choices, errorCode: importErrorCode, source, providerName,
     busy: fetching, setChoices, importCsv: ingest, fetchSymbol,
     descriptor, remember, setRemember, tooLargeToRemember,
   } = useSeriesStore();
@@ -303,7 +303,7 @@ export function ResearchPanel(): JSX.Element {
               type="text"
               value={symbol}
               onChange={(event) => setSymbol(event.target.value)}
-              placeholder="aapl.us"
+              placeholder="^NSEI"
               className={FIELD}
             />
           </label>
@@ -343,6 +343,12 @@ export function ResearchPanel(): JSX.Element {
             {rejected > 0 ? (
               <span className="ml-2 as-text-warning">
                 {t('research.rejected', { count: n(rejected) })}
+              </span>
+            ) : null}
+            {suspect.length > 0 ? (
+              <span className="ml-2 as-text-warning">
+                {t('fa.data.suspectCount', { count: suspect.length })} {t('fa.data.suspect')}{' '}
+                <span className="tabular-nums">{suspect.slice(0, 6).map((x) => x.date).join(', ')}{suspect.length > 6 ? ', …' : ''}</span>
               </span>
             ) : null}
           </p>

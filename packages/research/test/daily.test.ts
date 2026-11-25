@@ -33,6 +33,13 @@ describe('dailyRows', () => {
     const r = dailyRows(special, NSE_CALENDAR, '2026-11-08', '2026-11-08')[0]!;
     expect([r.status, r.irregular, r.holiday]).toEqual(['session', true, 'Diwali Laxmi Pujan']);
   });
+  it('says a weekday beyond the last bar or before the first is outside the data, not missing', () => {
+    const after = dailyRows(series, NSE_CALENDAR, '2026-10-26', '2026-10-27');
+    expect(after.map((r) => r.status)).toEqual(['outside', 'outside']);
+    expect(dailyRows(series, NSE_CALENDAR, '2026-10-15', '2026-10-15')[0]!.status).toBe('outside');
+    // A gap inside the series is still missing.
+    expect(dailyRows(series, NSE_CALENDAR, '2026-10-22', '2026-10-22')[0]!.status).toBe('missing');
+  });
   it('calls weekdays unknown when there is no series or no holiday list', () => {
     expect(dailyRows(null, NSE_CALENDAR, '2026-10-22', '2026-10-22')[0]!.status).toBe('unknown');
     expect(dailyRows(null, COMEX_CALENDAR, '2010-11-24', '2010-11-24')[0]!.status).toBe('unknown');

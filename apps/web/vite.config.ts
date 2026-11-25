@@ -48,12 +48,14 @@ function dropUnusedWasmDuplicate() {
  * plain http. `apply: 'serve'` keeps all of this out of the build.
  */
 function devApi(): Plugin {
-  const ROUTES = new Set(['auth', 'admin', 'charts']);
+  const ROUTES = new Set(['auth', 'admin', 'charts', 'prices']);
   const api = (name: string): string => fileURLToPath(new URL(`../../api/${name}.ts`, import.meta.url));
   let ready: Promise<void> | null = null;
 
   const prepare = (server: ViteDevServer): Promise<void> => (ready ??= (async () => {
     process.env.ADMIN_EMAILS ??= 'admin@localhost.test';
+    // The production deployment sets this itself; locally, Fetch uses the keyless Yahoo adapter.
+    process.env.MARKET_DATA_PROVIDER ??= 'yahoo';
     const { PGlite } = await import('@electric-sql/pglite');
     const pg = new PGlite();
     const schema = readFileSync(new URL('../../db/schema.sql', import.meta.url), 'utf8')

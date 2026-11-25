@@ -12,7 +12,7 @@
  * choice, not a side effect.
  */
 import { create } from 'zustand';
-import { makeSeries, parseMarketCsv, ProviderError, type Bar, type Series } from '@astro/research';
+import { makeSeries, parseMarketCsv, ProviderError, screenBars, type Bar, type Series, type SuspectBar } from '@astro/research';
 import { apiProvider } from '../lib/prices.js';
 
 const KEY = 'astro.fa.datasets';
@@ -32,8 +32,10 @@ export interface DatasetDescriptor {
   readonly firstDate: string;
   readonly lastDate: string;
   readonly hasVolume: boolean;
-  /** First 16 hex digits of SHA-256 over "date,close" lines. */
+  /** First 16 hex digits of SHA-256 over "date,close" lines, of the data as loaded (before the bad-bar screen). */
   readonly fingerprint: string;
+  /** Bars the bad-bar screen set aside (a vendor fault such as a split applied to two days). Absent on older descriptors. */
+  readonly suspect?: readonly SuspectBar[];
   readonly importedAt: string;
 }
 
@@ -67,9 +69,11 @@ function writeDescriptors(d: Record<string, DatasetDescriptor>): void {
 }
 
 async function build(instrumentId: string, origin: DatasetOrigin, sourceLabel: string, bars: readonly Bar[], columns: readonly string[], rejected: number): Promise<Dataset> {
-  const series = makeSeries(instrumentId, bars);
+  // Studies read the screened bars; the fingerprint stays on the data as loaded, so the same file gives the same value.
+  const screened = screenBars(bars);
+  const series = makeSeries(instrumentId, screened.bars);
   return {
-    instrumentId, origin, sourceLabel, columns, closeColumn: closeColumnOf(columns), rows: bars.length, rejected,
+    instrumentId, origin, sourceLabel, columns, closeColumn: closeColumnOf(columns), rows: bars.length, rejected, suspect: screened.suspect,
     firstDate: series.firstDate, lastDate: series.lastDate, hasVolume: bars.some((b) => b.volume !== undefined && b.volume > 0),
     fingerprint: await fingerprintBars(bars), importedAt: new Date().toISOString(), series,
   };

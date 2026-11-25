@@ -299,6 +299,17 @@ Astronomy in the tests is real (Swiss Ephemeris, checked against native SE).
 | Futures roll | Not reconstructible: Yahoo serves no expired contracts (GCZ24.CMX and others return "not found"). Roll-free series were added instead: GOLDBEES.NS (2009–) and SILVERBEES.NS (2022–), on the NSE calendar | Yahoo chart API, checked 2026-11-24 | combustion "offers roll-free ETF series…" |
 | Swiss Ephemeris return flag | Read from `swe_calc_ut` directly. It showed that the bundled files start on 1800-01-02, so midnight on 1 January 1800 is Moshier, which the range check had called Swiss | swisseph-wasm 0.1.0 exposes the Emscripten module | version.test "reads the ephemeris used…" |
 
+## 0.44.0: the Indian-market pass
+
+| Item | Change | Evidence |
+|---|---|---|
+| Fetch from provider on the live site | Answered `PROVIDER_NOT_CONFIGURED` for every instrument. Now `MARKET_DATA_PROVIDER=yahoo`: daily bars from Yahoo's chart endpoint (`period1=0`, `interval=1d`; `range=max` silently returns monthly bars), dated in the exchange's IANA zone, with an unfinished session dropped | All seven instruments fetched with 0 rows rejected; the api-tests `prices` suite (synthetic JSON) |
+| Vendor faults in free series | `screenBars`: a bar more than 40 % from the previous close that is back within 10 % of it inside 10 bars is set aside and listed, never filled | GOLDBEES 2019-12-19/20 at 1/100; RELIANCE.NS 1997-10-27 to 11-04 and 2005-07-28; 0 set aside in NIFTY, SENSEX, GC=F, SI=F, SILVERBEES |
+| Disputed NSE dates | 2013-11-14 session, 2013-11-15 holiday (Muharram moved by exchange notice); 2019-02-13 and 2019-03-29 sessions. 2011-10-26, 2012-10-26 and 2012-11-13 remain disputed | Business Standard, 13 Nov 2013; INDstocks daily bars (exchange-sourced, from 2013-03-28) for NIFTY, SENSEX and five stocks |
+| Budget weekend sessions | 2015-02-28, 2020-02-01 and 2026-02-01 count as sessions | INDstocks NIFTY volume 0.9–2.1 × median; 376 one-minute bars 09:15–15:30 on 2026-02-01 |
+| Days past the data | New day status `outside`, not `missing` | daily.test |
+| NSE 2027 holidays | Not yet published by NSE (it usually publishes in December); 2027 weekdays read as unknown and the Vedha tab says why | NSE circular archive, searched 2026-11-25 |
+
 ## Blocked items still open, their effect, and the evidence needed
 
 | Item | Effect now | Evidence needed |
@@ -306,7 +317,8 @@ Astronomy in the tests is real (Swiss Ephemeris, checked against native SE).
 | Which diagonal is vāma (left) | Settled by a stated convention, shown on screen and in exports. A graha stands on the edge facing into the cakra with East at the top, so from Kṛttikā "left" is Viśākhā (towards later nakṣatras); swift motion, which moves a graha forward, gives the left vedha | A text or commentary that names the left and right vedha of one nakṣatra (Narapati-jaya-caryā, Mānasāgarī, or a commentary on Horaratna) |
 | Numerical speed for "swift" vs "mean", and stations | Swift means faster than the mean daily motion (convention); a station (below 10 % of the mean) is "not evaluated" | The speed table in Venkatachalaiah & Sai Shankar, which is illegible in the scan, or another source with numbers |
 | NIFTY launch time | 10:00 is a research convention, labelled provisional. NSE Indices, Wikipedia and the press were searched; the only 1996 trading-hours table found was a forum post its author says ChatGPT wrote | An NSE or IISL circular or press release from April 1996 |
-| Disputed NSE dates (7) and COMEX dates (3) | Read as *unknown*, with the disagreement stated | The NSE circular for that year; CME's notice for 29–30 Oct 2012 and 5 Dec 2018 |
+| Disputed NSE dates (3, before 2013) and COMEX dates (3) | Read as *unknown*, with the disagreement stated. 0.44 settled four NSE dates | The NSE circular for 2011 and 2012 (Diwali Lakshmi Pujan sessions, 26 Oct 2012); CME's notice for 29–30 Oct 2012 and 5 Dec 2018 |
+| NSE 2027 holiday list | 2027 weekdays read as unknown | NSE's 2027 circular, expected in December 2026 |
 | COMEX roll dates | GC=F/SI=F roll jumps remain in those series; GOLDBEES/SILVERBEES avoid them | A vendor's back-adjusted continuous series with its documented rule, or individual contract histories |
 | Android device check | Layout verified at 375×812 in the browser. No device is connected and no emulator image is installed on this machine | A phone with USB debugging, or permission to download an emulator system image (about 1 GB) |
 
@@ -330,7 +342,7 @@ Astronomy in the tests is real (Swiss Ephemeris, checked against native SE).
   - [exchange_calendars XBOM](https://github.com/gerrymanoim/exchange_calendars/blob/master/exchange_calendars/exchange_calendar_xbom.py);
   - [pandas_market_calendars CME energy and metals](https://github.com/rsheftel/pandas_market_calendars/blob/master/pandas_market_calendars/calendars/cme_globex_energy_and_metals.py).
 
-## Roadmap (not in 0.43)
+## Roadmap (not in 0.44)
 
 - **Cycles:**
   - planetary synodic-cycle studies on the same event engine;
@@ -345,9 +357,11 @@ Astronomy in the tests is real (Swiss Ephemeris, checked against native SE).
 - **Cloud sync of saved studies** to the Neon account, with the configuration
   and fingerprints only (never prices).
 - **Data:**
-  - NSE/BSE holiday lists for 2011–2025;
-  - a CME holiday calendar;
-  - a back-adjusted futures option.
+  - the NSE/BSE 2027 holiday list, once NSE publishes it;
+  - a back-adjusted futures option;
+  - a licensed or exchange-sourced feed in place of Yahoo, if a study needs
+    one (INDstocks matches Yahoo's index closes exactly but adjusts single
+    stocks differently).
 - **Statistics:**
   - a block bootstrap and multiple-testing correction across the orb sweep;
   - the same rotation test the signal study uses, for episode studies.

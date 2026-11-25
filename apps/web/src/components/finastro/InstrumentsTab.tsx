@@ -168,7 +168,8 @@ function AddRecord({ onAdd }: { onAdd: (r: ChartRecord) => void }): JSX.Element 
   const submit = (): void => {
     const r: ChartRecord = {
       id: `own-${instrumentId}-${kind}-${date}`, instrumentId, kind, date, ...(time ? { time } : {}), timeCertainty: certainty,
-      place: { label: place, latitude: Number(lat), longitude: Number(lon) }, timeZone: zone, source,
+      // An empty box is no coordinate, not 0° (which would put the chart in the Gulf of Guinea).
+      place: { label: place, latitude: lat.trim() === '' ? Number.NaN : Number(lat), longitude: lon.trim() === '' ? Number.NaN : Number(lon) }, timeZone: zone, source,
     };
     const p = validateRecord(r);
     let zoneOk = true;

@@ -39,7 +39,12 @@ export interface ExchangeCalendar {
   readonly specialSessions?: Readonly<Record<string, string>>;
 }
 
-export type DayStatus = 'session' | 'weekend' | 'holiday' | 'missing' | 'unknown';
+/**
+ * `outside` is set by the day table only: an expected session before the
+ * loaded series begins or after its last bar (a day not yet traded, or one
+ * the file does not reach). It is not a gap in the data.
+ */
+export type DayStatus = 'session' | 'weekend' | 'holiday' | 'missing' | 'unknown' | 'outside';
 
 /**
  * NSE capital-market trading holidays for 2026, as published on nseindia.com
@@ -116,30 +121,55 @@ const XBOM_2011_2025: readonly string[] = [
   '2025-02-26', '2025-03-14', '2025-03-31', '2025-04-10', '2025-04-14', '2025-04-18', '2025-05-01', '2025-08-15', '2025-08-27', '2025-10-02', '2025-10-21', '2025-10-22', '2025-11-05', '2025-12-25',
 ];
 
+/**
+ * Corrections to the XBOM list, each from an exchange notice reported at the
+ * time and matched by a second, exchange-sourced price feed (INDstocks daily
+ * bars, read 2026-11-24).
+ * - 2013-11-14 is left out of the list above: the exchanges revoked that
+ *   holiday on 13 Nov 2013 and traded normally (full bars everywhere).
+ * - 2013-11-15 replaces it: "Market alert: trading holiday now on Friday for
+ *   Moharram", Business Standard, 13 Nov 2013. No bar in Yahoo or INDstocks.
+ */
+const INDIA_CORRECTIONS: Readonly<Record<string, string>> = {
+  '2013-11-15': 'Muharram (moved from 14 Nov by exchange notice)',
+};
+
 const INDIA_HOLIDAYS: Readonly<Record<string, string>> = {
   ...Object.fromEntries(XBOM_2011_2025.map((d) => [d, 'Trading holiday'])),
+  ...INDIA_CORRECTIONS,
   ...NSE_2026,
 };
 
 /**
- * Dates where the holiday list and the three Yahoo series (NIFTY 50, SENSEX,
- * RELIANCE.NS) disagree. None is a gap in one series only: each is the same
- * in all three.
+ * Dates where the holiday list and the Yahoo series (NIFTY 50, SENSEX,
+ * RELIANCE.NS) disagree and no second source settles it. INDstocks' history
+ * begins 2013-03-28, so it cannot speak for these.
+ *
+ * Settled in 0.44 and removed from here: 2013-11-14 (session), 2013-11-15
+ * (holiday, above), and 2019-02-13 and 2019-03-29. Those two were normal
+ * sessions: INDstocks has full-volume bars for NIFTY, SENSEX and five stocks,
+ * so the Yahoo series simply lack them (a "missing session", not a holiday).
  */
 const INDIA_DISPUTED: Readonly<Record<string, string>> = {
-  '2011-10-26': 'Diwali Lakshmi Pujan (Muhurat session day); not in the holiday list, no bar in any series',
-  '2012-10-26': 'not in the holiday list; no bar in any series',
-  '2012-11-13': 'Diwali Lakshmi Pujan (Muhurat session day); not in the holiday list, no bar in any series',
-  '2013-11-14': 'in the holiday list, but every series has a full bar',
-  '2013-11-15': 'not in the holiday list; no bar in any series (the holiday may be this day, not the 14th)',
-  '2019-02-13': 'not in the holiday list; no bar in any series',
-  '2019-03-29': 'not in the holiday list; no bar in any series',
+  '2011-10-26': 'Diwali Lakshmi Pujan: a Muhurat session was held (press reports); no exchange notice found on whether the regular session also ran, and no bar in any series',
+  '2012-10-26': 'not in the holiday list; no bar in any series; no closure notice found',
+  '2012-11-13': 'Diwali Lakshmi Pujan: a Muhurat session was held (press reports); no exchange notice found on whether the regular session also ran, and no bar in any series',
 };
 
-/** Saturday sessions in the same library's special weekmasks: full trading days. */
+/**
+ * Weekend days traded as full sessions. 2024-01-20 and 2025-02-01 are in the
+ * XBOM special weekmasks. The Budget days 2015-02-28, 2020-02-01 and
+ * 2026-02-01 come from INDstocks: NIFTY bars at 0.9-2.1 times median volume,
+ * and for 2026-02-01, 376 one-minute bars from 09:15 to 15:30. Short weekend
+ * sessions (Muhurat, the exchanges' disaster-recovery drills) are not listed:
+ * their bars stay irregular.
+ */
 const INDIA_SPECIAL: Readonly<Record<string, string>> = {
+  '2015-02-28': 'Union Budget, Saturday session',
+  '2020-02-01': 'Union Budget, Saturday session',
   '2024-01-20': 'Special Saturday session',
   '2025-02-01': 'Union Budget, Saturday session',
+  '2026-02-01': 'Union Budget, Sunday session',
 };
 
 const INDIA_YEARS: readonly number[] = [2011, 2012, 2013, 2014, 2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
@@ -154,7 +184,8 @@ export const NSE_CALENDAR: ExchangeCalendar = {
   holidayYears: INDIA_YEARS,
   source:
     '2026: NSE trading holidays, nseindia.com (read 2026-11-13). 2011-2025: exchange_calendars XBOM list (read 2026-11-24), ' +
-    'cross-checked with Yahoo NIFTY 50, SENSEX and RELIANCE.NS bars; disagreements kept as disputed.',
+    'cross-checked with Yahoo NIFTY 50, SENSEX and RELIANCE.NS bars and, from 2013-03-28, INDstocks daily bars; ' +
+    'Muharram 2013 moved to 15 Nov (exchange notice, 13 Nov 2013); unsettled disagreements kept as disputed.',
   disputed: INDIA_DISPUTED,
   specialSessions: INDIA_SPECIAL,
 };

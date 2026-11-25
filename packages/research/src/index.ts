@@ -36,6 +36,7 @@ export {
   CsvImportError,
   type Bar, type CsvErrorCode, type ParsedCsv, type ParseOptions, type RejectedRow,
 } from './market/csv.js';
+export { screenBars, type SuspectBar, type ScreenOptions, type ScreenedBars } from './market/quality.js';
 export {
   ProviderError, PROVIDER_ERROR_CODES, isProviderErrorCode,
   type FetchedBars, type FetchedSeries, type MarketDataProvider,

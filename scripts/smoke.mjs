@@ -177,6 +177,7 @@ if (bundle) {
     ['Financial astrology: daily vedha (0.42)', 'fa.vedha.compareTarget'],
     ['Aspect windows on the Calendar (0.42)', 'aw.lede'],
     ['Sarvatobhadra Horaratna tradition (0.43)', 'fa.vedha.sourced'],
+    ['Bad-bar screen on price series (0.44)', 'fa.data.suspectCount'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {
@@ -254,6 +255,20 @@ check('Sun near 0° Aries at the equinox',
 check('Swiss ephemeris, not Moshier', equinox.body?.days?.[0]?.source === 'swiss');
 check('range cap enforced',
   (await json('/api/ephemeris?from=2020-01-01&to=2024-01-01')).status === 400);
+
+// ------------------------------------------------------------- market data
+section('Market data API');
+/*
+ * Since 0.44 the deployment fetches daily prices from Yahoo (MARKET_DATA_PROVIDER
+ * = yahoo). NIFTY must come back dated in IST, with no unfinished session.
+ */
+const nifty = await json('/api/prices?symbol=%5ENSEI');
+const niftyRows = typeof nifty.body?.csv === 'string' ? nifty.body.csv.split('\n') : [];
+check('NIFTY daily prices fetch', nifty.status === 200 && niftyRows.length > 4000, `${nifty.status} ${nifty.body?.error ?? ''} ${niftyRows.length} rows`);
+check('prices come from the configured provider', nifty.body?.provider === 'yahoo', String(nifty.body?.provider));
+check('header is date,open,high,low,close,volume', niftyRows[0] === 'date,open,high,low,close,volume', niftyRows[0]);
+check('an unknown NSE symbol is not found, not an outage',
+  (await json('/api/prices?symbol=NOSUCHSTOCK123.NS')).body?.error === 'SYMBOL_NOT_FOUND');
 
 // ------------------------------------------------------- accounts & access
 /*

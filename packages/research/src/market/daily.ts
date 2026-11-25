@@ -5,7 +5,10 @@
  *
  * A weekend, a holiday, a missing session (a weekday the calendar expects but
  * the data lacks) and an unknown day (no holiday list for that year) are
- * different things and are never given a price or a direction.
+ * different things and are never given a price or a direction. A weekday
+ * the calendar expects but that lies before the series' first bar or after
+ * its last is `outside`, not missing: the data simply does not reach it
+ * (today's session before the close, or any later day).
  */
 import type { Series } from './series.js';
 import { dayStatus, isShut, type DayStatus, type ExchangeCalendar } from './calendar.js';
@@ -43,6 +46,7 @@ export function dailyRows(series: Series | null, calendar: ExchangeCalendar, fro
     // With no series at all, a weekday can only be called a session or not by the calendar.
     let status = dayStatus(calendar, date, have);
     if (!series && status === 'missing') status = 'unknown';
+    if (series && status === 'missing' && (date < series.firstDate || date > series.lastDate)) status = 'outside';
     const holiday = calendar.holidays[date];
     const disputed = calendar.disputed?.[date];
     const special = calendar.specialSessions?.[date];

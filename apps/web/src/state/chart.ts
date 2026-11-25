@@ -67,6 +67,9 @@ function loadInput(): StoredInput | null {
     const numeric = (value: unknown): boolean => typeof value === 'number' && Number.isFinite(value);
     if (!date || !numeric(date.year) || !numeric(date.month) || !numeric(date.day)) return null;
     if (!zone || !place || !numeric(place.latitude) || !numeric(place.longitude)) return null;
+    // A stored time with a blank hour or minute cannot be cast; recasting it only logs an engine error.
+    const time = (birth as { time?: { hour?: unknown; minute?: unknown } }).time;
+    if (time !== undefined && (time === null || !numeric(time.hour) || !numeric(time.minute))) return null;
     if (orbProfile !== 'standard' && orbProfile !== 'tight' && orbProfile !== 'wide') return null;
     return { birth, settings: settings ?? {}, orbProfile };
   } catch {

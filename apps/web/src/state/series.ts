@@ -37,8 +37,8 @@
  */
 import { create } from 'zustand';
 import {
-  makeSeries, parseMarketCsv, CsvImportError, ProviderError,
-  type Bar, type MarketDataProvider, type Series,
+  makeSeries, parseMarketCsv, CsvImportError, ProviderError, screenBars,
+  type Bar, type MarketDataProvider, type Series, type SuspectBar,
 } from '@astro/research';
 
 const DESCRIPTOR_KEY = 'astro.series.descriptor';
@@ -92,6 +92,8 @@ interface SeriesState {
   restore: () => void;
   /** Rows the parser could not use. Shown, never swallowed. */
   readonly rejected: number;
+  /** Bars the bad-bar screen set aside as vendor faults. Shown, never filled. */
+  readonly suspect: readonly SuspectBar[];
   readonly fileName: string | null;
   /** Where the current series came from. */
   readonly source: 'file' | 'provider' | null;
@@ -221,6 +223,7 @@ function persist(descriptor: SeriesDescriptor, bars: readonly Bar[], remember: b
 export const useSeriesStore = create<SeriesState>((set, get) => ({
   series: null,
   rejected: 0,
+  suspect: [],
   fileName: null,
   source: null,
   providerName: null,
@@ -278,8 +281,10 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
       return;
     }
     try {
+      const screened = screenBars(bars);
       set({
-        series: makeSeries(descriptor.symbol, bars),
+        series: makeSeries(descriptor.symbol, screened.bars),
+        suspect: screened.suspect,
         rejected: 0,
         fileName: descriptor.fileName,
         source: descriptor.source,
@@ -299,11 +304,13 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
     try {
       const parsed = parseMarketCsv(text, choices);
       // The file name is the only symbol available; nothing is fetched.
-      const series = makeSeries(fileName.replace(/\.csv$/i, ''), parsed.bars);
+      const screened = screenBars(parsed.bars);
+      const series = makeSeries(fileName.replace(/\.csv$/i, ''), screened.bars);
       const descriptor = describe(series, 'file', fileName, null, choices);
-      const stored = persist(descriptor, series.bars, get().remember);
+      const stored = persist(descriptor, parsed.bars, get().remember);
       set({
         series,
+        suspect: screened.suspect,
         rejected: parsed.rejected.length,
         fileName,
         source: 'file',
@@ -315,6 +322,7 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
     } catch (cause) {
       set({
         series: null,
+        suspect: [],
         rejected: 0,
         fileName,
         errorCode: (cause as CsvImportError | null)?.code ?? 'unknown',
@@ -328,13 +336,15 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
     set({ busy: true, errorCode: null });
     try {
       const fetched = await provider.fetchDaily(trimmed);
-      const series = makeSeries(trimmed.toUpperCase(), fetched.bars);
+      const screened = screenBars(fetched.bars);
+      const series = makeSeries(trimmed.toUpperCase(), screened.bars);
       // The name the SERVER reported, falling back to the adapter's own.
       const name = fetched.providerName ?? provider.describe.name;
       const descriptor = describe(series, 'provider', null, name, get().choices);
-      const stored = persist(descriptor, series.bars, get().remember);
+      const stored = persist(descriptor, fetched.bars, get().remember);
       set({
         series,
+        suspect: screened.suspect,
         rejected: 0,
         fileName: null,
         source: 'provider',
@@ -346,6 +356,7 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
     } catch (cause) {
       set({
         series: null,
+        suspect: [],
         rejected: 0,
         source: null,
         providerName: provider.describe.name,
@@ -358,7 +369,7 @@ export const useSeriesStore = create<SeriesState>((set, get) => ({
 
   clear() {
     set({
-      series: null, rejected: 0, fileName: null,
+      series: null, rejected: 0, suspect: [], fileName: null,
       source: null, providerName: null, errorCode: null,
       descriptor: null, hydrating: false, tooLargeToRemember: false,
     });

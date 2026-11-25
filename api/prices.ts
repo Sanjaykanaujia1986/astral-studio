@@ -19,6 +19,14 @@
  * than quietly picking a provider: fetching sends the symbol to a third party,
  * and which third party is the deployment's decision, not this file's.
  *
+ * `yahoo` (keyless, since 0.44) reads Yahoo Finance's daily chart endpoint. It
+ * covers the NSE/BSE indices, stocks and ETFs and the COMEX futures the
+ * financial-astrology instruments name, with Yahoo's own symbols (^NSEI,
+ * RELIANCE.NS, GC=F). Bars are dated in the exchange's IANA time zone, a day
+ * still trading is dropped rather than read as a close, and a day with no
+ * close is skipped, never filled. The data is unofficial and has gaps; the
+ * calendar reports a gap as a missing session.
+ *
  * Stooq was the obvious keyless candidate and is **not** offered. As of
  * November 2026 it answers non-browser clients with a JavaScript
  * proof-of-work challenge instead of data; working around that is
@@ -33,7 +41,7 @@ import { fail, HttpError, json, preflight } from './_lib.js';
  * A whitelist, not escaping: this value becomes part of an outbound URL, and
  * a blacklist is the wrong shape of defence for that.
  */
-const SYMBOL = /^[A-Za-z0-9^._:-]{1,24}$/;
+const SYMBOL = /^[A-Za-z0-9^._:=&-]{1,24}$/;
 
 interface Upstream {
   /** Needs `MARKET_DATA_KEY`. */
@@ -41,9 +49,74 @@ interface Upstream {
   readonly url: (symbol: string, key: string) => string;
   /** True when the body is the CSV we expect rather than an error page. */
   readonly looksRight: (text: string) => boolean;
+  /** For a JSON upstream: the body as `date,open,high,low,close,volume` CSV, or null for no data. */
+  readonly toCsv?: (text: string, now: number) => string | null;
+  /** The upstream answers an unknown symbol with HTTP 404. */
+  readonly notFoundIs404?: boolean;
+  readonly accept?: string;
+}
+
+interface YahooChart {
+  chart?: {
+    result?: Array<{
+      meta?: {
+        exchangeTimezoneName?: string;
+        currentTradingPeriod?: { regular?: { start?: number; end?: number } };
+      };
+      timestamp?: number[];
+      indicators?: { quote?: Array<{ open?: (number | null)[]; high?: (number | null)[]; low?: (number | null)[]; close?: (number | null)[]; volume?: (number | null)[] }> };
+    }> | null;
+  };
+}
+
+/**
+ * Yahoo chart JSON to CSV. Exported for the tests.
+ *
+ * - A bar's date is its timestamp's calendar day in the exchange's own IANA
+ *   zone, never a fixed offset: a fixed offset moves daylight-saving bars to
+ *   the previous day (the 0.42 "Sunday bars").
+ * - The current session's bar is dropped while that session is still open:
+ *   its "close" is the last trade so far.
+ * - A row with no close is skipped. Nothing is interpolated.
+ */
+export function yahooToCsv(text: string, now: number): string | null {
+  let doc: YahooChart;
+  try { doc = JSON.parse(text) as YahooChart; } catch { return null; }
+  const r = doc.chart?.result?.[0];
+  const ts = r?.timestamp;
+  const q = r?.indicators?.quote?.[0];
+  if (!r || !ts || ts.length === 0 || !q?.close) return null;
+  const zone = r.meta?.exchangeTimezoneName ?? 'UTC';
+  let day: Intl.DateTimeFormat;
+  try { day = new Intl.DateTimeFormat('en-CA', { timeZone: zone, year: 'numeric', month: '2-digit', day: '2-digit' }); } catch { return null; }
+  const regular = r.meta?.currentTradingPeriod?.regular;
+  const openUntil = regular?.start !== undefined && regular.end !== undefined && now / 1000 < regular.end ? regular.start : null;
+  const num = (v: number | null | undefined): string => (v === null || v === undefined || !Number.isFinite(v) ? '' : String(v));
+  const rows = new Map<string, string>();
+  for (let i = 0; i < ts.length; i++) {
+    const close = q.close[i];
+    if (close === null || close === undefined || !Number.isFinite(close) || close <= 0) continue;
+    if (openUntil !== null && ts[i]! >= openUntil) continue;
+    const date = day.format(new Date(ts[i]! * 1000));
+    // A repeated date keeps the later row: Yahoo sometimes appends a second stamp for the last session.
+    rows.set(date, [date, num(q.open?.[i]), num(q.high?.[i]), num(q.low?.[i]), String(close), num(q.volume?.[i])].join(','));
+  }
+  if (rows.size === 0) return null;
+  return ['date,open,high,low,close,volume', ...[...rows.keys()].sort().map((k) => rows.get(k)!)].join('\n');
 }
 
 const UPSTREAMS: Readonly<Record<string, Upstream>> = {
+  yahoo: {
+    keyed: false,
+    url: (symbol) =>
+      `https://query1.finance.yahoo.com/v8/finance/chart/${encodeURIComponent(symbol)}`
+      // period1=0 with interval=1d: `range=max` silently returns monthly bars.
+      + `?period1=0&period2=${Math.floor(Date.now() / 1000)}&interval=1d`,
+    looksRight: (text) => text.trimStart().startsWith('{'),
+    toCsv: yahooToCsv,
+    notFoundIs404: true,
+    accept: 'application/json',
+  },
   alphavantage: {
     keyed: true,
     url: (symbol, key) =>
@@ -95,12 +168,15 @@ export async function GET(request: Request): Promise<Response> {
     const response = await fetch(upstream.url(symbol, key), {
       // A hung upstream must not hold this function open to its own timeout.
       signal: AbortSignal.timeout(10_000),
-      headers: { accept: 'text/csv,text/plain' },
+      headers: { accept: upstream.accept ?? 'text/csv,text/plain', 'user-agent': 'astral-studio (+https://astro-beta-khaki.vercel.app)' },
     });
+    if (response.status === 404 && upstream.notFoundIs404) throw new HttpError(404, 'SYMBOL_NOT_FOUND');
     if (!response.ok) throw new HttpError(502, 'PROVIDER_UNAVAILABLE');
 
-    const text = await response.text();
-    if (!upstream.looksRight(text)) throw new HttpError(404, 'SYMBOL_NOT_FOUND');
+    const raw = await response.text();
+    if (!upstream.looksRight(raw)) throw new HttpError(404, 'SYMBOL_NOT_FOUND');
+    const text = upstream.toCsv ? upstream.toCsv(raw, Date.now()) : raw;
+    if (text === null) throw new HttpError(404, 'SYMBOL_NOT_FOUND');
 
     return json(request, {
       symbol,

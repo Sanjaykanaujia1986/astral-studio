@@ -22,7 +22,7 @@ import { saveStudy, listStudies, removeStudy, datasetMismatches, RunCache, type 
 import type { Sheet } from '../../lib/exporter.js';
 import {
   CalcSettingsFields, DatasetCard, InstrumentSelect, StatsTable, ExportBar, LayerBadge, statsSheet, useInstant, msOfJd, fmtDeg,
-  DEFAULT_SIDEREAL, FIELD, BUTTON, PRIMARY, TH, TD, CARD, type CalcSettingsValue,
+  DEFAULT_SIDEREAL, istDate, FIELD, BUTTON, PRIMARY, TH, TD, CARD, type CalcSettingsValue,
 } from './shared.js';
 
 type Mode = 'episode' | 'daily';
@@ -42,7 +42,7 @@ interface Config {
 }
 
 const DEFAULT_CONFIG: Config = {
-  instrumentId: 'nifty50', from: '2011-01-01', to: '2026-11-20', settings: DEFAULT_SIDEREAL, preset: VENUS_COMBUSTION_V1,
+  instrumentId: 'nifty50', from: '2011-01-01', to: istDate(), settings: DEFAULT_SIDEREAL, preset: VENUS_COMBUSTION_V1,
   mode: 'episode', choice: 'exact', splitDate: '2021-01-01', sweepHorizon: 5, objective: 'highest-bearish-hit-rate', minTrain: 10,
 };
 
@@ -153,7 +153,7 @@ export function VenusCombustionTab(): JSX.Element {
         columns: [
           { key: 'id', label: 'Episode id', layer: 'measurement' }, { key: 'conjunction', label: 'Conjunction', layer: 'measurement' },
           { key: 'entry', label: 'Entry (UTC)', layer: 'measurement' }, { key: 'exact', label: 'Exact (UTC, refined)', layer: 'measurement' },
-          { key: 'exit', label: 'Exit (UTC)', layer: 'measurement' }, { key: 'closest', label: 'Closest separation (°)', layer: 'measurement' },
+          { key: 'exit', label: 'Exit (UTC)', layer: 'measurement' }, { key: 'closest', label: 'Closest separation in longitude (°)', layer: 'measurement' },
         ],
         rows: episodes.map((e) => ({ id: e.id, conjunction: e.conjunction ?? '', entry: e.entryJd === null ? 'before range' : iso(e.entryJd), exact: e.exactJds.map(iso).join(' | '), exit: e.exitJd === null ? 'after range' : iso(e.exitJd), closest: e.closestSeparation })),
       },
