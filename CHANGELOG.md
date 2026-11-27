@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.48.0 — 2026-11-27
+The smaller issues left from the 0.47 defect scan.
+- FIX: **Daily vedha no longer reads a missing series as a market verdict.** With an instrument's prices not loaded, its column in the day table and the Days sheet now says "No data loaded" instead of being blank, and the Method A/B comparison says which prices to load instead of showing a table of zeros that read as "no hits".
+- FIX: **The Signal study holdout box keeps what you type.** Clearing it to type a new number snapped it to 0 at once. It now keeps the text while you type, uses the last valid number (0 to 50) and shows the number in use when you leave the box.
+- FIX: **Gann Lab says when the equinox and solstice dates could not be worked out.** If the ephemeris failed to load, the list just vanished; the console was the only place that said why. The page now says so and that the counts above it are unaffected.
+- NEW: **Undo a removal.** Removing a Gann note or template, or one of your own chart records in Instruments and charts, shows "Removed … Undo"; Undo puts it back where it was. A template saved since under the same name is newer work and is not overwritten.
+- DOCS: Gann Lab's header comment no longer says the fan has no default scale; the price-per-bar box starts at 1 and the fan's caption states the scale.
+
 ## 0.47.0 — 2026-11-27
 A defect scan of Gann Lab and Financial astrology, with usability fixes.
 - FIX: **Gann Lab no longer crashes on an impossible value.** A step of 0 in the Square of Nine, or a centre below 0, replaced the whole page with "Something in this workspace failed". Each now shows a sentence beside the figure saying what is wrong and what to enter; the parts that can still be drawn stay on screen.

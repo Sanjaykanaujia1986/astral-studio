@@ -35,6 +35,8 @@ export function InstrumentsTab(): JSX.Element {
   const own = useStocks((s) => s.own);
   const addOwn = useStocks((s) => s.addOwn);
   const removeOwn = useStocks((s) => s.removeOwn);
+  // The last own record removed, so the removal can be undone (0.48).
+  const [removedRecord, setRemovedRecord] = useState<ChartRecord | null>(null);
   // The added stocks are registered with the research package; reading them here re-renders on a change.
   const added = useStocks((s) => s.added);
   const instruments = useMemo(() => listInstruments(), [added]);
@@ -68,7 +70,13 @@ export function InstrumentsTab(): JSX.Element {
         <h3 id="inst-charts" className="font-semibold">{t('fa.charts')}</h3>
         <CalcSettingsFields value={settings} onChange={setSettings} />
         <p className="text-xs as-text-muted">{t('fa.charts.note')}</p>
-        <RecordsTable records={records} facts={facts} own={own} onRemove={removeOwn} />
+        <RecordsTable records={records} facts={facts} own={own} onRemove={(id) => { setRemovedRecord(own.find((r) => r.id === id) ?? null); removeOwn(id); }} />
+        {removedRecord ? (
+          <p role="status" className="flex flex-wrap items-center gap-x-2 text-sm">
+            <span>{t('fa.removedRecord', { instrument: instrumentById(removedRecord.instrumentId)?.name ?? removedRecord.instrumentId, date: removedRecord.date })}</span>
+            <button type="button" className={BUTTON} onClick={() => { addOwn(removedRecord); setRemovedRecord(null); }}>{t('fa.undo')}</button>
+          </p>
+        ) : null}
         <ul className="text-sm space-y-1">
           {MISSING_RECORDS.filter((m) => !own.some((r) => r.instrumentId === m.instrumentId && (r.kind === m.kind || r.kind === 'first-trade'))).map((m) => (
             <li key={`${m.instrumentId}-${m.kind}`} className="text-amber-700 dark:text-amber-400">

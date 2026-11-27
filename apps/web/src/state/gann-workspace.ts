@@ -132,6 +132,9 @@ interface WorkspaceState {
   deleteTemplate: (id: string) => void;
   addAnnotation: (annotation: NewAnnotation) => void;
   deleteAnnotation: (id: string) => void;
+  /** Undo a removal: back at its old place, unless it is already there (0.48). */
+  restoreTemplate: (template: GannTemplate, index: number) => void;
+  restoreAnnotation: (annotation: GannAnnotation, index: number) => void;
 }
 
 export const useGannWorkspace = create<WorkspaceState>((set, get) => ({
@@ -170,6 +173,25 @@ export const useGannWorkspace = create<WorkspaceState>((set, get) => ({
 
   deleteAnnotation(id) {
     const next = get().annotations.filter((a) => a.id !== id);
+    set({ annotations: next });
+    write(ANNOTATION_KEY, next);
+  },
+
+  restoreTemplate(template, index) {
+    const current = get().templates;
+    // A template saved since under the same name is newer work; undo does not overwrite it.
+    if (current.some((t) => t.id === template.id || t.name === template.name)) return;
+    const next = [...current];
+    next.splice(Math.min(index, next.length), 0, template);
+    set({ templates: next });
+    write(TEMPLATE_KEY, next);
+  },
+
+  restoreAnnotation(annotation, index) {
+    const current = get().annotations;
+    if (current.some((a) => a.id === annotation.id)) return;
+    const next = [...current];
+    next.splice(Math.min(index, next.length), 0, annotation);
     set({ annotations: next });
     write(ANNOTATION_KEY, next);
   },

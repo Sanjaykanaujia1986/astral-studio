@@ -128,6 +128,8 @@ export function ResearchPanel(): JSX.Element {
   const { dayFirst, decimalComma } = choices;
   const [selected, setSelected] = useState<readonly string[]>(['mercury-rx', 'full-moon']);
   const [holdoutPercent, setHoldoutPercent] = useState(30);
+  // The box keeps what is typed, so clearing it to type a new number does not snap to 0; the value in use is shown again on leaving (0.48).
+  const [holdoutText, setHoldoutText] = useState('30');
   const [alpha, setAlpha] = useState(0.05);
   const [result, setResult] = useState<StudyResult | null>(null);
   const [backtest, setBacktest] = useState<{ id: string; result: BacktestResult } | null>(null);
@@ -423,10 +425,14 @@ export function ResearchPanel(): JSX.Element {
               type="number"
               min={0}
               max={50}
-              value={holdoutPercent}
-              onChange={(e) =>
-                setHoldoutPercent(Math.max(0, Math.min(50, Number(e.target.value) || 0)))
-              }
+              inputMode="numeric"
+              value={holdoutText}
+              onChange={(e) => {
+                setHoldoutText(e.target.value);
+                const v = Number(e.target.value);
+                if (e.target.value.trim() !== '' && Number.isFinite(v)) setHoldoutPercent(Math.max(0, Math.min(50, Math.round(v))));
+              }}
+              onBlur={() => setHoldoutText(String(holdoutPercent))}
               className={`mt-1 w-24 ${FIELD}`}
             />
           </label>

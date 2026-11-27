@@ -7,8 +7,9 @@
  * chart reads as a forecasting tool unless it says otherwise where the reader
  * cannot miss it — the same reasoning as the Research disclosure.
  *
- * The scale has no default. "1×1" names no line until the reader says what one
- * bar is worth in price, so the fan does not draw until they have.
+ * The scale is never hidden. "1×1" names no line until the reader says what
+ * one bar is worth in price, so the price-per-bar box starts at 1 and sits
+ * beside the fan, and the fan's caption states the scale it was drawn at.
  */
 import { useEffect, useId, useMemo, useRef, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
@@ -25,7 +26,7 @@ import {
 } from '@astro/ui';
 import { useSeriesStore, extremeBars } from '../state/series.js';
 import {
-  useGannWorkspace, type GannTemplateSettings,
+  useGannWorkspace, type GannTemplateSettings, type GannTemplate, type GannAnnotation,
 } from '../state/gann-workspace.js';
 import { useChartStore } from '../state/chart.js';
 import { getProvider } from '../lib/engine.js';
@@ -143,11 +144,19 @@ export function GannPanel(): JSX.Element {
   const [gridSize, setGridSize] = useState(144);
 
   const {
-    templates, annotations, saveTemplate, deleteTemplate, addAnnotation, deleteAnnotation,
+    templates, annotations, saveTemplate, deleteTemplate, addAnnotation, deleteAnnotation, restoreTemplate, restoreAnnotation,
   } = useGannWorkspace();
   const [templateName, setTemplateName] = useState('');
   const [countUnit, setCountUnit] = useState<'bars' | 'calendarDays'>('calendarDays');
   const [seasonal, setSeasonal] = useState<readonly { date: string; label: string }[]>([]);
+  // A failed ephemeris lookup is said on the page, not only in the console (0.48).
+  const [seasonalFailed, setSeasonalFailed] = useState(false);
+  // The last removal, so it can be undone; a new removal or a save replaces it (0.48).
+  const [removed, setRemoved] = useState<
+    | { readonly kind: 'note'; readonly item: GannAnnotation; readonly index: number }
+    | { readonly kind: 'template'; readonly item: GannTemplate; readonly index: number }
+    | null
+  >(null);
   const [noteText, setNoteText] = useState('');
   const [noteBar, setNoteBar] = useState(0);
   const [notePrice, setNotePrice] = useState(0);
@@ -335,7 +344,7 @@ export function GannPanel(): JSX.Element {
    * computing them here keeps one definition of a solstice in the product.
    */
   useEffect(() => {
-    if (!anchorBar) { setSeasonal([]); return undefined; }
+    if (!anchorBar) { setSeasonal([]); setSeasonalFailed(false); return undefined; }
     let live = true;
     void (async () => {
       try {
@@ -348,6 +357,7 @@ export function GannPanel(): JSX.Element {
           bodies: ['sun'],
         }).filter((event) => ['aries', 'cancer', 'libra', 'capricorn'].includes(event.sign));
         if (live) {
+          setSeasonalFailed(false);
           setSeasonal(found.map((event) => ({
             date: event.utcIso.slice(0, 10),
             label: t(`sign.${event.sign}` as 'sign.aries'),
@@ -355,7 +365,7 @@ export function GannPanel(): JSX.Element {
         }
       } catch (cause) {
         console.error('seasonal dates failed', cause);
-        if (live) setSeasonal([]);
+        if (live) { setSeasonal([]); setSeasonalFailed(true); }
       }
     })();
     return () => { live = false; };
@@ -943,7 +953,13 @@ export function GannPanel(): JSX.Element {
             </table>
           </div>
 
-          {seasonalFromAnchor.length > 0 ? (
+          {seasonalFailed ? (
+            <>
+              <h3 className="as-h3 mt-4">{t('gann.counts.seasonal')}</h3>
+              <p className="as-body" role="alert" style={alertStyle}>{t('gann.counts.seasonalFailed')}</p>
+            </>
+          ) : null}
+          {!seasonalFailed && seasonalFromAnchor.length > 0 ? (
             <>
               <h3 className="as-h3 mt-4">{t('gann.counts.seasonal')}</h3>
               <p className="as-fineprint mb-2">{t('gann.counts.seasonalSource')}</p>
@@ -1047,7 +1063,10 @@ export function GannPanel(): JSX.Element {
                   type="button"
                   className={TEXT_BUTTON}
                   style={mutedStyle}
-                  onClick={() => deleteAnnotation(note.id)}
+                  onClick={() => {
+                    setRemoved({ kind: 'note', item: note, index: annotations.findIndex((a) => a.id === note.id) });
+                    deleteAnnotation(note.id);
+                  }}
                 >
                   {t('gann.notes.remove')}
                 </button>
@@ -1055,6 +1074,13 @@ export function GannPanel(): JSX.Element {
             ))}
           </ul>
         )}
+
+        {removed?.kind === 'note' ? (
+          <UndoLine
+            text={t('gann.removed', { name: removed.item.text })}
+            onUndo={() => { restoreAnnotation(removed.item, removed.index); setRemoved(null); }}
+          />
+        ) : null}
 
         <h3 className="as-h3 mt-4">{t('gann.templates.heading')}</h3>
         <p className="as-fineprint mb-2">{t('gann.templates.what')}</p>
@@ -1074,7 +1100,7 @@ export function GannPanel(): JSX.Element {
             type="button"
             className="as-button-secondary"
             disabled={!templateName.trim()}
-            onClick={() => { saveTemplate(templateName, currentSettings); setTemplateName(''); }}
+            onClick={() => { saveTemplate(templateName, currentSettings); setTemplateName(''); setRemoved(null); }}
           >
             {t('gann.templates.save')}
           </button>
@@ -1100,7 +1126,10 @@ export function GannPanel(): JSX.Element {
                   type="button"
                   className={TEXT_BUTTON}
                   style={mutedStyle}
-                  onClick={() => deleteTemplate(template.id)}
+                  onClick={() => {
+                    setRemoved({ kind: 'template', item: template, index: templates.findIndex((x) => x.id === template.id) });
+                    deleteTemplate(template.id);
+                  }}
                 >
                   {t('gann.notes.remove')}
                 </button>
@@ -1109,10 +1138,28 @@ export function GannPanel(): JSX.Element {
           </ul>
         )}
 
+        {removed?.kind === 'template' ? (
+          <UndoLine
+            text={t('gann.removed', { name: removed.item.name })}
+            onUndo={() => { restoreTemplate(removed.item, removed.index); setRemoved(null); }}
+          />
+        ) : null}
+
         <p className="as-fineprint mt-3">{t('gann.notes.kept')}</p>
       </section>
 
       <p className="as-fineprint">{t('gann.conventions')}</p>
     </div>
+  );
+}
+
+/** "Removed X. Undo" — a removal is one tap, so taking it back is one tap too (0.48). */
+function UndoLine({ text, onUndo }: { readonly text: string; readonly onUndo: () => void }): JSX.Element {
+  const { t } = useTranslator();
+  return (
+    <p className="as-body mt-2 flex flex-wrap items-center gap-x-2 text-sm" role="status">
+      <span>{text}</span>
+      <button type="button" className={TEXT_BUTTON} onClick={onUndo}>{t('gann.undo')}</button>
+    </p>
   );
 }

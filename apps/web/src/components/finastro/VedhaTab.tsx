@@ -217,7 +217,8 @@ export function VedhaTab(): JSX.Element {
         const row: Record<string, string | number | null> = { date: d.date, time: run.config.time, tithi: `${d.tithi} (${d.paksha})`, a: hitsTextEn(d, 'A'), b: hitsTextEn(d, 'B') };
         for (const id of PRICE_IDS) {
           const p = (prices[id] ?? []).find((r) => r.date === d.date);
-          row[`${id}Status`] = p ? `${p.status}${p.holiday ? ` (${p.holiday})` : ''}${p.disputed ? ` (disputed: ${p.disputed})` : ''}${p.special ? ` (${p.special})` : ''}${p.irregular ? ' irregular' : ''}` : '';
+          // No series is "not loaded", never a calendar verdict (0.48).
+          row[`${id}Status`] = !datasets[id] ? 'not loaded' : p ? `${p.status}${p.holiday ? ` (${p.holiday})` : ''}${p.disputed ? ` (disputed: ${p.disputed})` : ''}${p.special ? ` (${p.special})` : ''}${p.irregular ? ' irregular' : ''}` : '';
           row[`${id}Close`] = p?.close ?? null; row[`${id}Dir`] = p?.direction ?? null;
         }
         return row;
@@ -383,7 +384,7 @@ export function VedhaTab(): JSX.Element {
               <tbody>
                 {run.days.map((d) => (
                   <Row key={d.date} d={d} open={open === d.date} onToggle={() => setOpen((x) => (x === d.date ? null : d.date))}
-                    a={hitsText(d, 'A')} b={hitsText(d, 'B')} prices={PRICE_IDS.map((id) => dirText((prices[id] ?? []).find((r) => r.date === d.date)))}
+                    a={hitsText(d, 'A')} b={hitsText(d, 'B')} prices={PRICE_IDS.map((id) => (datasets[id] ? dirText((prices[id] ?? []).find((r) => r.date === d.date)) : t('fa.vedha.notLoaded')))}
                     nak28={nak28} targetLabel={targetLabel} time={run.config.time} />
                 ))}
               </tbody>
@@ -397,6 +398,10 @@ export function VedhaTab(): JSX.Element {
         <section className={CARD} aria-labelledby="vedha-compare">
           <h3 id="vedha-compare" className="font-semibold">{t('fa.vedha.compare', { instrument: instrumentById(runCompareId)?.name ?? runCompareId })}</h3>
           <p className="text-xs as-text-muted">{t('fa.vedha.compareNote', { instrument: instrumentById(runCompareId)?.name ?? runCompareId })}</p>
+          {!datasets[runCompareId] ? (
+            // No series for the record's instrument: a table of zeros would read as "no hits", so say what to load instead (0.48).
+            <p role="status" className="text-sm text-amber-700 dark:text-amber-400">{t('fa.vedha.compareNotLoaded', { instrument: instrumentById(runCompareId)?.name ?? runCompareId })}</p>
+          ) : (<>
           <label className="flex flex-col gap-1 text-sm"><span className="text-xs as-text-muted">{t('fa.vedha.compareTarget')}</span>
             <select className={`${FIELD} max-w-xs`} value={compareTarget} onChange={(e) => setCompareTarget(e.target.value as TargetKind | 'any')}>
               <option value="any">{t('fa.vedha.anyTarget')}</option>
@@ -413,6 +418,7 @@ export function VedhaTab(): JSX.Element {
               </tr>
             ))}</tbody>
           </table>
+          </>)}
         </section>
       ) : null}
 

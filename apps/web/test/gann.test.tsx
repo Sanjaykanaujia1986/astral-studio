@@ -407,6 +407,34 @@ describe('notes and templates', () => {
     expect(screen.getByText(/Origin 250, step 1/)).toBeInTheDocument();
   });
 
+  it('takes back a removed note or template with one tap (0.48)', async () => {
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+
+    await user.type(screen.getByLabelText('Note'), 'second test');
+    await user.click(screen.getByRole('button', { name: 'Pin to the price chart' }));
+    await user.type(screen.getByLabelText('Template name'), 'wheat');
+    await user.click(screen.getByRole('button', { name: 'Save current settings' }));
+
+    // Note: removed, then undone, back in the list and on the figure.
+    const noteItem = screen.getAllByText('second test').find((node) => node.tagName.toLowerCase() === 'span')!.closest('li')!;
+    await user.click(within(noteItem).getByRole('button', { name: 'Remove' }));
+    expect(screen.queryAllByText('second test')).toHaveLength(0);
+    expect(screen.getByText('Removed “second test”.')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getAllByText('second test')).toHaveLength(2);
+    expect(useGannWorkspace.getState().annotations).toHaveLength(1);
+
+    // Template: the same.
+    const templateItem = screen.getByRole('button', { name: 'wheat' }).closest('li')!;
+    await user.click(within(templateItem).getByRole('button', { name: 'Remove' }));
+    expect(screen.queryByRole('button', { name: 'wheat' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Undo' }));
+    expect(screen.getByRole('button', { name: 'wheat' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Undo' })).not.toBeInTheDocument();
+  });
+
   it('says where notes and templates are kept', () => {
     renderPanel();
     expect(screen.getByText(/kept in this browser only/i)).toBeInTheDocument();
