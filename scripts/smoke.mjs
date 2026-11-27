@@ -180,6 +180,7 @@ if (bundle) {
     ['Bad-bar screen on price series (0.44)', 'fa.data.suspectCount'],
     ['Holdout split note in the Signal study (0.45)', 'research.split'],
     ['NSE stock picker in Instruments and charts (0.46)', 'fa.stocks.load'],
+    ['Gann Lab refuses a zero step in words, not a crash (0.47)', 'gann.error.zeroStep'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {

@@ -150,13 +150,48 @@ describe('the Square of Nine', () => {
     await user.type(origin, '100');
     expect(screen.getByText(/Origin 100, step 1/)).toBeInTheDocument();
   });
+
+  it('says a step of 0 cannot be drawn instead of crashing the page (0.47)', async () => {
+    const user = userEvent.setup();
+    renderPanel();
+    const step = screen.getByLabelText('Step per cell');
+    await user.clear(step);
+    await user.type(step, '0');
+    expect(screen.getByRole('alert')).toHaveTextContent(/step of 0/);
+    // The rest of the workspace is still there.
+    expect(screen.getByLabelText('Centre value')).toBeInTheDocument();
+  });
+
+  it('says a centre below 0 has no angle instead of crashing the page (0.47)', async () => {
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+    const origin = screen.getByLabelText('Centre value');
+    await user.clear(origin);
+    await user.type(origin, '-10');
+    expect(screen.getAllByRole('alert')[0]).toHaveTextContent(/centre below 0 has no angle/);
+    expect(screen.getAllByText('None at this centre').length).toBeGreaterThan(0);
+  });
+
+  it('does not mark a last close that is off the square, and offers to centre on it (0.47)', async () => {
+    const user = userEvent.setup();
+    loadSeries();
+    renderPanel();
+    // The synthetic series closes at 110; a centre of 1 with 5 rings ends at 121, so put it out of reach.
+    const origin = screen.getByLabelText('Centre value');
+    await user.clear(origin);
+    await user.type(origin, '500');
+    expect(screen.getByText(/is not on this square/)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Centre the square on the last close' }));
+    expect(screen.queryByText(/is not on this square/)).not.toBeInTheDocument();
+  });
 });
 
 describe('the fan', () => {
   it('asks for a series rather than inventing prices', () => {
     renderPanel();
     expect(screen.getByText(/A fan is anchored to a price series/i)).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: /Research/ })).toHaveAttribute('href', '/research');
+    expect(screen.getByRole('link', { name: /Signal study/ })).toHaveAttribute('href', '/research?tab=signals');
   });
 
   it('anchors to the lowest close by default and scales every ratio', () => {

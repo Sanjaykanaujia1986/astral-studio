@@ -55,13 +55,14 @@ export function InstrumentsTab(): JSX.Element {
 
   return (
     <div className="space-y-4">
+      {/* First: choosing what to study comes before its data and its charts, and the data list grows with every stock added. */}
+      <StocksCard />
+
       <section className={CARD} aria-labelledby="inst-list">
         <h3 id="inst-list" className="font-semibold">{t('fa.instruments')}</h3>
         <p className="text-xs as-text-muted">{t('fa.instruments.note')}</p>
         <div className="grid gap-2 md:grid-cols-2">{instruments.map((i) => <DatasetCard key={i.id} instrumentId={i.id} />)}</div>
       </section>
-
-      <StocksCard />
 
       <section className={CARD} aria-labelledby="inst-charts">
         <h3 id="inst-charts" className="font-semibold">{t('fa.charts')}</h3>

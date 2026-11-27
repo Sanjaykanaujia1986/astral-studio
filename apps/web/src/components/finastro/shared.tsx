@@ -140,7 +140,8 @@ export function DatasetCard({ instrumentId, compact = false }: { instrumentId: s
           <input ref={input} type="file" accept=".csv,text/csv,text/plain" className="hidden" onChange={(e) => void onFile(e)} />
           <button type="button" className={BUTTON} disabled={busy[instrumentId]} onClick={() => input.current?.click()}>{t('fa.data.import')}</button>
           <button type="button" className={BUTTON} disabled={busy[instrumentId]} onClick={() => void fetchFromProvider(instrumentId, inst.symbol)}>{t('fa.data.fetch')}</button>
-          {shared ? <button type="button" className={BUTTON} onClick={() => void adoptSeries(instrumentId, shared, `${t('nav.research')}: ${shared.symbol}`)}>{t('fa.data.useResearch', { symbol: shared.symbol })}</button> : null}
+          {/* Only the same symbol: NIFTY's prices offered on the gold card would become gold's (0.47). */}
+          {shared && shared.symbol.trim().toUpperCase() === inst.symbol.toUpperCase() ? <button type="button" className={BUTTON} onClick={() => void adoptSeries(instrumentId, shared, `${t('nav.research')}: ${shared.symbol}`)}>{t('fa.data.useResearch', { symbol: shared.symbol })}</button> : null}
           {d ? <button type="button" className={BUTTON} onClick={() => clear(instrumentId)}>{t('fa.data.clear')}</button> : null}
         </span>
       </div>

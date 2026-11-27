@@ -20,6 +20,7 @@ import {
   evaluateSignal,
   describeSignal,
   truncatedHistory,
+  listInstruments,
   type SignalSpec,
   type StudyResult,
   type BacktestResult,
@@ -28,16 +29,32 @@ import {
 import { useTranslator, type Translator, type MessageKey } from '@astro/i18n';
 import { getProvider } from '../lib/engine.js';
 import { useSeriesStore } from '../state/series.js';
+import { useStocks } from '../state/stocks.js';
 import { apiProvider } from '../lib/prices.js';
 
-/** A signal in the reader's language; English keeps the compact form the studies were written in. */
-function signalLabel(spec: SignalSpec, t: Translator['t'], code: string): string {
-  if (code === 'en') return describeSignal(spec);
+/** Plain names for the Moon-phase windows; the degrees follow in brackets. */
+const PHASE_NAMES: Readonly<Record<string, MessageKey>> = {
+  'new-moon': 'research.signal.name.newMoon',
+  'full-moon': 'research.signal.name.fullMoon',
+  waxing: 'research.signal.name.waxing',
+};
+
+/**
+ * A signal in the reader's language, in every language (0.47). English used
+ * to show the engine's compact id ("moon/sun phase 350–10°") in a code font;
+ * that form is still the tooltip and the export, via `describeSignal`.
+ */
+function signalLabel(spec: SignalSpec, t: Translator['t']): string {
   const b = (x: string): string => t(`body.${x}` as MessageKey);
+  const named = PHASE_NAMES[spec.id];
+  if (named && spec.kind === 'phase-range') {
+    return `${t(named)} (${t('research.signal.phase', { fast: b(spec.fast), slow: b(spec.slow), from: spec.fromDegrees, to: spec.toDegrees })})`;
+  }
   switch (spec.kind) {
     case 'retrograde': return t('research.signal.retrograde', { body: b(spec.body) });
     case 'sign-occupancy': return t('research.signal.sign', { body: b(spec.body), sign: t(`sign.${spec.sign}` as MessageKey) });
-    case 'aspect-window': return t('research.signal.aspect', { a: b(spec.bodyA), aspect: t(`aspect.${spec.aspect}` as MessageKey), b: b(spec.bodyB), days: spec.windowDays });
+    // The aspect is a common noun mid-sentence: "Sun conjunction Saturn", not "Sun Conjunction Saturn".
+    case 'aspect-window': return t('research.signal.aspect', { a: b(spec.bodyA), aspect: t(`aspect.${spec.aspect}` as MessageKey).toLocaleLowerCase(), b: b(spec.bodyB), days: spec.windowDays });
     case 'phase-range': return t('research.signal.phase', { fast: b(spec.fast), slow: b(spec.slow), from: spec.fromDegrees, to: spec.toDegrees });
     case 'declination': return t('research.signal.declination', { body: b(spec.body), min: spec.minimumAbsolute, hemisphere: t(`research.hemisphere.${spec.hemisphere}` as MessageKey) });
   }
@@ -87,7 +104,7 @@ function warningText(warning: StudyWarning, t: Translator['t'], n: Translator['n
 }
 
 export function ResearchPanel(): JSX.Element {
-  const { t, n, locale } = useTranslator();
+  const { t, n } = useTranslator();
 
   /*
    * The series lives in a store rather than here: Gann Lab anchors its fans
@@ -100,6 +117,14 @@ export function ResearchPanel(): JSX.Element {
     descriptor, remember, setRemember, tooLargeToRemember,
   } = useSeriesStore();
   const [symbol, setSymbol] = useState('');
+  const nseList = useStocks((st) => st.list);
+  const addedStocks = useStocks((st) => st.added);
+  const symbolChoices = useMemo(() => {
+    const seen = new Map<string, string>();
+    for (const i of listInstruments()) seen.set(i.symbol, i.name);
+    for (const st of nseList?.stocks ?? []) if (!seen.has(`${st.symbol}.NS`)) seen.set(`${st.symbol}.NS`, st.name);
+    return [...seen].map(([sym, name]) => ({ symbol: sym, name }));
+  }, [nseList, addedStocks]);
   const { dayFirst, decimalComma } = choices;
   const [selected, setSelected] = useState<readonly string[]>(['mercury-rx', 'full-moon']);
   const [holdoutPercent, setHoldoutPercent] = useState(30);
@@ -305,8 +330,15 @@ export function ResearchPanel(): JSX.Element {
               value={symbol}
               onChange={(event) => setSymbol(event.target.value)}
               placeholder="^NSEI"
+              list="research-symbols"
+              autoCapitalize="characters"
+              spellCheck={false}
               className={FIELD}
             />
+            {/* Suggestions: the built-in instruments, added stocks and any NSE list loaded in Instruments and charts (0.47). */}
+            <datalist id="research-symbols">
+              {symbolChoices.map((c) => <option key={c.symbol} value={c.symbol}>{c.name}</option>)}
+            </datalist>
           </label>
           <button
             type="button"
@@ -366,7 +398,7 @@ export function ResearchPanel(): JSX.Element {
         <p className="text-xs as-text-muted">{t('research.signals.hint')}</p>
         <div className="flex flex-wrap gap-x-5 gap-y-2">
           {AVAILABLE_SIGNALS.map((spec) => (
-            <label key={spec.id} className="flex items-center gap-2 text-sm">
+            <label key={spec.id} className="flex min-h-[40px] cursor-pointer items-center gap-2 text-sm" title={describeSignal(spec)}>
               <input
                 type="checkbox"
                 checked={selected.includes(spec.id)}
@@ -379,7 +411,7 @@ export function ResearchPanel(): JSX.Element {
                 }
                 className="h-4 w-4 rounded as-border-strong"
               />
-              <span className="font-mono text-xs">{signalLabel(spec, t, locale.code)}</span>
+              <span>{signalLabel(spec, t)}</span>
             </label>
           ))}
         </div>
@@ -477,7 +509,7 @@ export function ResearchPanel(): JSX.Element {
                   return (
                     <tr key={study.signalId} className="border-b as-border-hair last:border-0">
                       <th scope="row" className={`${TD} text-left font-normal`}>
-                        <span className="font-mono text-xs">{signalLabel(study.spec, t, locale.code)}</span>
+                        <span title={describeSignal(study.spec)}>{signalLabel(study.spec, t)}</span>
                         {study.warnings.length > 0 ? (
                           <span
                             className="ml-1 cursor-help as-text-warning"

@@ -10,7 +10,7 @@
  * The scale has no default. "1×1" names no line until the reader says what one
  * bar is worth in price, so the fan does not draw until they have.
  */
-import { useEffect, useMemo, useRef, useState, type JSX } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type JSX } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslator } from '@astro/i18n';
 import { findIngresses, julianDay } from '@astro/engine';
@@ -43,36 +43,60 @@ const fieldStyle = {
   color: 'var(--as-ink)',
 };
 const mutedStyle = { color: 'var(--as-ink-muted)' };
+const alertStyle = { color: 'var(--as-warning)' };
+/** Small text buttons still get a finger-sized target. */
+const TEXT_BUTTON = 'min-h-[40px] px-2 text-xs underline';
+
+/**
+ * The engine refuses impossible inputs by throwing (a step of 0, a negative
+ * centre under a square root). Those are the reader's half-typed values, not
+ * bugs, so they must end as a message beside the field, never as the
+ * "something in this workspace failed" screen (0.47).
+ */
+function attempt<T>(fn: () => T): T | null {
+  try { return fn(); } catch { return null; }
+}
 
 /** A number input that keeps its own text, so a half-typed "-" is not eaten. */
 function NumberField({
-  label, value, onChange, step = 1, min,
+  label, value, onChange, step = 1, min, hint,
 }: {
   label: string;
   value: number;
   onChange: (value: number) => void;
   step?: number;
   min?: number;
+  /** One line under the box: what the number means (a bar's date, say). */
+  hint?: string | undefined;
 }): JSX.Element {
   const [text, setText] = useState(String(value));
+  const hintId = useId();
   useEffect(() => { setText(String(value)); }, [value]);
   return (
-    <label className={LABEL}>
+    // The hint sits outside the label and is linked to the box, so the box's name stays just its label.
+    <div className={LABEL}>
+    <label className="block">
       <span className="block font-medium">{label}</span>
       <input
+        {...(hint ? { 'aria-describedby': hintId } : {})}
         type="number"
         className={`mt-1 ${FIELD}`}
         style={fieldStyle}
         value={text}
         step={step}
+        inputMode="decimal"
         {...(min === undefined ? {} : { min })}
         onChange={(event) => {
           setText(event.target.value);
           const parsed = Number(event.target.value);
           if (event.target.value !== '' && Number.isFinite(parsed)) onChange(parsed);
         }}
+        // A value the page clamped (rings 50 → 20) or a box left empty shows what is really in use.
+        onBlur={() => setText(String(value))}
       />
     </label>
+    {hint ? <span id={hintId} className="mt-1 block text-xs" style={mutedStyle}>{hint}</span> : null}
+    </div>
   );
 }
 
@@ -140,24 +164,39 @@ export function GannPanel(): JSX.Element {
   const [basePrice, setBasePrice] = useState<number | null>(null);
   const [baseLongitude, setBaseLongitude] = useState(0);
 
+  // Built only for the construction on screen, and never allowed to throw into the page.
   const square = useMemo(
-    () => buildSquare({ originValue, increment, rings, direction }),
-    [originValue, increment, rings, direction],
+    () => (layout === 'square' && increment !== 0 ? attempt(() => buildSquare({ originValue, increment, rings, direction })) : null),
+    [layout, originValue, increment, rings, direction],
   );
   const circle = useMemo(
-    () => buildCircle({ originValue, increment, divisions, turns: Math.max(1, rings) }),
-    [originValue, increment, divisions, rings],
+    () => (layout === 'circle' && increment !== 0 ? attempt(() => buildCircle({ originValue, increment, divisions, turns: Math.max(1, rings) })) : null),
+    [layout, originValue, increment, divisions, rings],
   );
   const polygon = useMemo(
-    () => buildPolygon({ originValue, increment, sides, rings }),
-    [originValue, increment, sides, rings],
+    () => (layout === 'polygon' && increment !== 0 ? attempt(() => buildPolygon({ originValue, increment, sides, rings })) : null),
+    [layout, originValue, increment, sides, rings],
   );
 
   const bars = series?.bars ?? [];
   const extremes = useMemo(() => extremeBars(bars), [bars]);
   const lastClose = bars[bars.length - 1]?.close;
 
-  const resolvedAnchor = anchorIndex ?? extremes.lowIndex;
+  /*
+   * A bar number belongs to one series. When another series is loaded, the
+   * anchor goes back to that series' own low and the note fields to its last
+   * bar, instead of pointing past its end (0.47).
+   */
+  useEffect(() => {
+    setAnchorIndex(null);
+    const last = series?.bars[series.bars.length - 1];
+    setNoteBar(series ? series.bars.length - 1 : 0);
+    setNotePrice(last ? Number(last.close.toFixed(2)) : 0);
+  }, [series]);
+
+  const clampBar = (i: number): number => Math.max(0, Math.min(bars.length - 1, Math.round(i)));
+  // A template saved on a longer series can carry a bar this one does not have.
+  const resolvedAnchor = bars.length ? clampBar(anchorIndex ?? extremes.lowIndex) : 0;
 
   // The grid follows the fan's scale until the reader overrides it, so the
   // square's diagonal and the 1×1 stay the same line by construction.
@@ -221,20 +260,42 @@ export function GannPanel(): JSX.Element {
     ? { method: 'linear', basePrice: resolvedBasePrice, baseLongitude, unitsPerDegree }
     : { method: 'square', originValue, turns };
 
-  const projections = useMemo(() => {
+  const projectionResult = useMemo(() => {
     if (!chart) return [];
     const zodiac = chart.settings.zodiac.kind === 'sidereal'
       ? { kind: 'sidereal' as const, ayanamsha: chart.settings.zodiac.ayanamsha }
       : { kind: 'tropical' as const };
-    return projectAll(
+    // The square method takes a root of the centre: a negative centre has no projection.
+    return attempt(() => projectAll(
       chart.bodies.map((placed) => ({
         body: placed.position.body,
         longitude: placed.position.longitude,
       })),
       projectionSettings,
       zodiac,
-    );
+    ));
   }, [chart, method, unitsPerDegree, turns, originValue, resolvedBasePrice, baseLongitude]);
+  const projections = projectionResult ?? [];
+
+  /** What the reader sees in place of a construction the inputs cannot make. */
+  const squareProblem = increment === 0
+    ? t('gann.error.zeroStep')
+    : layout === 'square' && originValue < 0 ? t('gann.error.negativeOrigin') : null;
+  const squareRange = useMemo(() => {
+    if (!square) return null;
+    let min = Infinity; let max = -Infinity;
+    for (const c of square.cells) { if (c.value < min) min = c.value; if (c.value > max) max = c.value; }
+    return { min, max };
+  }, [square]);
+  // Only marked when it is on the square: the edge cell is not "nearest" to a price far beyond it.
+  const closeOnSquare = lastClose !== undefined && squareRange !== null && lastClose >= squareRange.min && lastClose <= squareRange.max;
+  const spiral = lastClose === undefined ? null : attempt(() => spiralAngle(Math.max(lastClose, 0), originValue));
+  const angleValue = originValue < 0 ? null : attempt(() => valueAtAngle(90, turns, originValue));
+  const centreOnClose = (): void => {
+    if (lastClose === undefined) return;
+    setOriginValue(Number(lastClose.toFixed(lastClose >= 100 ? 0 : 2)));
+  };
+  const barDate = (i: number): string | undefined => bars[i]?.date;
 
   // Export. The figures resolve their own colours, so the markup in the DOM
   // is a complete file; nothing has to be re-rendered to save it.
@@ -382,8 +443,27 @@ export function GannPanel(): JSX.Element {
           </select>
         </label>
 
+        {squareProblem ? (
+          <p className="as-body mb-3" role="alert" style={alertStyle}>{squareProblem}</p>
+        ) : null}
+
+        {layout === 'square' && square && lastClose !== undefined && !closeOnSquare && squareRange ? (
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <p className="as-body" style={alertStyle}>
+              {t('gann.square.outside', {
+                close: n(lastClose, { maximumFractionDigits: 2 }),
+                min: n(squareRange.min, { maximumFractionDigits: 2 }),
+                max: n(squareRange.max, { maximumFractionDigits: 2 }),
+              })}
+            </p>
+            <button type="button" className="as-button-secondary" onClick={centreOnClose}>
+              {t('gann.square.centreOnClose')}
+            </button>
+          </div>
+        ) : null}
+
         <div ref={layoutRef}>
-        {layout === 'square' ? (
+        {layout === 'square' && square ? (
           <SquareOfNineFigure
             square={square}
             size={520}
@@ -391,13 +471,13 @@ export function GannPanel(): JSX.Element {
               ...marks,
               ...squareNotes.map((note) => ({ value: note.value, label: note.text })),
             ]}
-            {...(lastClose === undefined ? {} : { focusValue: lastClose })}
+            {...(closeOnSquare && lastClose !== undefined ? { focusValue: lastClose } : {})}
             decimals={decimals}
             className="mx-auto"
           />
-        ) : (
+        ) : layout !== 'square' && (layout === 'circle' ? circle : polygon) ? (
           <RadialLayoutFigure
-            chart={layout === 'circle' ? circle : polygon}
+            chart={(layout === 'circle' ? circle : polygon)!}
             size={520}
             marks={[
               ...marks,
@@ -406,13 +486,14 @@ export function GannPanel(): JSX.Element {
             decimals={decimals}
             className="mx-auto"
           />
-        )}
+        ) : null}
         </div>
 
         <p className="mt-3">
           <button
             type="button"
             className="as-button-secondary"
+            disabled={increment === 0}
             onClick={() => saveFigure(
               layoutRef.current,
               `gann-${layout}`,
@@ -449,7 +530,7 @@ export function GannPanel(): JSX.Element {
                 {t('gann.angle.of', { value: n(lastClose, { maximumFractionDigits: 2 }) })}
               </dt>
               <dd className="tabular-nums">
-                {n(spiralAngle(Math.max(lastClose, 0), originValue), { maximumFractionDigits: 3 })}°
+                {spiral === null ? t('gann.angle.none') : `${n(spiral, { maximumFractionDigits: 3 })}°`}
               </dd>
             </div>
           )}
@@ -458,7 +539,7 @@ export function GannPanel(): JSX.Element {
               {t('gann.angle.valueAt', { angle: n(90), turns: n(turns) })}
             </dt>
             <dd className="tabular-nums">
-              {n(valueAtAngle(90, turns, Math.max(originValue, 0)), { maximumFractionDigits: 3 })}
+              {angleValue === null ? t('gann.angle.none') : n(angleValue, { maximumFractionDigits: 3 })}
             </dd>
           </div>
         </dl>
@@ -484,7 +565,7 @@ export function GannPanel(): JSX.Element {
                 })
                 : t('gann.fan.needsSeries')}
             </p>
-            <Link to="/research" className="as-button-secondary">{t('gann.fan.openResearch')}</Link>
+            <Link to="/research?tab=signals" className="as-button-secondary">{t('gann.fan.openResearch')}</Link>
           </>
         ) : (
           <>
@@ -511,11 +592,34 @@ export function GannPanel(): JSX.Element {
               </label>
               <NumberField
                 label={t('gann.fan.anchorBar')} value={resolvedAnchor}
-                onChange={(v) => setAnchorIndex(
-                  Math.max(0, Math.min(bars.length - 1, Math.round(v))),
-                )}
+                onChange={(v) => setAnchorIndex(clampBar(v))}
                 min={0}
+                hint={anchorBar ? t('gann.fan.anchorIs', {
+                  date: anchorBar.date,
+                  close: n(anchorBar.close, { maximumFractionDigits: 2 }),
+                  last: n(bars.length - 1),
+                }) : undefined}
               />
+              {/* A date is how a reader knows a turning point; the bar number follows from it. */}
+              <div className={LABEL}>
+              <label className="block">
+                <span className="block font-medium">{t('gann.fan.anchorDate')}</span>
+                <input
+                  type="date"
+                  aria-describedby="gann-anchor-date-hint"
+                  className={`mt-1 ${FIELD}`}
+                  style={fieldStyle}
+                  min={bars[0]?.date}
+                  max={bars[bars.length - 1]?.date}
+                  value={anchorBar?.date ?? ''}
+                  onChange={(e) => {
+                    const at = bars.findIndex((b) => b.date >= e.target.value);
+                    if (e.target.value) setAnchorIndex(at === -1 ? bars.length - 1 : at);
+                  }}
+                />
+              </label>
+              <span id="gann-anchor-date-hint" className="mt-1 block text-xs" style={mutedStyle}>{t('gann.fan.anchorDateHint')}</span>
+              </div>
             </div>
 
             <div className="mb-3 flex flex-wrap gap-2">
@@ -757,6 +861,9 @@ export function GannPanel(): JSX.Element {
             {method === 'square' ? (
               <p className="as-fineprint mb-3">{t('gann.projection.turnWarning')}</p>
             ) : null}
+            {projectionResult === null ? (
+              <p className="as-body mb-3" role="alert" style={alertStyle}>{t('gann.projection.failed')}</p>
+            ) : null}
 
             <div className="overflow-x-auto">
               <table className="w-full border-collapse text-sm">
@@ -850,7 +957,9 @@ export function GannPanel(): JSX.Element {
                     {t('gann.counts.sunEnters', { sign: entry.label })}
                     <span style={mutedStyle}>
                       {' '}
-                      ({t('gann.counts.daysFrom', { days: n(entry.daysFromAnchor) })})
+                      ({entry.daysFromAnchor < 0
+                        ? t('gann.counts.daysBefore', { days: n(-entry.daysFromAnchor) })
+                        : t('gann.counts.daysFrom', { days: n(entry.daysFromAnchor) })})
                     </span>
                   </li>
                 ))}
@@ -881,7 +990,8 @@ export function GannPanel(): JSX.Element {
           </label>
           <NumberField
             label={t('gann.notes.bar')} value={noteBar}
-            onChange={(v) => setNoteBar(Math.max(0, Math.round(v)))} min={0}
+            onChange={(v) => setNoteBar(bars.length ? clampBar(v) : Math.max(0, Math.round(v)))} min={0}
+            hint={barDate(noteBar) ? t('gann.notes.barIs', { date: barDate(noteBar)! }) : undefined}
           />
           <NumberField
             label={t('gann.notes.price')} value={notePrice}
@@ -935,7 +1045,7 @@ export function GannPanel(): JSX.Element {
                 </span>
                 <button
                   type="button"
-                  className="text-xs underline"
+                  className={TEXT_BUTTON}
                   style={mutedStyle}
                   onClick={() => deleteAnnotation(note.id)}
                 >
@@ -988,7 +1098,7 @@ export function GannPanel(): JSX.Element {
                 </span>
                 <button
                   type="button"
-                  className="text-xs underline"
+                  className={TEXT_BUTTON}
                   style={mutedStyle}
                   onClick={() => deleteTemplate(template.id)}
                 >

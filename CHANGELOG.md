@@ -2,6 +2,17 @@
 
 Newest first.
 
+## 0.47.0 — 2026-11-27
+A defect scan of Gann Lab and Financial astrology, with usability fixes.
+- FIX: **Gann Lab no longer crashes on an impossible value.** A step of 0 in the Square of Nine, or a centre below 0, replaced the whole page with "Something in this workspace failed". Each now shows a sentence beside the figure saying what is wrong and what to enter; the parts that can still be drawn stay on screen.
+- FIX: **The Square of Nine no longer marks a price that is not on it.** With the centre at 1, NIFTY's 25,819 was "marked" on the edge cell, 121. The page now says the last close is off the square, gives the square's range, and offers "Centre the square on the last close".
+- FIX: **A Gann anchor or note bar can no longer point past the series.** After loading a shorter series, or applying a template saved on a longer one, the fan silently disappeared. The anchor now goes back to the new series' low, and the note fields to its last bar.
+- FIX: **Financial astrology only offers the Signal study series to the matching instrument.** Every instrument card offered "Use ^NSEI from Signal study", so NIFTY's prices could be loaded as gold's or as a stock's. Only the card with the same symbol offers it now.
+- NEW: **Pick the Gann anchor by date.** Beside the bar number there is an Anchor date box (a weekend or holiday picks the next trading day), and the bar number shows its date and close. A note's bar shows its date too.
+- NEW: **Signal study suggests symbols.** The symbol box lists the built-in instruments, the stocks you added and, once loaded, the whole NSE index list as SYMBOL.NS.
+- CHANGE: **Plainer wording.** Signal names read as phrases in every language ("New Moon (Moon/Sun phase 350–10°)", "Sun conjunction Saturn (±3 days)") instead of code-style ids; the id stays in the tooltip. Equinoxes before the anchor say "129 days before the anchor" instead of "-129 days from the anchor". Gann Lab's links and notes name Financial astrology → Signal study, not the old Research page.
+- CHANGE: **Easier to use on a phone.** The NSE stock picker comes first on Instruments and charts; signal checkboxes and Gann's Remove links have finger-sized targets; a number the page clamped (rings above 20) shows the value in use once you leave the box.
+
 ## 0.46.0 — 2026-11-27
 Financial astrology on any NIFTY 500 stock.
 - NEW: **Any stock of an NSE index can be studied.** Instruments and charts has a new card, NSE stocks: load NIFTY 50, 100, 200 or 500 from NSE's own published list, search by symbol, company or industry, and add a stock. It then appears in Venus combustion, Daily vedha and the Add-record form, and its prices are fetched like any other series (Yahoo's SYMBOL.NS). RELIANCE, GOLDBEES and SILVERBEES are marked as already built in rather than added twice. The list is read only when asked, by signed-in admins, through the existing `/api/prices` route (`?list=nifty500`), so no new server function.
