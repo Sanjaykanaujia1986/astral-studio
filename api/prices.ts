@@ -40,6 +40,18 @@
  * deployment's quota and reputation, and with `public, s-maxage` the CDN
  * could hand one answer to every caller. It now needs an admin session and
  * its answers are cached privately, in the admin's own browser only.
+ *
+ * ## NSE index lists (0.46)
+ *
+ *   GET /api/prices?list=nifty500   (or nifty50, nifty100, nifty200)
+ *
+ * The constituents of an NSE index, from NSE's own published files: the
+ * index list (`ind_nifty500list.csv`) joined by symbol to the equity list
+ * (`EQUITY_L.csv`) for each company's NSE listing date. Both are public CSVs
+ * on archives.nseindia.com, read with this app's own user agent; nothing is
+ * stored. Without the equity list the stocks still come back, without
+ * listing dates, and the answer says so. It lives in this route, not a new
+ * one, because the Hobby plan caps the number of functions.
  */
 import { ensureSchema, requireAdmin } from './_auth.js';
 import { fail, HttpError, json, preflight } from './_lib.js';
@@ -170,6 +182,133 @@ const UPSTREAMS: Readonly<Record<string, Upstream>> = {
   },
 };
 
+// ------------------------------------------------------------------ NSE index lists
+
+const NSE_ARCHIVES = 'https://archives.nseindia.com/content';
+const UA = 'astral-studio (+https://astro-beta-khaki.vercel.app)';
+
+/** The index lists offered, and NSE's file for each. A whitelist: the value becomes part of an outbound URL. */
+export const NSE_LISTS: Readonly<Record<string, { readonly name: string; readonly file: string }>> = {
+  nifty50: { name: 'NIFTY 50', file: 'ind_nifty50list.csv' },
+  nifty100: { name: 'NIFTY 100', file: 'ind_nifty100list.csv' },
+  nifty200: { name: 'NIFTY 200', file: 'ind_nifty200list.csv' },
+  nifty500: { name: 'NIFTY 500', file: 'ind_nifty500list.csv' },
+};
+
+const NSE_SYMBOL = /^[A-Z0-9][A-Z0-9&-]{0,19}$/;
+const MONTHS: Readonly<Record<string, string>> = {
+  JAN: '01', FEB: '02', MAR: '03', APR: '04', MAY: '05', JUN: '06', JUL: '07', AUG: '08', SEP: '09', OCT: '10', NOV: '11', DEC: '12',
+};
+
+/** One CSV line into cells. NSE's files are unquoted today; a quoted cell is honoured anyway. */
+export function csvCells(line: string): string[] {
+  const out: string[] = [];
+  let cell = '';
+  let quoted = false;
+  for (let i = 0; i < line.length; i++) {
+    const c = line[i]!;
+    if (quoted) {
+      if (c === '"' && line[i + 1] === '"') { cell += '"'; i++; }
+      else if (c === '"') quoted = false;
+      else cell += c;
+    } else if (c === '"') quoted = true;
+    else if (c === ',') { out.push(cell.trim()); cell = ''; }
+    else cell += c;
+  }
+  out.push(cell.trim());
+  return out;
+}
+
+/** Rows keyed by lower-case, trimmed header names (EQUITY_L.csv pads them with spaces). */
+function csvRows(text: string): Record<string, string>[] {
+  const lines = text.replace(/^﻿/, '').split(/\r?\n/).filter((l) => l.trim() !== '');
+  if (lines.length === 0) return [];
+  const header = csvCells(lines[0]!).map((h) => h.toLowerCase());
+  return lines.slice(1).map((l) => {
+    const cells = csvCells(l);
+    return Object.fromEntries(header.map((h, i) => [h, cells[i] ?? '']));
+  });
+}
+
+/** NSE's `06-OCT-2008` as `2008-10-06`, or null for anything else (and for an impossible date). */
+export function nseListingDate(text: string): string | null {
+  const m = /^(\d{2})-([A-Za-z]{3})-(\d{4})$/.exec(text.trim());
+  const month = m ? MONTHS[m[2]!.toUpperCase()] : undefined;
+  if (!m || !month) return null;
+  const iso = `${m[3]}-${month}-${m[1]}`;
+  const d = new Date(`${iso}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === iso ? iso : null;
+}
+
+export interface NseListStock {
+  readonly symbol: string;
+  readonly name: string;
+  readonly industry: string;
+  readonly series: string;
+  readonly isin: string;
+  readonly listed?: string;
+}
+
+/**
+ * An index list (`Company Name, Industry, Symbol, Series, ISIN Code`) joined
+ * to the equity list (`SYMBOL, NAME OF COMPANY, …, DATE OF LISTING, …`).
+ * Throws `LIST_MALFORMED` when the index file is not the shape NSE publishes:
+ * an error page must not pass for an empty index.
+ */
+export function joinNseLists(indexCsv: string, equityCsv: string | null): NseListStock[] {
+  const index = csvRows(indexCsv);
+  if (index.length === 0 || !('symbol' in index[0]!) || !('company name' in index[0]!)) throw new HttpError(502, 'LIST_MALFORMED');
+  const listed = new Map<string, string>();
+  for (const r of equityCsv ? csvRows(equityCsv) : []) {
+    const date = nseListingDate(r['date of listing'] ?? '');
+    if (r.symbol && date) listed.set(r.symbol.toUpperCase(), date);
+  }
+  const seen = new Set<string>();
+  const out: NseListStock[] = [];
+  for (const r of index) {
+    const symbol = (r.symbol ?? '').toUpperCase();
+    if (!NSE_SYMBOL.test(symbol) || seen.has(symbol)) continue;
+    seen.add(symbol);
+    const date = listed.get(symbol);
+    out.push({
+      symbol, name: r['company name'] || symbol, industry: r.industry ?? '', series: r.series ?? '', isin: r['isin code'] ?? '',
+      ...(date ? { listed: date } : {}),
+    });
+  }
+  if (out.length === 0) throw new HttpError(502, 'LIST_MALFORMED');
+  return out;
+}
+
+async function nseFile(path: string): Promise<string> {
+  const response = await fetch(`${NSE_ARCHIVES}/${path}`, {
+    // A hung NSE server must not hold this function open to its own timeout.
+    signal: AbortSignal.timeout(10_000),
+    headers: { accept: 'text/csv,text/plain', 'user-agent': UA },
+  });
+  if (!response.ok) throw new HttpError(502, 'LIST_UNAVAILABLE');
+  return response.text();
+}
+
+async function nseList(request: Request, list: string): Promise<Response> {
+  const entry = Object.hasOwn(NSE_LISTS, list) ? NSE_LISTS[list] : undefined;
+  if (!entry) throw new HttpError(400, 'LIST_UNKNOWN');
+  const indexPath = `indices/${entry.file}`;
+  const equityPath = 'equities/EQUITY_L.csv';
+  const [index, equity] = await Promise.allSettled([nseFile(indexPath), nseFile(equityPath)]);
+  if (index.status === 'rejected') throw index.reason;
+  const equityOk = equity.status === 'fulfilled';
+  const stocks = joinNseLists(index.value, equityOk ? equity.value : null);
+  const readOn = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  return json(request, {
+    list, name: entry.name, readOn, stocks,
+    sources: [`${NSE_ARCHIVES}/${indexPath}`, ...(equityOk ? [`${NSE_ARCHIVES}/${equityPath}`] : [])],
+    ...(equityOk ? {} : { listingDatesUnavailable: true }),
+  }, 200, {
+    // NSE revises index membership twice a year; a few hours is plenty.
+    'cache-control': 'private, max-age=21600',
+  });
+}
+
 /** Provider CSV headers differ; the importer wants `date` and `close`. */
 function normaliseHeader(text: string): string {
   const [header, ...rows] = text.split(/\r?\n/);
@@ -189,6 +328,9 @@ export async function GET(request: Request): Promise<Response> {
   try {
     await ensureSchema();
     await requireAdmin(request);
+
+    const list = new URL(request.url).searchParams.get('list');
+    if (list !== null) return await nseList(request, list.trim().toLowerCase());
 
     const name = (process.env.MARKET_DATA_PROVIDER ?? '').trim().toLowerCase();
     if (!name) throw new HttpError(503, 'PROVIDER_NOT_CONFIGURED');

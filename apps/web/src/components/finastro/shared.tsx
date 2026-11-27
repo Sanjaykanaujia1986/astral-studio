@@ -5,10 +5,11 @@
  */
 import { useRef, type ChangeEvent, type JSX, type ReactNode } from 'react';
 import type { HouseSystem, NodeType, ZodiacMode } from '@astro/engine';
-import { INSTRUMENTS, instrumentById, isProviderErrorCode, truncatedHistory, type ReturnStats } from '@astro/research';
+import { INSTRUMENTS, instrumentById, isProviderErrorCode, listInstruments, truncatedHistory, type ReturnStats } from '@astro/research';
 import { useTranslator, type MessageKey } from '@astro/i18n';
 import { useInstrumentData } from '../../state/instrumentData.js';
 import { useSeriesStore } from '../../state/series.js';
+import { useStocks } from '../../state/stocks.js';
 import type { Layer, Sheet } from '../../lib/exporter.js';
 import { downloadCsv, downloadWorkbook, printReport, reportHtml, type ReportSection } from '../../lib/exporter.js';
 
@@ -80,14 +81,29 @@ export function useLayerLabel(): (l: Layer) => string {
   return (l) => t(`fa.layer.${l}` as MessageKey);
 }
 
+/** The built-in instruments, then the NSE stocks added in Instruments and charts (0.46). */
 export function InstrumentSelect({ value, onChange, ids }: { value: string; onChange: (id: string) => void; ids?: readonly string[] }): JSX.Element {
   const { t } = useTranslator();
+  // Read so a stock added or removed elsewhere re-renders the menu.
+  const added = useStocks((s) => s.added);
+  const all = listInstruments().filter((i) => !ids || ids.includes(i.id));
+  const builtIn = all.filter((i) => INSTRUMENTS.includes(i));
+  const stocks = all.filter((i) => !INSTRUMENTS.includes(i));
+  // A study reopened with a stock since removed still shows what it was run on.
+  const orphan = all.some((i) => i.id === value) ? null : instrumentById(value);
   return (
-    <label className="flex flex-col gap-1 text-sm">
+    <label className="flex min-w-0 max-w-full flex-col gap-1 text-sm">
       <span className="text-xs as-text-muted">{t('fa.instrument')}</span>
-      <select className={FIELD} value={value} onChange={(e) => onChange(e.target.value)}>
-        {INSTRUMENTS.filter((i) => !ids || ids.includes(i.id)).map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
+      <select className={`${FIELD} max-w-full`} value={value} onChange={(e) => onChange(e.target.value)}>
+        {orphan ? <option value={orphan.id}>{orphan.name}</option> : null}
+        {stocks.length ? (
+          <>
+            <optgroup label={t('fa.stocks.builtInGroup')}>{builtIn.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</optgroup>
+            <optgroup label={t('fa.stocks.group')}>{stocks.map((i) => <option key={i.id} value={i.id}>{i.symbol.replace(/\.NS$/, '')} · {i.name}</option>)}</optgroup>
+          </>
+        ) : builtIn.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}
       </select>
+      {added.length === 0 && !ids ? <span className="text-xs as-text-muted">{t('fa.stocks.hint')}</span> : null}
     </label>
   );
 }
@@ -148,7 +164,13 @@ export function DatasetCard({ instrumentId, compact = false }: { instrumentId: s
                 <span className="tabular-nums">{d.suspect.slice(0, 6).map((x) => `${x.date} (${n(x.close)} ← ${n(x.previousClose)} → ${n(x.backTo)})`).join('; ')}{d.suspect.length > 6 ? '; …' : ''}</span>
               </dd></>
           ) : null}
-          {truncatedHistory(d.providerFirstTrade, d.firstDate) !== null ? (
+          {d.beforeListing ? (
+            <dd role="alert" className="col-span-2 md:col-span-4 whitespace-normal text-amber-700 dark:text-amber-400">
+              {t('fa.data.beforeListing', { count: d.beforeListing.count, listed: d.beforeListing.listedOn, first: d.beforeListing.first, last: d.beforeListing.last })}
+            </dd>
+          ) : null}
+          {/* Bars set aside before a listing are not a cut-short history: compare from the listing day. */}
+          {truncatedHistory(d.providerFirstTrade && d.beforeListing && d.providerFirstTrade < d.beforeListing.listedOn ? d.beforeListing.listedOn : d.providerFirstTrade, d.firstDate) !== null ? (
             <dd role="alert" className="col-span-2 md:col-span-4 whitespace-normal text-amber-700 dark:text-amber-400">
               {t('provider.truncated', { provider: d.sourceLabel, firstTrade: d.providerFirstTrade ?? '', firstBar: d.firstDate })}
             </dd>

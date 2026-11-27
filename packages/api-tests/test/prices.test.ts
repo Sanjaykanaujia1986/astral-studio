@@ -155,3 +155,89 @@ describe('GET /api/prices with MARKET_DATA_PROVIDER=yahoo', () => {
     expect(res.status).toBe(400);
   });
 });
+
+/*
+ * NSE index lists (0.46). Synthetic files in NSE's published shapes: the
+ * companies, symbols and dates below are made up.
+ */
+const INDEX_CSV = [
+  'Company Name,Industry,Symbol,Series,ISIN Code',
+  'Alpha Widgets Ltd.,Capital Goods,ALPHA,EQ,INE000A00001',
+  'Beta & Sons Ltd.,Consumer Durables,B&S,EQ,INE000B00002',
+  'Gamma-Delta Ltd.,Financial Services,GAMMA-D,EQ,INE000C00003',
+  'Trust Units,Realty,TRUSTU,RR,INE000D00004',
+  'Alpha Widgets Ltd.,Capital Goods,ALPHA,EQ,INE000A00001',
+].join('\r\n');
+// EQUITY_L.csv pads its header names with a space, as NSE's does.
+const EQUITY_CSV = [
+  'SYMBOL,NAME OF COMPANY, SERIES, DATE OF LISTING, PAID UP VALUE, MARKET LOT, ISIN NUMBER, FACE VALUE',
+  'ALPHA,Alpha Widgets Limited,EQ,06-OCT-2008,5,1,INE000A00001,5',
+  'B&S,Beta & Sons Limited,EQ,08-FEB-1995,5,1,INE000B00002,5',
+  'GAMMA-D,Gamma-Delta Limited,EQ,31-FEB-2010,1,1,INE000C00003,1',
+].join('\n');
+
+describe('NSE index lists', () => {
+  it('reads NSE dates, and refuses an impossible one', () => {
+    expect(prices.nseListingDate('06-OCT-2008')).toBe('2008-10-06');
+    expect(prices.nseListingDate(' 08-feb-1995 ')).toBe('1995-02-08');
+    expect(prices.nseListingDate('31-FEB-2010')).toBeNull();
+    expect(prices.nseListingDate('2008-10-06')).toBeNull();
+  });
+  it('splits quoted cells', () => {
+    expect(prices.csvCells('"Alpha, Ltd.",X, "a ""b"""')).toEqual(['Alpha, Ltd.', 'X', 'a "b"']);
+  });
+  it('joins the index to the equity list by symbol, keeps & and -, drops repeats, and leaves an unknown listing date out', () => {
+    const stocks = prices.joinNseLists(INDEX_CSV, EQUITY_CSV);
+    expect(stocks.map((s) => s.symbol)).toEqual(['ALPHA', 'B&S', 'GAMMA-D', 'TRUSTU']);
+    expect(stocks[0]).toEqual({ symbol: 'ALPHA', name: 'Alpha Widgets Ltd.', industry: 'Capital Goods', series: 'EQ', isin: 'INE000A00001', listed: '2008-10-06' });
+    expect(stocks[1]!.listed).toBe('1995-02-08');
+    expect(stocks[2]!.listed).toBeUndefined();
+    expect(stocks[3]!.listed).toBeUndefined();
+  });
+  it('still lists the stocks without the equity list, and refuses an error page', () => {
+    expect(prices.joinNseLists(INDEX_CSV, null).every((s) => s.listed === undefined)).toBe(true);
+    expect(() => prices.joinNseLists('<html>Access denied</html>', EQUITY_CSV)).toThrow();
+  });
+});
+
+describe('GET /api/prices?list=', () => {
+  let admin = '';
+  beforeAll(async () => { admin = await signUp('lists-admin@example.com'); process.env.ADMIN_EMAILS = 'prices-admin@example.com,lists-admin@example.com'; });
+  afterEach(() => { vi.unstubAllGlobals(); });
+
+  it('answers only an admin, and needs no market-data provider', async () => {
+    const seen: string[] = [];
+    vi.stubGlobal('fetch', async (url: string, init?: RequestInit) => {
+      seen.push(`${url} ${new Headers(init?.headers).get('user-agent')}`);
+      return new Response(url.includes('EQUITY_L') ? EQUITY_CSV : INDEX_CSV, { status: 200 });
+    });
+    expect((await get('/api/prices?list=nifty500')).status).toBe(401);
+    expect(seen).toHaveLength(0);
+    const res = await get('/api/prices?list=nifty500', admin);
+    expect(res.status).toBe(200);
+    expect(res.headers.get('cache-control')).toBe('private, max-age=21600');
+    const body = (await res.json()) as { name: string; stocks: unknown[]; sources: string[]; readOn: string; listingDatesUnavailable?: boolean };
+    expect(body.name).toBe('NIFTY 500');
+    expect(body.stocks).toHaveLength(4);
+    expect(body.sources).toEqual([
+      'https://archives.nseindia.com/content/indices/ind_nifty500list.csv',
+      'https://archives.nseindia.com/content/equities/EQUITY_L.csv',
+    ]);
+    expect(body.readOn).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(body.listingDatesUnavailable).toBeUndefined();
+    // The app's own name, never a browser's.
+    expect(seen.every((s) => s.endsWith('astral-studio (+https://astro-beta-khaki.vercel.app)'))).toBe(true);
+  });
+  it('says when listing dates are missing, refuses an unknown list, and maps an outage', async () => {
+    vi.stubGlobal('fetch', async (url: string) => (url.includes('EQUITY_L') ? new Response('busy', { status: 503 }) : new Response(INDEX_CSV, { status: 200 })));
+    const partial = (await (await get('/api/prices?list=nifty50', admin)).json()) as { listingDatesUnavailable?: boolean; sources: string[] };
+    expect(partial.listingDatesUnavailable).toBe(true);
+    expect(partial.sources).toHaveLength(1);
+    const unknown = await get('/api/prices?list=sensex', admin);
+    expect(unknown.status).toBe(400);
+    expect(await unknown.json()).toEqual({ error: 'LIST_UNKNOWN' });
+    expect((await (await get('/api/prices?list=__proto__', admin)).json())).toEqual({ error: 'LIST_UNKNOWN' });
+    vi.stubGlobal('fetch', async () => new Response('busy', { status: 500 }));
+    expect((await (await get('/api/prices?list=nifty500', admin)).json())).toEqual({ error: 'LIST_UNAVAILABLE' });
+  });
+});

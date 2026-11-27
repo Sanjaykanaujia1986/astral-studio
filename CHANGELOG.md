@@ -2,6 +2,14 @@
 
 Newest first.
 
+## 0.46.0 — 2026-11-27
+Financial astrology on any NIFTY 500 stock.
+- NEW: **Any stock of an NSE index can be studied.** Instruments and charts has a new card, NSE stocks: load NIFTY 50, 100, 200 or 500 from NSE's own published list, search by symbol, company or industry, and add a stock. It then appears in Venus combustion, Daily vedha and the Add-record form, and its prices are fetched like any other series (Yahoo's SYMBOL.NS). RELIANCE, GOLDBEES and SILVERBEES are marked as already built in rather than added twice. The list is read only when asked, by signed-in admins, through the existing `/api/prices` route (`?list=nifty500`), so no new server function.
+- NEW: **Each added stock gets its NSE listing as a chart record.** The date comes from NSE's EQUITY_L.csv and is date-only (NSE gives no time), so no ascendant is computed. For listings before 2000 the record says this is likely the NSE listing, not the first listing: M&M shows 1996-01-03 on NSE, and Reliance 1995-11-29 against its 1978 Bombay listing.
+- FIX: **Prices dated before a stock's NSE listing are set aside.** Yahoo sends 531 bars for TCS.NS from 2002-08-12, two years before TCS listed on 2004-08-25. Those cannot be TCS trading on NSE. They are now left out and listed on the card, and studies start at the listing; nothing is filled in.
+- FIX: **Your own chart records can be used in Daily vedha.** They were listed in Instruments and charts but could not be chosen as the vedha chart.
+- CHANGE: **Daily vedha compares against the chart's own instrument.** A stock or Reliance record adds that instrument's prices beside NIFTY, gold and silver, and Methods A and B are counted against its sessions. Before, every record was compared with NIFTY.
+
 ## 0.45.0 — 2026-11-25
 From a full test of the Financial astrology page.
 - FIX: **Venus combustion no longer invents returns before a listing.** An episode before an instrument's first bar was measured from the first bar instead. SILVERBEES, listed in February 2022, showed 20 complete episodes from 2011, most with the same return. Such episodes, and any whose next bar lies across a gap in the data, are now left out and counted as "outside the data or across a gap". SILVERBEES now reports 6 episodes; NIFTY still reports all 20.

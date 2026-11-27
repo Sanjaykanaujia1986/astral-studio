@@ -23,6 +23,7 @@
  */
 import type { ExchangeCalendar } from './market/calendar.js';
 import { NSE_CALENDAR, BSE_CALENDAR, COMEX_CALENDAR } from './market/calendar.js';
+import type { Bar } from './market/csv.js';
 
 export type PriceBasis =
   | 'price-index'
@@ -46,6 +47,12 @@ export interface Instrument {
   readonly calendar: ExchangeCalendar;
   /** For futures: the contract and the roll, or that the source does not document it. */
   readonly contract?: string;
+  /**
+   * The day the instrument began trading on the exchange named (0.46: an NSE
+   * stock's listing date). A bar before it cannot be this instrument's own
+   * price there, so it is set aside, never kept.
+   */
+  readonly listedOn?: string;
 }
 
 export const INSTRUMENTS: readonly Instrument[] = [
@@ -99,7 +106,117 @@ export const INSTRUMENTS: readonly Instrument[] = [
 ];
 
 export function instrumentById(id: string): Instrument | undefined {
-  return INSTRUMENTS.find((i) => i.id === id);
+  const builtIn = INSTRUMENTS.find((i) => i.id === id);
+  if (builtIn) return builtIn;
+  // Any NSE stock id resolves, registered or not, so a study saved with a
+  // stock the reader has since removed still names its symbol.
+  const symbol = nseSymbolOf(id);
+  return symbol ? nseStockInstrument(stocks.get(symbol) ?? { symbol, name: symbol }) : undefined;
+}
+
+// ------------------------------------------------------------------ NSE stocks (0.46)
+
+/**
+ * A stock from an NSE index list (NIFTY 50 … NIFTY 500), as the reader
+ * added it. Read from NSE's own published files by `/api/prices?list=…`:
+ * the index constituents (`ind_nifty500list.csv`) joined to the equity list
+ * (`EQUITY_L.csv`) for the listing date. Nothing here is market data, and
+ * none of it is in the repository: the list is fetched when the reader asks.
+ */
+export interface NseStock {
+  /** NSE's symbol: `TCS`, `M&M`, `BAJAJ-AUTO`. */
+  readonly symbol: string;
+  readonly name: string;
+  readonly industry?: string;
+  readonly isin?: string;
+  /** EQUITY_L.csv "DATE OF LISTING", as YYYY-MM-DD. */
+  readonly listed?: string;
+  /** The day the list was read (IST), YYYY-MM-DD. */
+  readonly readOn?: string;
+}
+
+/** NSE symbols: capitals, digits, `&` and `-`, as NSE prints them. */
+export const NSE_SYMBOL = /^[A-Z0-9][A-Z0-9&-]{0,19}$/;
+const NSE_PREFIX = 'nse:';
+/** NSE's capital-market segment began trading on 3 November 1994. */
+export const NSE_EQUITY_START = '1994-11-03';
+
+export function nseStockId(symbol: string): string {
+  return `${NSE_PREFIX}${symbol}`;
+}
+
+/** The NSE symbol of a stock id, or null for any other id. */
+export function nseSymbolOf(id: string): string | null {
+  if (!id.startsWith(NSE_PREFIX)) return null;
+  const symbol = id.slice(NSE_PREFIX.length);
+  return NSE_SYMBOL.test(symbol) ? symbol : null;
+}
+
+/** The built-in instrument that already is this NSE symbol (RELIANCE, GOLDBEES, SILVERBEES), so it is never added twice. */
+export function builtInForNseSymbol(symbol: string): Instrument | undefined {
+  return INSTRUMENTS.find((i) => i.symbol === `${symbol}.NS`);
+}
+
+/**
+ * An NSE stock as an instrument. Prices are Yahoo's `SYMBOL.NS` daily bars
+ * through the same route as every other instrument, on the NSE calendar.
+ */
+export function nseStockInstrument(stock: Pick<NseStock, 'symbol' | 'name' | 'listed'>): Instrument {
+  return {
+    id: nseStockId(stock.symbol), name: stock.name, exchange: 'NSE', symbol: `${stock.symbol}.NS`, currency: 'INR',
+    priceBasis: 'equity-as-provided',
+    adjustment:
+      'Closes as the data source provides them: Yahoo normally adjusts its daily closes for splits, not for dividends. Check the ' +
+      'company’s corporate actions (splits, bonuses, mergers, demergers) and look for a jump on the ex-date before comparing prices across one.',
+    hasVolume: true, calendar: NSE_CALENDAR,
+    ...(stock.listed ? { listedOn: stock.listed } : {}),
+  };
+}
+
+export interface BeforeListing {
+  readonly listedOn: string;
+  readonly count: number;
+  readonly first: string;
+  readonly last: string;
+}
+
+/**
+ * Sets aside the bars dated before an instrument's listing day.
+ *
+ * Found in November 2026: Yahoo sends 531 daily bars for TCS.NS from
+ * 2002-08-12, two years before TCS listed on NSE (2004-08-25). Whatever those
+ * prices are, they are not TCS trading on NSE, and a study would read them as
+ * if they were (Venus episodes "measured" before the company was listed). They
+ * are left out and listed, as the bad-bar screen does; nothing is filled in.
+ */
+export function setAsideBeforeListing(bars: readonly Bar[], listedOn: string | undefined): { bars: readonly Bar[]; before: BeforeListing | null } {
+  if (!listedOn) return { bars, before: null };
+  const before = bars.filter((b) => b.date < listedOn);
+  if (before.length === 0) return { bars, before: null };
+  return {
+    bars: bars.filter((b) => b.date >= listedOn),
+    before: { listedOn, count: before.length, first: before[0]!.date, last: before[before.length - 1]!.date },
+  };
+}
+
+const stocks = new Map<string, NseStock>();
+
+/**
+ * Sets the stocks the reader has added. Replaces the previous set; a symbol
+ * that is malformed or already built in is skipped.
+ */
+export function registerNseStocks(list: readonly NseStock[]): void {
+  stocks.clear();
+  for (const s of list) if (NSE_SYMBOL.test(s.symbol) && !builtInForNseSymbol(s.symbol)) stocks.set(s.symbol, s);
+}
+
+export function registeredNseStocks(): NseStock[] {
+  return [...stocks.values()];
+}
+
+/** The built-in instruments, then the stocks the reader added. */
+export function listInstruments(): Instrument[] {
+  return [...INSTRUMENTS, ...[...stocks.values()].map(nseStockInstrument)];
 }
 
 // ------------------------------------------------------------------ chart records
@@ -185,9 +302,37 @@ export const CHART_RECORDS: readonly ChartRecord[] = [
  */
 export const MISSING_RECORDS: readonly { readonly instrumentId: string; readonly kind: ChartKind; readonly needed: string }[] = [];
 
-/** The records of one instrument, built-in and the user's own. */
+/**
+ * The NSE listing record of an added stock, from EQUITY_L.csv, or null when
+ * the list gave no listing date (REITs and InvITs are not in that file).
+ *
+ * Date only: NSE publishes no time. It is the NSE listing, which for a
+ * company that traded on BSE or a regional exchange before NSE opened in
+ * November 1994 is not its first listing; for a listing before 2000 the note
+ * says so plainly.
+ */
+export function nseListingRecord(stock: NseStock): ChartRecord | null {
+  if (!stock.listed || !/^\d{4}-\d{2}-\d{2}$/.test(stock.listed)) return null;
+  const early = stock.listed < '2000-01-01';
+  return {
+    id: `nse-${stock.symbol}-listing`, instrumentId: nseStockId(stock.symbol), kind: 'listing', date: stock.listed,
+    timeCertainty: 'date-only', place: MUMBAI, timeZone: 'Asia/Kolkata',
+    source: `NSE equity list (EQUITY_L.csv), "DATE OF LISTING"${stock.readOn ? `, read ${stock.readOn}` : ''}. The day the shares were listed on NSE; NSE gives no time.`,
+    note: early
+      ? 'NSE began equity trading in November 1994, and most companies it listed before 2000 were already trading on BSE or a regional exchange, so this is likely its NSE listing, not its first listing. Add the earlier record yourself if you have a source for it.'
+      : 'If the company listed earlier on another exchange, that is a different chart: add it as your own record with its source.',
+  };
+}
+
+/** Every record: built-in, the added stocks' NSE listings, then the reader's own. */
+export function allChartRecords(own: readonly ChartRecord[] = []): ChartRecord[] {
+  const listings = [...stocks.values()].flatMap((s) => { const r = nseListingRecord(s); return r ? [r] : []; });
+  return [...CHART_RECORDS, ...listings, ...own];
+}
+
+/** The records of one instrument: built-in, an added stock's NSE listing, and the user's own. */
 export function chartRecordsFor(instrumentId: string, own: readonly ChartRecord[] = []): ChartRecord[] {
-  return [...CHART_RECORDS, ...own].filter((r) => r.instrumentId === instrumentId);
+  return allChartRecords(own).filter((r) => r.instrumentId === instrumentId);
 }
 
 export type RecordProblem = 'BAD_DATE' | 'BAD_TIME' | 'TIME_WITHOUT_CERTAINTY' | 'CERTAINTY_WITHOUT_TIME' | 'NO_SOURCE' | 'BAD_PLACE';

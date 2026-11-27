@@ -96,7 +96,9 @@ export { dailyRows, FLAT_PCT, type DailyRow, type Direction } from './market/dai
 // Instruments and their chart records
 export {
   INSTRUMENTS, CHART_RECORDS, MISSING_RECORDS, instrumentById, chartRecordsFor, validateRecord,
-  type Instrument, type PriceBasis, type ChartRecord, type ChartKind, type TimeCertainty, type RecordProblem,
+  NSE_SYMBOL, NSE_EQUITY_START, nseStockId, nseSymbolOf, builtInForNseSymbol, nseStockInstrument, registerNseStocks,
+  registeredNseStocks, listInstruments, nseListingRecord, allChartRecords, setAsideBeforeListing,
+  type Instrument, type PriceBasis, type ChartRecord, type ChartKind, type TimeCertainty, type RecordProblem, type NseStock, type BeforeListing,
 } from './instruments.js';
 export {
   deriveChartFacts,

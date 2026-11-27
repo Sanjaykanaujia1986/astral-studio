@@ -8,31 +8,39 @@
  * as a convention. Reliance's incorporation and listing charts are compared
  * side by side; the listing record is missing until someone supplies an
  * exchange record, and the screen says so instead of inventing one.
+ *
+ * Since 0.46 any stock of an NSE index (NIFTY 50 to NIFTY 500) can be added
+ * from NSE's own list; it then works as an instrument in every tab, with its
+ * NSE listing date as a date-only chart record.
  */
 import { useEffect, useMemo, useState, type JSX } from 'react';
 import {
-  INSTRUMENTS, MISSING_RECORDS, chartRecordsFor, validateRecord, deriveChartFacts, instrumentById,
-  type ChartRecord, type ChartFacts, type ChartKind, type TimeCertainty,
+  MISSING_RECORDS, chartRecordsFor, validateRecord, deriveChartFacts, instrumentById, listInstruments, builtInForNseSymbol,
+  type ChartRecord, type ChartFacts, type ChartKind, type TimeCertainty, type NseStock,
 } from '@astro/research';
 import { useTranslator, type MessageKey } from '@astro/i18n';
 import { getProvider } from '../../lib/engine.js';
 import { useJy } from '../vedic/shared.js';
+import { useStocks, NSE_LIST_IDS, type NseListId } from '../../state/stocks.js';
 import { CalcSettingsFields, DatasetCard, FIELD, BUTTON, TH, TD, CARD, DEFAULT_SIDEREAL, type CalcSettingsValue } from './shared.js';
 
-const OWN_KEY = 'astro.fa.ownRecords';
 const KINDS: readonly ChartKind[] = ['incorporation', 'ipo', 'listing', 'first-trade', 'index-launch', 'index-base-date'];
-
-function loadOwn(): ChartRecord[] {
-  try { const v = JSON.parse(localStorage.getItem(OWN_KEY) ?? '[]') as unknown; return Array.isArray(v) ? (v as ChartRecord[]).filter((r) => validateRecord(r).length === 0) : []; } catch { return []; }
-}
+/** Matches shown at once; the search narrows the rest. */
+const SHOWN = 25;
+const LIST_ERRORS = new Set(['LIST_UNAVAILABLE', 'LIST_UNKNOWN', 'LIST_MALFORMED', 'SIGN_IN_REQUIRED', 'PROVIDER_TIMEOUT']);
 
 export function InstrumentsTab(): JSX.Element {
   const { t } = useTranslator();
   const [settings, setSettings] = useState<CalcSettingsValue>(DEFAULT_SIDEREAL);
-  const [own, setOwn] = useState<ChartRecord[]>(loadOwn);
+  const own = useStocks((s) => s.own);
+  const addOwn = useStocks((s) => s.addOwn);
+  const removeOwn = useStocks((s) => s.removeOwn);
+  // The added stocks are registered with the research package; reading them here re-renders on a change.
+  const added = useStocks((s) => s.added);
+  const instruments = useMemo(() => listInstruments(), [added]);
   const [facts, setFacts] = useState<Record<string, ChartFacts | string>>({});
 
-  const records = useMemo(() => INSTRUMENTS.flatMap((i) => chartRecordsFor(i.id, own)), [own]);
+  const records = useMemo(() => instruments.flatMap((i) => chartRecordsFor(i.id, own)), [instruments, own]);
   useEffect(() => {
     let live = true;
     void getProvider().then((p) => {
@@ -44,24 +52,16 @@ export function InstrumentsTab(): JSX.Element {
     return () => { live = false; };
   }, [records, settings]);
 
-  const addOwn = (r: ChartRecord): void => {
-    const next = [...own.filter((x) => x.id !== r.id), r];
-    setOwn(next);
-    try { localStorage.setItem(OWN_KEY, JSON.stringify(next)); } catch { /* storage blocked: the record lives for this visit */ }
-  };
-  const removeOwn = (id: string): void => {
-    const next = own.filter((x) => x.id !== id);
-    setOwn(next);
-    try { localStorage.setItem(OWN_KEY, JSON.stringify(next)); } catch { /* ignore */ }
-  };
 
   return (
     <div className="space-y-4">
       <section className={CARD} aria-labelledby="inst-list">
         <h3 id="inst-list" className="font-semibold">{t('fa.instruments')}</h3>
         <p className="text-xs as-text-muted">{t('fa.instruments.note')}</p>
-        <div className="grid gap-2 md:grid-cols-2">{INSTRUMENTS.map((i) => <DatasetCard key={i.id} instrumentId={i.id} />)}</div>
+        <div className="grid gap-2 md:grid-cols-2">{instruments.map((i) => <DatasetCard key={i.id} instrumentId={i.id} />)}</div>
       </section>
+
+      <StocksCard />
 
       <section className={CARD} aria-labelledby="inst-charts">
         <h3 id="inst-charts" className="font-semibold">{t('fa.charts')}</h3>
@@ -81,7 +81,7 @@ export function InstrumentsTab(): JSX.Element {
 
       <section className={CARD} aria-labelledby="inst-add">
         <h3 id="inst-add" className="font-semibold">{t('fa.charts.add')}</h3>
-        <AddRecord onAdd={addOwn} />
+        <AddRecord onAdd={addOwn} instruments={instruments} />
       </section>
     </div>
   );
@@ -152,7 +152,79 @@ function RelianceComparison({ records, facts }: { records: readonly ChartRecord[
   );
 }
 
-function AddRecord({ onAdd }: { onAdd: (r: ChartRecord) => void }): JSX.Element {
+/** Any stock of an NSE index, from NSE's own list: search, add, remove. */
+function StocksCard(): JSX.Element {
+  const { t } = useTranslator();
+  const { list, added, loading, error, loadList, add, remove } = useStocks();
+  const [which, setWhich] = useState<NseListId>(list?.list ?? 'nifty500');
+  const [q, setQ] = useState('');
+  const matches = useMemo(() => {
+    if (!list) return [];
+    const needle = q.trim().toLowerCase();
+    if (!needle) return list.stocks;
+    // Symbol first, then name, then industry: "TCS" should not open on a bank.
+    const bySymbol = list.stocks.filter((s) => s.symbol.toLowerCase().startsWith(needle));
+    const byName = list.stocks.filter((s) => !bySymbol.includes(s) && s.name.toLowerCase().includes(needle));
+    const byIndustry = list.stocks.filter((s) => !bySymbol.includes(s) && !byName.includes(s) && (s.industry ?? '').toLowerCase().includes(needle));
+    return [...bySymbol, ...byName, ...byIndustry];
+  }, [list, q]);
+  const isAdded = (s: NseStock): boolean => added.some((a) => a.symbol === s.symbol);
+  return (
+    <section className={CARD} aria-labelledby="inst-stocks">
+      <h3 id="inst-stocks" className="font-semibold">{t('fa.stocks')}</h3>
+      <p className="text-xs as-text-muted">{t('fa.stocks.note')}</p>
+      <div className="flex flex-wrap items-end gap-3 text-sm">
+        <label className="flex flex-col gap-1"><span className="text-xs as-text-muted">{t('fa.stocks.index')}</span>
+          <select className={FIELD} value={which} onChange={(e) => setWhich(e.target.value as NseListId)}>
+            {NSE_LIST_IDS.map((id) => <option key={id} value={id}>{t(`fa.stocks.list.${id}` as MessageKey)}</option>)}
+          </select></label>
+        <button type="button" className={BUTTON} disabled={loading} onClick={() => void loadList(which)}>{t(list ? 'fa.stocks.reload' : 'fa.stocks.load')}</button>
+        <span role="status" className="text-xs as-text-muted">
+          {loading ? t('fa.stocks.loading') : list ? t('fa.stocks.loaded', { count: list.stocks.length, name: list.name, date: list.readOn }) : ''}
+        </span>
+      </div>
+      {error ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{LIST_ERRORS.has(error) ? t(`fa.stocks.error.${error}` as MessageKey) : error}</p> : null}
+      {list?.listingDatesUnavailable ? <p className="text-xs text-amber-700 dark:text-amber-400">{t('fa.stocks.noDates')}</p> : null}
+      {list ? (
+        <div className="space-y-2">
+          <label className="flex max-w-md flex-col gap-1 text-sm"><span className="text-xs as-text-muted">{t('fa.stocks.search')}</span>
+            <input type="search" className={FIELD} value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('fa.stocks.searchHint')} /></label>
+          <ul className="divide-y as-border text-sm" aria-label={t('fa.stocks.results')}>
+            {matches.slice(0, SHOWN).map((s) => {
+              const builtIn = builtInForNseSymbol(s.symbol);
+              return (
+                <li key={s.symbol} className="flex flex-wrap items-center gap-x-3 gap-y-1 py-1.5">
+                  <span className="min-w-[5.5rem] font-medium sm:min-w-[7rem]">{s.symbol}</span>
+                  <span className="min-w-0 flex-1">{s.name}<span className="block text-xs as-text-muted">{s.industry}{s.listed ? ` · ${t('fa.stocks.listed', { date: s.listed })}` : ''}</span></span>
+                  {builtIn ? <span className="text-xs as-text-muted">{t('fa.stocks.builtIn', { name: builtIn.name })}</span>
+                    : isAdded(s) ? <span className="text-xs as-text-muted">{t('fa.stocks.added')}</span>
+                    : <button type="button" className={BUTTON} onClick={() => add(s)} aria-label={t('fa.stocks.addOne', { symbol: s.symbol })}>{t('fa.stocks.add')}</button>}
+                </li>
+              );
+            })}
+          </ul>
+          {matches.length === 0 ? <p className="text-xs as-text-muted">{t('fa.stocks.none')}</p> : null}
+          {matches.length > SHOWN ? <p className="text-xs as-text-muted">{t('fa.stocks.more', { count: matches.length - SHOWN })}</p> : null}
+        </div>
+      ) : null}
+      {added.length ? (
+        <div className="space-y-1">
+          <h4 className="text-xs as-text-muted">{t('fa.stocks.yours', { count: added.length })}</h4>
+          <ul className="flex flex-wrap gap-2 text-sm">
+            {added.map((s) => (
+              <li key={s.symbol} className="flex items-center gap-1 rounded-md border as-border pl-2">
+                <span>{s.symbol}</span>
+                <button type="button" className="min-h-[40px] min-w-[40px] rounded-md px-2 as-hover-inset" onClick={() => remove(s.symbol)} aria-label={t('fa.stocks.removeOne', { symbol: s.symbol })}>×</button>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+    </section>
+  );
+}
+
+function AddRecord({ onAdd, instruments }: { onAdd: (r: ChartRecord) => void; instruments: readonly { id: string; name: string }[] }): JSX.Element {
   const { t } = useTranslator();
   const [instrumentId, setInstrumentId] = useState('reliance');
   const [kind, setKind] = useState<ChartKind>('listing');
@@ -182,7 +254,7 @@ function AddRecord({ onAdd }: { onAdd: (r: ChartRecord) => void }): JSX.Element 
   return (
     <div className="space-y-2">
       <div className="flex flex-wrap items-end gap-3">
-        {L(t('fa.instrument'), <select className={FIELD} value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)}>{INSTRUMENTS.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select>)}
+        {L(t('fa.instrument'), <select className={`${FIELD} max-w-full`} value={instrumentId} onChange={(e) => setInstrumentId(e.target.value)}>{instruments.map((i) => <option key={i.id} value={i.id}>{i.name}</option>)}</select>)}
         {L(t('fa.charts.kind'), <select className={FIELD} value={kind} onChange={(e) => setKind(e.target.value as ChartKind)}>{KINDS.map((k) => <option key={k} value={k}>{t(`fa.kind.${k}` as MessageKey)}</option>)}</select>)}
         {L(t('fa.date'), <input type="date" className={FIELD} value={date} onChange={(e) => setDate(e.target.value)} />)}
         {L(t('fa.charts.certainty'), <select className={FIELD} value={certainty} onChange={(e) => { setCertainty(e.target.value as TimeCertainty); if (e.target.value === 'date-only') setTime(''); }}>

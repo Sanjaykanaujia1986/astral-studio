@@ -179,6 +179,7 @@ if (bundle) {
     ['Sarvatobhadra Horaratna tradition (0.43)', 'fa.vedha.sourced'],
     ['Bad-bar screen on price series (0.44)', 'fa.data.suspectCount'],
     ['Holdout split note in the Signal study (0.45)', 'research.split'],
+    ['NSE stock picker in Instruments and charts (0.46)', 'fa.stocks.load'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {
@@ -268,6 +269,10 @@ section('Market data API');
 const anonymousPrices = await json('/api/prices?symbol=%5ENSEI');
 check('prices refuse a signed-out caller', anonymousPrices.status === 401 && anonymousPrices.body?.error === 'SIGN_IN_REQUIRED',
   `${anonymousPrices.status} ${anonymousPrices.body?.error ?? ''}`);
+// 0.46: the NSE index lists go through the same route and the same gate.
+const anonymousList = await json('/api/prices?list=nifty500');
+check('NSE index lists refuse a signed-out caller', anonymousList.status === 401 && anonymousList.body?.error === 'SIGN_IN_REQUIRED',
+  `${anonymousList.status} ${anonymousList.body?.error ?? ''}`);
 
 // ------------------------------------------------------- accounts & access
 /*

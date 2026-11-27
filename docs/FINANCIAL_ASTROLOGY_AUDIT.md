@@ -326,6 +326,18 @@ The test covered every tab and control, each instrument and tradition, the expor
 
 Checked and working: access (customers and signed-out visitors cannot reach the page), all seven fetches (0 rows rejected), record validation, all 20 Vedha tradition and record pairs, the 400-day cap and the 2027 notice, Cancel, CSV, Excel and print exports (valid XML, no formula-like cells), saving and reopening a study with its dataset warning, a remembered series across a reload, Hindi and Gujarati with no raw keys, and no console errors.
 
+## 0.46.0: any NIFTY 500 stock
+
+| Piece | Rule | Evidence |
+|---|---|---|
+| Stock list | NSE's `ind_nifty{50,100,200,500}list.csv` joined by symbol to `EQUITY_L.csv`, read on request through `/api/prices?list=` (admin only, private cache, the app's own user agent). Nothing is stored in the repository. | api-tests `prices` (join, quoted cells, impossible dates, error page refused, 401, partial answer without listing dates) |
+| Instrument | `nse:SYMBOL`, Yahoo `SYMBOL.NS`, INR, NSE calendar. A symbol that is a built-in (RELIANCE, GOLDBEES, SILVERBEES) is not added twice. A removed stock still resolves by its symbol, so a saved study keeps its name. | research `stocks.test` |
+| Chart record | NSE "DATE OF LISTING", date-only, Mumbai. Before 2000 the record says it is likely not the first listing. | `stocks.test`; Reliance NSE 1995-11-29 against the 1978 Bombay listing |
+| Bars before listing | Set aside and listed, never kept: Yahoo's TCS.NS has 531 bars from 2002-08-12 against a 2004-08-25 listing. | `stocks.test`; live TCS.NS check |
+| Daily vedha | Records: built-in, added stocks' listings and the reader's own. The record's instrument joins the price columns, and Methods A and B are counted against it. | Browser check (TCS listing, 43 days) |
+
+Verified on 2026-11-27 against NSE's live files: NIFTY 500 has 501 rows, and 498 have a listing date. The three without one are REITs (`RR` series), which `EQUITY_L.csv` does not carry.
+
 ## Blocked items still open, their effect, and the evidence needed
 
 | Item | Effect now | Evidence needed |

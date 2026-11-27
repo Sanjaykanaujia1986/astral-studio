@@ -11,7 +11,7 @@
 import { useMemo, useRef, useState, type JSX } from 'react';
 import { resolveCivilTime, type EphemerisProvider } from '@astro/engine';
 import {
-  CHART_RECORDS, instrumentById, deriveChartFacts, dailyRows,
+  allChartRecords, instrumentById, deriveChartFacts, dailyRows,
   type ChartFacts, type DailyRow,
 } from '@astro/research';
 import {
@@ -23,6 +23,7 @@ import { useTranslator, type MessageKey } from '@astro/i18n';
 import { getProvider } from '../../lib/engine.js';
 import { searchVedha, cancelSearches, SearchError } from '../../lib/search.js';
 import { useInstrumentData } from '../../state/instrumentData.js';
+import { useStocks } from '../../state/stocks.js';
 import { saveStudy, RunCache, type RunStatus } from '../../state/studies.js';
 import type { Sheet } from '../../lib/exporter.js';
 import { useJy } from '../vedic/shared.js';
@@ -31,7 +32,12 @@ import {
 } from './shared.js';
 
 const TRADITIONS: readonly SbcTradition[] = [SBC_HORARATNA_V1, SBC_ALL_THREE_V1, SBC_GEOMETRY_V1, SBC_METHOD_A_FIXTURE];
-const PRICE_IDS = ['nifty50', 'gold', 'silver'] as const;
+/**
+ * Always shown beside the vedha days. The chart record's own instrument is
+ * added when it is not one of these (Reliance, SENSEX, an NSE stock), and the
+ * Method A/B comparison is made against that instrument's sessions (0.46).
+ */
+const BASE_PRICE_IDS: readonly string[] = ['nifty50', 'gold', 'silver'];
 /** Days per run. A longer range is cut here and the cut is said, never silent. */
 const MAX_DAYS = 400;
 
@@ -107,7 +113,13 @@ export function VedhaTab(): JSX.Element {
   const generation = useRef(0);
   const set = <K extends keyof Config>(k: K, v: Config[K]): void => setConfig((c) => ({ ...c, [k]: v }));
   const tradition = TRADITIONS.find((x) => x.id === config.traditionId) ?? SBC_HORARATNA_V1;
-  const records = CHART_RECORDS;
+  const own = useStocks((s) => s.own);
+  const added = useStocks((s) => s.added);
+  // Built-in records, the added stocks' NSE listings and the reader's own records (0.46: before, own records could not be chosen here).
+  const records = useMemo(() => allChartRecords(own), [own, added]);
+  const record = records.find((r) => r.id === config.recordId) ?? records[0]!;
+  const compareId = record.instrumentId;
+  const PRICE_IDS = useMemo(() => (BASE_PRICE_IDS.includes(compareId) ? BASE_PRICE_IDS : [...BASE_PRICE_IDS, compareId]), [compareId]);
 
   const dates = useMemo(() => {
     const out: string[] = [];
@@ -118,13 +130,12 @@ export function VedhaTab(): JSX.Element {
 
   const calculate = async (): Promise<void> => {
     const my = ++generation.current;
-    const key = { kind: 'vedha', ...config, data: PRICE_IDS.map((id) => datasets[id]?.fingerprint ?? null) };
+    const key = { kind: 'vedha', ...config, recordId: record.id, data: PRICE_IDS.map((id) => datasets[id]?.fingerprint ?? null) };
     const hit = cache.get(key);
     if (hit) { setRun(hit); setStatus('complete'); return; }
     setStatus('running'); setError(null); setNotice(null);
     try {
       const provider = await getProvider();
-      const record = records.find((r) => r.id === config.recordId)!;
       const facts = deriveChartFacts(provider, record, config.settings);
       const { input } = natalTargets(provider, facts, config.settings, config);
       const [hh, mm] = config.time.split(':').map(Number);
@@ -134,7 +145,7 @@ export function VedhaTab(): JSX.Element {
       });
       const res = await searchVedha({ days, settings: { zodiac: config.settings.zodiac, nodeType: config.settings.nodeType }, tradition, targets: resolveTargets(input) });
       if (my !== generation.current) return;
-      const r: Run = { days: res.days, ephemerisVersion: res.ephemerisVersion, facts, config };
+      const r: Run = { days: res.days, ephemerisVersion: res.ephemerisVersion, facts, config: { ...config, recordId: record.id } };
       cache.set(key, r); setRun(r); setStatus('complete');
     } catch (cause) {
       if (my !== generation.current) return;
@@ -147,7 +158,7 @@ export function VedhaTab(): JSX.Element {
   const prices = useMemo(() => Object.fromEntries(PRICE_IDS.map((id) => {
     const inst = instrumentById(id)!;
     return [id, dailyRows(datasets[id]?.series ?? null, inst.calendar, config.from, config.to)];
-  })) as Record<(typeof PRICE_IDS)[number], DailyRow[]>, [datasets, config.from, config.to]);
+  })) as Record<string, DailyRow[]>, [PRICE_IDS, datasets, config.from, config.to]);
 
   const targetLabel = (kind: TargetKind, value: string): string => {
     if (!value) return t(`fa.target.${kind}` as MessageKey);
@@ -169,14 +180,15 @@ export function VedhaTab(): JSX.Element {
     return `${r.close!.toFixed(2)} ${r.direction === 'up' ? '▲' : r.direction === 'down' ? '▼' : '='} ${r.changePct!.toFixed(2)}%${r.irregular ? ' *' : ''}`;
   };
 
-  // A comparison over valid NIFTY sessions: days with at least one malefic hit on any target, by method, against the day's direction.
+  // A comparison over the record's own instrument's valid sessions: days with at least one malefic hit on any target, by method, against the day's direction.
+  const runCompareId = run ? run.facts.record.instrumentId : compareId;
   const comparison = useMemo(() => {
     if (!run) return null;
-    const nifty = new Map(prices.nifty50.map((r) => [r.date, r]));
+    const sessions = new Map((prices[runCompareId] ?? []).map((r) => [r.date, r]));
     return (['A', 'B'] as const).map((method) => {
       const cells = { hit: { up: 0, down: 0, flat: 0 }, none: { up: 0, down: 0, flat: 0 }, notEvaluated: 0 };
       for (const d of run.days) {
-        const p = nifty.get(d.date);
+        const p = sessions.get(d.date);
         if (!p || p.status !== 'session' || p.irregular || p.direction === null) continue;
         const evals = d.evaluations.filter((e) => e.method === method && e.target.cell && (compareTarget === 'any' || e.target.kind === compareTarget));
         if (evals.length === 0 || evals.every((e) => e.outcome === 'not-evaluated')) { cells.notEvaluated += 1; continue; }
@@ -185,7 +197,7 @@ export function VedhaTab(): JSX.Element {
       }
       return { method, ...cells };
     });
-  }, [run, prices, compareTarget]);
+  }, [run, prices, compareTarget, runCompareId]);
 
   const sheets = useMemo<Sheet[]>(() => {
     if (!run) return [];
@@ -204,7 +216,7 @@ export function VedhaTab(): JSX.Element {
       rows: run.days.map((d) => {
         const row: Record<string, string | number | null> = { date: d.date, time: run.config.time, tithi: `${d.tithi} (${d.paksha})`, a: hitsTextEn(d, 'A'), b: hitsTextEn(d, 'B') };
         for (const id of PRICE_IDS) {
-          const p = prices[id].find((r) => r.date === d.date);
+          const p = (prices[id] ?? []).find((r) => r.date === d.date);
           row[`${id}Status`] = p ? `${p.status}${p.holiday ? ` (${p.holiday})` : ''}${p.disputed ? ` (disputed: ${p.disputed})` : ''}${p.special ? ` (${p.special})` : ''}${p.irregular ? ' irregular' : ''}` : '';
           row[`${id}Close`] = p?.close ?? null; row[`${id}Dir`] = p?.direction ?? null;
         }
@@ -330,7 +342,7 @@ export function VedhaTab(): JSX.Element {
         {tradition.sidesBasis ? <p className="text-xs as-text-muted"><span className="font-medium">{t('fa.vedha.sides')}:</span> {tradition.sidesBasis}</p> : null}
         {problems.length ? <p role="alert" className="text-xs text-red-700 dark:text-red-400">{problems.join(', ')}</p> : null}
         <p className="text-xs as-text-muted">{t('fa.vedha.nameNote')}</p>
-        <div className="grid gap-2 md:grid-cols-3">{PRICE_IDS.map((id) => <DatasetCard key={id} instrumentId={id} compact />)}</div>
+        <div className={`grid gap-2 ${PRICE_IDS.length > 3 ? "md:grid-cols-2 xl:grid-cols-4" : "md:grid-cols-3"}`}>{PRICE_IDS.map((id) => <DatasetCard key={id} instrumentId={id} compact />)}</div>
         <div className="flex flex-wrap items-center gap-2">
           <button type="button" className={PRIMARY} disabled={busy || dates.length === 0 || inputProblems.length > 0} onClick={() => void calculate()}>{t('fa.calculate')}</button>
           {busy ? <button type="button" className={BUTTON} onClick={cancel}>{t('fa.cancel')}</button> : null}
@@ -371,7 +383,7 @@ export function VedhaTab(): JSX.Element {
               <tbody>
                 {run.days.map((d) => (
                   <Row key={d.date} d={d} open={open === d.date} onToggle={() => setOpen((x) => (x === d.date ? null : d.date))}
-                    a={hitsText(d, 'A')} b={hitsText(d, 'B')} prices={PRICE_IDS.map((id) => dirText(prices[id].find((r) => r.date === d.date)))}
+                    a={hitsText(d, 'A')} b={hitsText(d, 'B')} prices={PRICE_IDS.map((id) => dirText((prices[id] ?? []).find((r) => r.date === d.date)))}
                     nak28={nak28} targetLabel={targetLabel} time={run.config.time} />
                 ))}
               </tbody>
@@ -383,8 +395,8 @@ export function VedhaTab(): JSX.Element {
 
       {comparison ? (
         <section className={CARD} aria-labelledby="vedha-compare">
-          <h3 id="vedha-compare" className="font-semibold">{t('fa.vedha.compare')}</h3>
-          <p className="text-xs as-text-muted">{t('fa.vedha.compareNote')}</p>
+          <h3 id="vedha-compare" className="font-semibold">{t('fa.vedha.compare', { instrument: instrumentById(runCompareId)?.name ?? runCompareId })}</h3>
+          <p className="text-xs as-text-muted">{t('fa.vedha.compareNote', { instrument: instrumentById(runCompareId)?.name ?? runCompareId })}</p>
           <label className="flex flex-col gap-1 text-sm"><span className="text-xs as-text-muted">{t('fa.vedha.compareTarget')}</span>
             <select className={`${FIELD} max-w-xs`} value={compareTarget} onChange={(e) => setCompareTarget(e.target.value as TargetKind | 'any')}>
               <option value="any">{t('fa.vedha.anyTarget')}</option>

@@ -287,6 +287,12 @@ conjunction. Its rules:
   first-trade day precedes the first bar it sent by more than 30 days
   (Yahoo, Nov 2026: RELIANCE.BO and INFY.BO, 8 bars against a 1995 first
   trade), the page says so. Nothing is filled in.
+- **Bars before a listing are set aside** (0.46, `setAsideBeforeListing`).
+  An NSE stock added from an index list carries its NSE listing day, and a
+  bar dated before it cannot be that stock's NSE price. Yahoo's TCS.NS
+  (Nov 2026) begins on 2002-08-12, two years before the 2004-08-25 listing.
+  Those bars are left out and listed; the fingerprint stays on the data as
+  loaded.
 - **Vendor faults are screened out, never repaired** (`screenBars`). A bar
   more than 40 % away from the previous close that comes back within 10 %
   of it inside 10 bars is set aside and listed with both prices: in practice

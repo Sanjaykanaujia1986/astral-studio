@@ -12,7 +12,7 @@
  * choice, not a side effect.
  */
 import { create } from 'zustand';
-import { makeSeries, parseMarketCsv, ProviderError, screenBars, type Bar, type Series, type SuspectBar } from '@astro/research';
+import { instrumentById, makeSeries, parseMarketCsv, ProviderError, screenBars, setAsideBeforeListing, type Bar, type BeforeListing, type Series, type SuspectBar } from '@astro/research';
 import { apiProvider } from '../lib/prices.js';
 
 const KEY = 'astro.fa.datasets';
@@ -38,6 +38,8 @@ export interface DatasetDescriptor {
   readonly suspect?: readonly SuspectBar[];
   /** The provider's own first-trade day, when it said (0.45): shows a history it cut short. */
   readonly providerFirstTrade?: string;
+  /** Bars dated before the instrument's listing day, set aside (0.46). */
+  readonly beforeListing?: BeforeListing;
   readonly importedAt: string;
 }
 
@@ -72,10 +74,13 @@ function writeDescriptors(d: Record<string, DatasetDescriptor>): void {
 
 async function build(instrumentId: string, origin: DatasetOrigin, sourceLabel: string, bars: readonly Bar[], columns: readonly string[], rejected: number): Promise<Dataset> {
   // Studies read the screened bars; the fingerprint stays on the data as loaded, so the same file gives the same value.
-  const screened = screenBars(bars);
+  const listing = setAsideBeforeListing(bars, instrumentById(instrumentId)?.listedOn);
+  if (listing.bars.length === 0) throw Object.assign(new Error('every bar predates the listing'), { code: 'NO_ROWS' });
+  const screened = screenBars(listing.bars);
   const series = makeSeries(instrumentId, screened.bars);
   return {
     instrumentId, origin, sourceLabel, columns, closeColumn: closeColumnOf(columns), rows: bars.length, rejected, suspect: screened.suspect,
+    ...(listing.before ? { beforeListing: listing.before } : {}),
     firstDate: series.firstDate, lastDate: series.lastDate, hasVolume: bars.some((b) => b.volume !== undefined && b.volume > 0),
     fingerprint: await fingerprintBars(bars), importedAt: new Date().toISOString(), series,
   };
@@ -126,11 +131,15 @@ export const useInstrumentData = create<State>((set, get) => {
         const built = await build(instrumentId, 'provider', fetched.providerName ?? apiProvider.describe.name, fetched.bars, ['date', 'close'], 0);
         put(fetched.providerFirstTrade ? { ...built, providerFirstTrade: fetched.providerFirstTrade } : built);
       } catch (cause) {
-        fail(instrumentId, cause instanceof ProviderError ? cause.code : 'unknown');
+        fail(instrumentId, cause instanceof ProviderError ? cause.code : (cause as { code?: string }).code ?? 'unknown');
       } finally { busy(instrumentId, false); }
     },
     async adoptSeries(instrumentId, series, label) {
-      put(await build(instrumentId, 'research-series', label, series.bars, ['date', 'close'], 0));
+      try {
+        put(await build(instrumentId, 'research-series', label, series.bars, ['date', 'close'], 0));
+      } catch (cause) {
+        fail(instrumentId, (cause as { code?: string }).code ?? 'unknown');
+      }
     },
     clear(instrumentId) {
       const { [instrumentId]: _d, ...datasets } = get().datasets;
