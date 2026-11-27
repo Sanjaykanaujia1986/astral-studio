@@ -74,11 +74,24 @@ is wrong for most others. The ones implemented, with their rules:
 | **D-9** Navāṁśa | 3°20' | Count continuously from Aries: `floor(longitude / 3°20') mod 12`. Equivalent to the classical rule that movable signs start from themselves, fixed from the 9th, dual from the 5th. |
 | **D-10** Daśāṁśa | 3° | Odd signs — count from the sign itself; even signs — count from the 9th from it. |
 | **D-12** Dvādaśāṁśa | 2°30' | Count from the sign itself. |
+| **D-4** Caturthāṁśa | 7°30' | The sign itself, then the 4th, 7th and 10th from it. |
+| **D-7** Saptāṁśa | 4°17'08" | Odd signs — count from the sign; even signs — from the 7th from it. |
+| **D-16** Ṣoḍaśāṁśa | 1°52'30" | Movable signs from Aries, fixed from Leo, dual from Sagittarius. |
+| **D-20** Viṁśāṁśa | 1°30' | Movable from Aries, fixed from Sagittarius, dual from Leo. |
+| **D-24** Caturviṁśāṁśa | 1°15' | Odd signs from Leo, even signs from Cancer. |
+| **D-27** Saptaviṁśāṁśa | 1°06'40" | Fire signs from Aries, earth from Cancer, air from Libra, water from Capricorn — a continuous count from Aries. |
+| **D-30** Triṁśāṁśa | unequal | Odd signs: 0–5° Aries, 5–10° Aquarius, 10–18° Sagittarius, 18–25° Gemini, 25–30° Libra. Even signs: 0–5° Taurus, 5–12° Virgo, 12–20° Pisces, 20–25° Capricorn, 25–30° Scorpio. |
+| **D-40** Khavedāṁśa | 0°45' | Odd signs from Aries, even signs from Libra. |
+| **D-45** Akṣavedāṁśa | 0°40' | Movable from Aries, fixed from Leo, dual from Sagittarius. |
+| **D-60** Ṣaṣṭyāṁśa | 0°30' | Count from the sign itself. |
 
-Not implemented: D-4, D-7, D-16, D-20, D-24, D-27, D-30, D-40, D-45, D-60. Each
-needs its own rule stated and checked; D-30 (triṁśāṁśa) in particular is not a
-simple division at all, and several have competing Parāśarī and Jaiminī forms.
-They are absent rather than approximated.
+Since 0.49 the chart page offers all sixteen of Parāśara's ṣoḍaśavarga, with
+the Parāśarī rules above (the booklet and ṣaḍbala already used them through
+`vargaOf`; a test asserts `vargaSignIndex` and `vargaOf` agree across the
+zodiac). Not offered: D-5, D-6, D-8, D-11 and other non-Parāśarī divisions,
+whose rules differ between sources; and Jaiminī alternatives of the sixteen
+(for example a cyclic D-2 or the parivṛtti D-3). They are absent rather than
+approximated.
 
 ## 6. Viṁśottarī daśā
 

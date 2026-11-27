@@ -2,6 +2,9 @@
 
 Newest first.
 
+## 0.49.0 — 2026-11-27
+- NEW: **All sixteen divisional charts on the Vedic page.** The Divisional chart picker now offers Parāśara's full ṣoḍaśavarga, not six: D1, D2, D3, D4, D7, D9, D10, D12, D16, D20, D24, D27, D30, D40, D45 and D60, each labelled with what it is traditionally read for. Every new chart has its own stated rule (docs/VEDIC_CONVENTIONS.md §5): the Triṁśāṁśa (D30) uses its unequal 5-5-8-7-5° parts, and the Ṣoḍaśāṁśa, Viṁśāṁśa and Akṣavedāṁśa start from the sign's modality. These are the same rules the printed kuṇḍalī booklet and ṣaḍbala already used, and a test checks that the page and the booklet agree all round the zodiac. D5, D6, D8 and D11 are not offered: they are not among Parāśara's sixteen, and their rules differ between sources.
+
 ## 0.48.0 — 2026-11-27
 The smaller issues left from the 0.47 defect scan.
 - FIX: **Daily vedha no longer reads a missing series as a market verdict.** With an instrument's prices not loaded, its column in the day table and the Days sheet now says "No data loaded" instead of being blank, and the Method A/B comparison says which prices to load instead of showing a table of zeros that read as "no hits".

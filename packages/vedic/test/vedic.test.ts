@@ -17,6 +17,8 @@ import {
   VIMSHOTTARI_LORDS,
 } from '../src/nakshatra.js';
 import { vargaSignIndex, buildVargaChart, VARGAS } from '../src/varga.js';
+import { vargaOf } from '../src/shadbala.js';
+import { SHODASHA } from '../src/tables.js';
 import {
   vimshottari, dashaAt, lordSequence, LORD_YEARS, TOTAL_YEARS, YEAR_LENGTHS,
 } from '../src/vimshottari.js';
@@ -175,6 +177,39 @@ describe('vargas', () => {
     expect(vargaSignIndex(1, 'D12')).toBe(0);
     expect(vargaSignIndex(31, 'D12')).toBe(1);
     expect(vargaSignIndex(31 + 2.5, 'D12')).toBe(2);
+  });
+
+  it('places the ten further ṣoḍaśavarga by their own Parāśarī rules (0.49)', () => {
+    expect(vargaSignIndex(8, 'D4')).toBe(3);          // Aries 2nd quarter → 4th from Aries = Cancer
+    expect(vargaSignIndex(35, 'D7')).toBe(8);         // Taurus (even) from Scorpio, 2nd part → Sagittarius
+    expect(vargaSignIndex(5, 'D7')).toBe(1);          // Aries (odd) from itself, 2nd part → Taurus
+    expect(vargaSignIndex(32, 'D16')).toBe(5);        // Taurus (fixed) from Leo, 2nd part → Virgo
+    expect(vargaSignIndex(60.5, 'D20')).toBe(4);      // Gemini (dual) from Leo
+    expect(vargaSignIndex(30.5, 'D20')).toBe(8);      // Taurus (fixed) from Sagittarius
+    expect(vargaSignIndex(0.5, 'D24')).toBe(4);       // Aries (odd) from Leo
+    expect(vargaSignIndex(30.5, 'D24')).toBe(3);      // Taurus (even) from Cancer
+    expect(vargaSignIndex(30.5, 'D27')).toBe(3);      // Taurus (earth) from Cancer
+    expect(vargaSignIndex(120.5, 'D27')).toBe(0);     // Leo (fire) from Aries
+    expect(vargaSignIndex(3, 'D30')).toBe(0);         // Aries 0–5° → Aries (Mars)
+    expect(vargaSignIndex(15, 'D30')).toBe(8);        // Aries 10–18° → Sagittarius (Jupiter)
+    expect(vargaSignIndex(33, 'D30')).toBe(1);        // Taurus 0–5° → Taurus (Venus)
+    expect(vargaSignIndex(57, 'D30')).toBe(7);        // Taurus 25–30° → Scorpio (Mars)
+    expect(vargaSignIndex(30.5, 'D40')).toBe(6);      // Taurus (even) from Libra
+    expect(vargaSignIndex(60.5, 'D45')).toBe(8);      // Gemini (dual) from Sagittarius
+    expect(vargaSignIndex(0.6, 'D60')).toBe(1);       // Aries 2nd half-degree → Taurus
+  });
+
+  it('agrees with the booklet’s and ṣaḍbala’s vargaOf everywhere (0.49)', () => {
+    // Steps chosen to stay off the part boundaries, where the two float forms could differ by rounding.
+    for (const varga of VARGAS) {
+      const n = Number(varga.slice(1));
+      for (let k = 0; k < 2000; k += 1) {
+        const lon = (k * 0.1803 + 0.0071) % 360;
+        expect(vargaSignIndex(lon, varga), `${varga} at ${lon}`).toBe(vargaOf(n, lon));
+      }
+    }
+    expect(VARGAS).toHaveLength(16);
+    expect([...SHODASHA].map((n) => `D${n}`)).toEqual([...VARGAS]);
   });
 
   it('builds a varga chart whose lagna is itself divided', () => {

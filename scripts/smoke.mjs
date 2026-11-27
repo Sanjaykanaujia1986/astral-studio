@@ -182,6 +182,7 @@ if (bundle) {
     ['NSE stock picker in Instruments and charts (0.46)', 'fa.stocks.load'],
     ['Gann Lab refuses a zero step in words, not a crash (0.47)', 'gann.error.zeroStep'],
     ['Daily vedha says "No data loaded", not a verdict (0.48)', 'fa.vedha.notLoaded'],
+    ['All sixteen vargas in the Vedic chart picker (0.49)', 'varga.sig.D16'],
     // AGPL §13: the source offer must reach the served bundle, not just the repo.
     ['licence notice', 'Affero'],
   ]) {
